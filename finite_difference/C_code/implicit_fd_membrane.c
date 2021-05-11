@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <lapacke.h>
 #include <math.h>
+#include "parameters.h"
 
 int main (int argc, const char * argv[])
 {
@@ -14,19 +15,12 @@ int main (int argc, const char * argv[])
 
     /* Parameters */
     double pi = 3.1415926535;
-    double ALPHA = 0.1; 
-    double BETA = 10;
-    double GAMMA = 1;
-    double L = 1; // Size of domain
-    double dt = 1e-4; // Timestep
-    double tmax = 0.4;
-    int N = 1024;
 
     // Derived parameters
-    double dx = L / (N - 1); // May need to make it L / N
-    double Cbeta2 = BETA * dt * dt / (ALPHA * dx * dx);
-    double Cgamma2 = GAMMA * dt * dt / (ALPHA * dx * dx * dx * dx); 
-
+    double dx = L / (N_MEMBRANE - 1); // May need to make it L / N
+    double Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * dx * dx);
+    double Cgamma2 = GAMMA * DELTA_T * DELTA_T / (ALPHA * dx * dx * dx * dx); 
+    int N = N_MEMBRANE;
 
     /* Matrix equations set-up. The first KL = 2 rows are empty, then the rows
     are the diagonals, appropriately shifted */
@@ -114,7 +108,7 @@ int main (int argc, const char * argv[])
     // First-order initial conditions
     for (int i = 0; i < N; i++) {
         double x = dx * i;
-        double w_val = cos(pi * x / L) + 1;
+        double w_val = cos(M_PI * x / L) + 1;
         w_previous[i] = w_val;
         w[i] = w_val;
     }
@@ -132,11 +126,11 @@ int main (int argc, const char * argv[])
     fclose(output_file);
 
     // Increments times
-    t += dt;
+    t += DELTA_T;
     k++;
 
     /* Loops over all timesteps */
-    while (t < tmax) {
+    while (t < T_MAX) {
         printf("t = %g\n", t);
         // Outputs solution for w;
         char output_filename[40];
@@ -169,7 +163,7 @@ int main (int argc, const char * argv[])
         rhs = temp;
 
         // Increments time
-        t += dt;
+        t += DELTA_T;
         k++;
     }
     printf("Finished with t = %g\n", t);
