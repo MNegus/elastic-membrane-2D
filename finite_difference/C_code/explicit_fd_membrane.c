@@ -90,7 +90,7 @@ set by solving the membrane equation under the conditions that w_t = 0 at t = 0.
         double x = Deltax * i;
 
         // Prescribed initial conditions for w and its first derivative
-        w_previous[i] = cos(M_PI * x / L) + 1;
+        w_previous[i] = cos(M_PI * x / (2 * L));
         w_deriv[i] = 0;
     }
 

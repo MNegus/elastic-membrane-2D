@@ -169,7 +169,7 @@ set by solving the membrane equation under the conditions that w_t = 0 at t = 0.
     // Initialise w_previous and w_deriv
     for (int i = 0; i < N_MEMBRANE; i++) {
         double x = Deltax * i;
-        w_previous[i] = cos(M_PI * x / L) + 1;
+        w_previous[i] = cos(M_PI * x / (2 * L));
         w_deriv[i] = 0;
     }
 
