@@ -198,11 +198,11 @@ void output_membrane() {
 Outputs the x positions of the membrane into a text file
 */
     char w_filename[40];
-    sprintf(w_filename, "outputs/w_%d.txt", k);
+    sprintf(w_filename, "implicit_outputs/w_%d.txt", k);
     FILE *w_file = fopen(w_filename, "w");
 
     char w_deriv_filename[40];
-    sprintf(w_deriv_filename, "outputs/w_deriv_%d.txt", k);
+    sprintf(w_deriv_filename, "implicit_outputs/w_deriv_%d.txt", k);
     FILE *w_deriv_file = fopen(w_deriv_filename, "w");
 
     for (int i = 0; i < N_MEMBRANE; i++) {
@@ -218,7 +218,7 @@ Outputs the x positions of the membrane into a text file
 
 void run() {
 /* Loops over all time values solving the equations */
-    while (t < T_MAX) {
+    while (t <= T_MAX) {
         printf("t = %g\n", t);
         
         // Configures right-hand-side vector
@@ -237,14 +237,14 @@ void run() {
             w_deriv[i] = (rhs[i] - w_previous[i]) / (2 * DELTA_T);
         }
 
-        // Outputs w and w_deriv
-        output_membrane();
-
         // Shifts arrays, updating w
         double *temp = w_previous;
         w_previous = w;
         w = rhs;
         rhs = temp;
+
+        // Outputs w_previous and w_deriv
+        output_membrane();
 
         // Increments time
         t += DELTA_T;
