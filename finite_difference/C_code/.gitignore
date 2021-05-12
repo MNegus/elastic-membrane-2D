@@ -3,3 +3,5 @@ a.out
 
 # Outputs directory
 outputs/
+explicit_outputs/
+implicit_outputs/
