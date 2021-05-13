@@ -4,9 +4,6 @@
 
 CODENAME=$1
 
-# Removes any previous output files
-rm outputs/*
-
 # Compiles program
 gcc $CODENAME -llapacke -llapack -lm
 
