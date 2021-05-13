@@ -85,14 +85,45 @@ Initialises the membrane position arrays w_previous and w using a second-order
 in time scheme. w_previous is set to a known position, and then w at k = 1 is 
 set by solving the membrane equation under the conditions that w_t = 0 at t = 0.
 */
-    // Initialise w_previous and w_deriv
-    for (int i = 0; i < N_MEMBRANE; i++) {
-        double x = Deltax * i;
 
-        // Prescribed initial conditions for w and its first derivative
-        w_previous[i] = cos(M_PI * x / (2 * L));
-        w_deriv[i] = 0;
+    // Reads the intial condition for w from the initial_condition.txt file
+
+    // Line reading values
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    // IC file
+    FILE *initial_condition_file = fopen("initial_condition.txt", "r");
+
+    // Loops over all lines in file
+    int i = 0;
+    while ((read = getline(&line, &len, initial_condition_file)) != -1) {
+        // printf("%s", line);
+
+        // Read x and w_val from the file
+        double x, w_val;
+        sscanf(line, "%lf, %lf", &x, &w_val);
+        
+        // Save w_val into w_previous
+        w_previous[i] = w_val;
+        
+        // Initial condition for w_deriv
+        w_deriv[i] = 0.;
+
+        // Incremement i
+        i++;
     }
+    fclose(initial_condition_file);
+
+    // // Initialise w_previous and w_deriv
+    // for (int i = 0; i < N_MEMBRANE; i++) {
+    //     double x = Deltax * i;
+
+    //     // Prescribed initial conditions for w and its first derivative
+    //     w_previous[i] = cos(M_PI * x / (2 * L));
+    //     w_deriv[i] = 0;
+    // }
 
     // Initialise w at the k = 1 timestep for the bulk nodes
     for (int i = 2; i < N_MEMBRANE - 2; i++) {
