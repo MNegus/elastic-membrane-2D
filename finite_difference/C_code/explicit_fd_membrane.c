@@ -1,12 +1,12 @@
 /* explicit_fd_membrane.c 
 Solves the membrane equation 
     ALPHA * w_tt - BETA * w_xx + GAMMA * w_xxxx = 0,
-using an explicit finite difference method.
-This ends up becoming a matrix 
-equation
-A w^(k+1) = 2 * w^k - w^(k-1),
-with A being a banded matrix. To this end, we use LAPACKE, the C-wrapper 
-to LAPACK, to solve the matrix equation equation. 
+with boundary conditions
+    w_x = w_xxx at x = 0, w = w_xx = 0 at x = L,
+using an implicit finite difference method. We discretise the spatial domain 
+with N_MEMBRANE points, with a grid size Deltax = L / (N_MEMBRANE - 1), and
+we discretise in time with a timestep of DELTA_T.
+
 
 Author: Michael Negus
 */
