@@ -1,12 +1,18 @@
 /* implicit_fd_membrane.c 
 Solves the membrane equation 
     ALPHA * w_tt - BETA * w_xx + GAMMA * w_xxxx = 0,
-using an implicit finite difference method.
-This ends up becoming a matrix 
-equation
+with boundary conditions
+    w_x = w_xxx at x = 0, w = w_xx = 0 at x = L,
+using an implicit finite difference method. We discretise the spatial domain 
+with N_MEMBRANE points, with a grid size Deltax = L / (N_MEMBRANE - 1), and
+we discretise in time with a timestep of DELTA_T.
+
+Due to the w = 0 term at x = L, we do not need to calculate the 
+n = N_MEMBRANE - 1 term, and hence we are left with a matrix equation
 A w^(k+1) = 2 * w^k - w^(k-1),
-with A being a banded matrix. To this end, we use the dgsbv subroutine from
-LAPACKE, the C-wrapper to LAPACK, to solve the banded matrix equation. 
+with A being an MxM banded matrix, with M = N_MEMBRANE - 1. To this end, we use 
+the dgsbv subroutine from LAPACKE, the C-wrapper to LAPACK, to solve the banded 
+matrix equation. 
 
 Author: Michael Negus
 */
@@ -20,6 +26,7 @@ Author: Michael Negus
 /* Global variables */
 // Finite-difference parameters
 double Deltax, Cbeta2, Cgamma2; 
+int M; // Size of matrix 
 
 // LAPACK parameters
 int info, *ipiv, kl, ku, nrhs, ldab, ldb, noRows;
@@ -57,31 +64,32 @@ void init() {
     Deltax = L / (N_MEMBRANE - 1); // May need to make it L / N
     Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax);
     Cgamma2 = GAMMA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax * Deltax * Deltax); 
+    M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
 
     /* Matrix equations set-up */
 
     // LAPACKE constants
     info; // Output for the dgbsv LAPACKE subroutine
-    ipiv = malloc(N_MEMBRANE * sizeof(int)); // Pivot array for dgbsv
+    ipiv = malloc(M * sizeof(int)); // Pivot array for dgbsv
     kl = 2; // Number of sub-diagonals
     ku = 2; // Number of super-diagonals
     nrhs = 1; // Number of right-hand side vectors
-    ldab = N_MEMBRANE; // Leading dimension of A
+    ldab = M; // Leading dimension of A
     ldb = 1; // Leading dimension of the right-hand side vector
     noRows = 2 * kl + ku + 1; // Number of rows in coefficient matrix
 
     // Creates coefficient matrix
-    A_static = malloc(N_MEMBRANE * noRows * sizeof(double));
+    A_static = malloc(M * noRows * sizeof(double));
 
     // Fills in the coefficient matrix
     initialise_coefficient_matrix();
 
     /* Initialise w arrays */
-    w_previous = malloc(N_MEMBRANE * sizeof(double)); // w at previous timestep
-    w = malloc(N_MEMBRANE * sizeof(double)); // w at current timestep
-    w_deriv = malloc(N_MEMBRANE * sizeof(double)); // Time derivative of w
-    rhs = malloc(N_MEMBRANE * sizeof(double)); // Right-hand-side vector
-    A = malloc(N_MEMBRANE * noRows * sizeof(double)); // Coefficient matrix
+    w_previous = malloc(M * sizeof(double)); // w at previous timestep
+    w = malloc(M * sizeof(double)); // w at current timestep
+    w_deriv = malloc(M * sizeof(double)); // Time derivative of w
+    rhs = malloc(M * sizeof(double)); // Right-hand-side vector
+    A = malloc(M * noRows * sizeof(double)); // Coefficient matrix
 
     // Initialise w_previous and w using second-order initial conditions
     initialise_membrane();
@@ -105,52 +113,55 @@ Cgamma2 = GAMMA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax * Deltax * Deltax
 
 
     // Stores upper-upper-diagonal in third row
-    for (int colNum = 2; colNum < N_MEMBRANE; colNum++) {
+    for (int colNum = 2; colNum < M; colNum++) {
         double value;
         if (colNum == 2) {
             value = 2 * Cgamma2;
         } else {
             value = Cgamma2;
         }
-        A_static[2 * N_MEMBRANE + colNum] = value;
+        A_static[2 * M + colNum] = value;
     }
 
     // Stores upper diagonal in fourth row
-    for (int colNum = 1; colNum < N_MEMBRANE; colNum++) {
+    for (int colNum = 1; colNum < M; colNum++) {
         double value;
         if (colNum == 1) {
             value = - 2 * (Cbeta2 + 4 * Cgamma2);
         } else {
             value = -(Cbeta2 + 4 * Cgamma2);
         }
-        A_static[3 * N_MEMBRANE + colNum] = value;
+        A_static[3 * M + colNum] = value;
     }
 
     // Stores main diagonal in fifth row
-    for (int colNum = 0; colNum < N_MEMBRANE; colNum++) {
+    for (int colNum = 0; colNum < M; colNum++) {
         double value;
         if (colNum == 1) {
             value = 1 + 2 * Cbeta2 + 7 * Cgamma2;
+        } else if (colNum == M - 1) {
+            value = 1 + 2 * Cbeta2 + 5 * Cgamma2;
         } else {
             value = 1 + 2 * Cbeta2 + 6 * Cgamma2;
         }
-        A_static[4 * N_MEMBRANE + colNum] = value;
+        A_static[4 * M + colNum] = value;
     }
 
     // Stores lower diagonal in sixth row
-    for (int colNum = 0; colNum < N_MEMBRANE - 1; colNum++) {
+    for (int colNum = 0; colNum < M - 1; colNum++) {
         double value;
-        if (colNum == N_MEMBRANE - 2) {
-            value = -(Cbeta2 + 3 * Cgamma2);
-        } else {
-            value = -(Cbeta2 + 4 * Cgamma2);
-        }
-        A_static[5 * N_MEMBRANE + colNum] = value;
+        // if (colNum == M - 2) {
+        //     value = -(Cbeta2 + 5 * Cgamma2);
+        // } else {
+        //     value = -(Cbeta2 + 4 * Cgamma2);
+        // }
+        value = -(Cbeta2 + 4 * Cgamma2);
+        A_static[5 * M + colNum] = value;
     }
 
     // Stores lower-lower diagonal in seventh row
-    for (int colNum = 0; colNum < N_MEMBRANE - 2; colNum++) {
-        A_static[6 * N_MEMBRANE + colNum] = Cgamma2;
+    for (int colNum = 0; colNum < M - 2; colNum++) {
+        A_static[6 * M + colNum] = Cgamma2;
     }
 
 }
@@ -164,27 +175,27 @@ set by solving the membrane equation under the conditions that w_t = 0 at t = 0.
 */
 
     // Copies over elements to A
-    memcpy(A, A_static, N_MEMBRANE * noRows * sizeof(double));
+    memcpy(A, A_static, M * noRows * sizeof(double));
     
     // Initialise w_previous and w_deriv
-    for (int i = 0; i < N_MEMBRANE; i++) {
+    for (int i = 0; i < M; i++) {
         double x = Deltax * i;
         w_previous[i] = cos(M_PI * x / (2 * L));
         w_deriv[i] = 0;
     }
 
     // Adjusts the main diagonal of A (i.e. mapping A -> A + I)
-    for (int colNum = 0; colNum < N_MEMBRANE; colNum++) {
-        A[4 * N_MEMBRANE + colNum] += 1;
+    for (int colNum = 0; colNum < M; colNum++) {
+        A[4 * M + colNum] += 1;
     }
 
     // Configures right-hand-side vector
-    for (int i = 0; i < N_MEMBRANE; i++) {
+    for (int i = 0; i < M; i++) {
         rhs[i] = 2 * w_previous[i];
     }
 
     // Solves matrix equation, saving result in rhs
-    info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, N_MEMBRANE, kl, ku, nrhs, A, ldab, ipiv, rhs, ldb);
+    info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, rhs, ldb);
     
     // Swaps arrays, updating w
     double *temp = w;
@@ -205,11 +216,18 @@ Outputs the x positions of the membrane into a text file
     sprintf(w_deriv_filename, "implicit_outputs/w_deriv_%d.txt", k);
     FILE *w_deriv_file = fopen(w_deriv_filename, "w");
 
-    for (int i = 0; i < N_MEMBRANE; i++) {
+    // Outputs from x = 0 to L - dx
+    for (int i = 0; i < M; i++) {
         double x = i * Deltax;
-        fprintf(w_file, "%g, %g\n", x, w_previous[i]);
-        fprintf(w_deriv_file, "%g, %g\n", x, w_deriv[i]);
+        fprintf(w_file, "%.8f, %.8f\n", x, w_previous[i]);
+        fprintf(w_deriv_file, "%.8f, %.8f\n", x, w_deriv[i]);
     }
+
+    // Outputs x = L, where w and w_deriv = 0
+    double x = M * Deltax;
+    fprintf(w_file, "%.4f, %.8f", x, 0.0);
+    fprintf(w_deriv_file, "%.4f, %.8f", x, 0.0);
+
     fclose(w_file);
     fclose(w_deriv_file);
 
@@ -222,18 +240,18 @@ void run() {
         printf("t = %g\n", t);
         
         // Configures right-hand-side vector
-        for (int i = 0; i < N_MEMBRANE; i++) {
+        for (int i = 0; i < M; i++) {
             rhs[i] = 2 * w[i] - w_previous[i];
         }
 
         // Copies over elements to A
-        memcpy(A, A_static, N_MEMBRANE * noRows * sizeof(double));
+        memcpy(A, A_static, M * noRows * sizeof(double));
 
         // Solves matrix equation, saving result in rhs
-        info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, N_MEMBRANE, kl, ku, nrhs, A, ldab, ipiv, rhs, ldb);
+        info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, rhs, ldb);
 
         // Determines w_deriv at current timestep 
-        for (int i = 0; i < N_MEMBRANE; i++) {
+        for (int i = 0; i < M; i++) {
             w_deriv[i] = (rhs[i] - w_previous[i]) / (2 * DELTA_T);
         }
 
