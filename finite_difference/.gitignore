@@ -1,0 +1,2 @@
+# Ignores all text files to ensure data isn't uploaded
+*.txt

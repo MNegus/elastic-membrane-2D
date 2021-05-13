@@ -3,10 +3,7 @@ a.out
 *.o
 
 # Outputs directory
-outputs/
-explicit_outputs/
-implicit_outputs/
+#explicit_outputs/
+#implicit_outputs/
 
-# Text files 
-*.txt
 
