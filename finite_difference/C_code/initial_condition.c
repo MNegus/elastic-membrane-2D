@@ -31,7 +31,7 @@ int main (int argc, const char * argv[]) {
         double w = 0;
         for (int n = 1; n <= N0; n++) {
             double lambda = M_PI * (2 * n - 1) / (2 * L);
-            w += As[n] * cos(lambda * x);
+            w += As[n - 1] * cos(lambda * x);
         }
         fprintf(w_file, "%.8f, %.8f\n", x, w);
     }
