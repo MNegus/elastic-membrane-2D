@@ -133,8 +133,8 @@ Outputs the x positions of the membrane into a text file
 
     for (int i = 0; i < N_MEMBRANE; i++) {
         double x = i * Deltax;
-        fprintf(w_file, "%g, %g\n", x, w_previous[i]);
-        fprintf(w_deriv_file, "%g, %g\n", x, w_deriv[i]);
+        fprintf(w_file, "%.8f, %.8f\n", x, w_previous[i]);
+        fprintf(w_deriv_file, "%.8f, %.8f\n", x, w_deriv[i]);
     }
     fclose(w_file);
     fclose(w_deriv_file);
