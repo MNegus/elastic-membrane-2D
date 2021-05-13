@@ -61,7 +61,7 @@ int main (int argc, const char * argv[]) {
 
 void init() {
     /* Derived parameters */
-    Deltax = L / (N_MEMBRANE - 1); // May need to make it L / N
+    Deltax = L / (N_MEMBRANE - 1); // Spatial grid size
     Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax);
     Cgamma2 = GAMMA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax * Deltax * Deltax); 
     M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
@@ -177,12 +177,46 @@ set by solving the membrane equation under the conditions that w_t = 0 at t = 0.
     // Copies over elements to A
     memcpy(A, A_static, M * noRows * sizeof(double));
     
-    // Initialise w_previous and w_deriv
-    for (int i = 0; i < M; i++) {
-        double x = Deltax * i;
-        w_previous[i] = cos(M_PI * x / (2 * L));
-        w_deriv[i] = 0;
+    
+    /* Initialise w_previous and w_deriv */
+
+    // Reads the intial condition for w from the initial_condition.txt file
+
+    // Line reading values
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    // IC file
+    FILE *initial_condition_file = fopen("initial_condition.txt", "r");
+
+    // Loops over all lines in file
+    int i = 0;
+    while ((read = getline(&line, &len, initial_condition_file)) != -1) {
+        // printf("%s", line);
+
+        // Read x and w_val from the file
+        double x, w_val;
+        sscanf(line, "%lf, %lf", &x, &w_val);
+        
+        // Save w_val into w_previous
+        if (i < M) {
+            w_previous[i] = w_val;
+        
+            // Initial condition for w_deriv
+            w_deriv[i] = 0.;
+        }
+       
+        // Incremement i
+        i++;
     }
+    fclose(initial_condition_file);
+
+    // for (int i = 0; i < M; i++) {
+    //     double x = Deltax * i;
+    //     w_previous[i] = cos(M_PI * x / (2 * L));
+    //     w_deriv[i] = 0;
+    // }
 
     // Adjusts the main diagonal of A (i.e. mapping A -> A + I)
     for (int colNum = 0; colNum < M; colNum++) {
@@ -225,8 +259,8 @@ Outputs the x positions of the membrane into a text file
 
     // Outputs x = L, where w and w_deriv = 0
     double x = M * Deltax;
-    fprintf(w_file, "%.4f, %.8f", x, 0.0);
-    fprintf(w_deriv_file, "%.4f, %.8f", x, 0.0);
+    fprintf(w_file, "%.8f, %.8f", x, 0.0);
+    fprintf(w_deriv_file, "%.8f, %.8f", x, 0.0);
 
     fclose(w_file);
     fclose(w_deriv_file);
@@ -237,7 +271,7 @@ Outputs the x positions of the membrane into a text file
 void run() {
 /* Loops over all time values solving the equations */
     while (t <= T_MAX) {
-        printf("t = %g\n", t);
+        // printf("t = %g\n", t);
         
         // Configures right-hand-side vector
         for (int i = 0; i < M; i++) {
