@@ -97,9 +97,6 @@ void init() {
     /* Outputs w_previous */
     output_membrane();
 
-    // Increments times
-    t += DELTA_T;
-    k++;
 }
 
 
@@ -253,14 +250,14 @@ Outputs the x positions of the membrane into a text file
     // Outputs from x = 0 to L - dx
     for (int i = 0; i < M; i++) {
         double x = i * Deltax;
-        fprintf(w_file, "%.8f, %.8f\n", x, w_previous[i]);
-        fprintf(w_deriv_file, "%.8f, %.8f\n", x, w_deriv[i]);
+        fprintf(w_file, "%.10f, %.10f\n", x, w_previous[i]);
+        fprintf(w_deriv_file, "%.10f, %.10f\n", x, w_deriv[i]);
     }
 
     // Outputs x = L, where w and w_deriv = 0
     double x = M * Deltax;
-    fprintf(w_file, "%.8f, %.8f", x, 0.0);
-    fprintf(w_deriv_file, "%.8f, %.8f", x, 0.0);
+    fprintf(w_file, "%.10f, %.10f", x, 0.0);
+    fprintf(w_deriv_file, "%.10f, %.10f", x, 0.0);
 
     fclose(w_file);
     fclose(w_deriv_file);

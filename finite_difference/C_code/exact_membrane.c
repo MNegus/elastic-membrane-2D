@@ -49,7 +49,7 @@ int main (int argc, const char * argv[]) {
             double lambda = M_PI * (2 * n - 1) / (2 * L);
             w += As[n - 1] * cos(lambda * x);
         }
-        fprintf(w_file, "%.8f, %.8f\n", x, w);
+        fprintf(w_file, "%.10f, %.10f\n", x, w);
     }
     fclose(w_file);
 
@@ -73,7 +73,7 @@ int main (int argc, const char * argv[]) {
             }
 
             // Outputs solution
-            fprintf(w_file, "%.8f, %.8f\n", x, w);
+            fprintf(w_file, "%.10f, %.10f\n", x, w);
         }
         fclose(w_file);
 
