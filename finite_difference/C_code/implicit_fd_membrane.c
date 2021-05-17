@@ -2,7 +2,7 @@
 Solves the membrane equation 
     ALPHA * w_tt - BETA * w_xx + GAMMA * w_xxxx = 0,
 with boundary conditions
-    w_x = w_xxx at x = 0, w = w_xx = 0 at x = L,
+    w_x = w_xxx = 0 at x = 0, w = w_xx = 0 at x = L,
 using an implicit finite difference method. We discretise the spatial domain 
 with N_MEMBRANE points, with a grid size Deltax = L / (N_MEMBRANE - 1), and
 we discretise in time with a timestep of DELTA_T.
