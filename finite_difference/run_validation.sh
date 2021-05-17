@@ -10,8 +10,11 @@ cd C_code/
 rm -r exact_outputs
 mkdir exact_outputs
 
-rm -r implicit_outputs
-mkdir implicit_outputs
+# rm -r implicit_outputs
+# mkdir implicit_outputs
+rm -r CN_outputs
+mkdir CN_outputs
+
 
 ##############################
 # Varying spatial grid size
@@ -71,8 +74,10 @@ do
     # Run the exact solution
     ./run_code.sh exact_membrane.c 
 
-    # Run the implicit solution
-    ./run_code.sh implicit_fd_membrane.c 
+    # # Run the implicit solution
+    # ./run_code.sh implicit_fd_membrane.c 
+    # Run the CN solution
+    ./run_code.sh CN_fd_wave.c 
 
     # Make a new directory in the validation data directory
     mkdir ../validation/validation_data/DT_$DTPOWER
@@ -83,11 +88,11 @@ do
 
     # Move outputs into the data directory
     mv exact_outputs ../validation/validation_data/DT_$DTPOWER/
-    mv implicit_outputs ../validation/validation_data/DT_$DTPOWER 
+    mv CN_outputs ../validation/validation_data/DT_$DTPOWER 
 
     # Create new directories for next time
     mkdir exact_outputs
-    mkdir implicit_outputs
+    mkdir CN_outputs
 
     # Output DT
     echo Finished DT = $DT
