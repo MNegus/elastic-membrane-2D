@@ -36,7 +36,9 @@ int main (int argc, const char * argv[]) {
 
     /* Parameters */
     int N0 = 3; // Number of terms to take in the sum
-    double As[3] = {1, 0.5, 0.25}; // Coefficients
+    // double As[3] = {1, 0.5, 0.25}; // Coefficients
+    double As[3] = {10, 5, 2.5}; // Coefficients
+    // double As[3] = {1, 0, 0};
     double Deltax = L / (N_MEMBRANE - 1); // Spatial grid size
 
     /* Outputs initial condition */
@@ -46,8 +48,10 @@ int main (int argc, const char * argv[]) {
         double x = i * Deltax;
         double w = 0;
         for (int n = 1; n <= N0; n++) {
-            double lambda = M_PI * (2 * n - 1) / (2 * L);
-            w += As[n - 1] * cos(lambda * x);
+            // double lambda = M_PI * (2 * n - 1) / (2 * L);
+            // w += As[n - 1] * cos(lambda * x);
+            double lambda = M_PI * (2 * n - 1) / (L);
+            w += As[n - 1] * sin(lambda * x);
         }
         fprintf(w_file, "%.10f, %.10f\n", x, w);
     }
@@ -57,6 +61,7 @@ int main (int argc, const char * argv[]) {
     double t = 0;
     int k = 0;
     while (t < T_MAX) {
+        printf("t = %g\n", t);
         char w_filename[40];
         sprintf(w_filename, "exact_outputs/w_%d.txt", k);
         FILE *w_file = fopen(w_filename, "w");
@@ -67,9 +72,12 @@ int main (int argc, const char * argv[]) {
 
             // Loops over terms
             for (int n = 1; n <= N0; n++) {
-                double lambda = M_PI * (2 * n - 1) / (2 * L);
+                
+                // double lambda = M_PI * (2 * n - 1) / (2 * L);
+                // w += As[n - 1] * cos(l * t) * cos(lambda * x);
+                double lambda = M_PI * (2 * n - 1) / (L);
                 double l = sqrt(BETA * pow(lambda, 2) + GAMMA * pow(lambda, 4)) / sqrt(ALPHA);
-                w += As[n - 1] * cos(l * t) * cos(lambda * x);
+                w += As[n - 1] * cos(l * t) * sin(lambda * x);
             }
 
             // Outputs solution

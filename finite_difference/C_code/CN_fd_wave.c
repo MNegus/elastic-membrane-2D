@@ -44,7 +44,7 @@ int k = 0; // Timestep variable, such that t = DELTA_T * k
 /* Function definitions */
 void init();
 void initialise_coefficient_matrix();
-void initialise_membrane();
+void initialise_membrane(); and w_deriv
 void output_membrane();
 void run();
 

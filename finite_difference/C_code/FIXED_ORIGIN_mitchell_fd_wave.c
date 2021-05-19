@@ -69,7 +69,7 @@ void init() {
     /* Derived parameters */
     Deltax = L / (N_MEMBRANE - 1); // Spatial grid size
     Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax);
-    M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
+    M = N_MEMBRANE - 2; // Size of matrix once the last row has been removed
 
     /* Matrix equations set-up */
 
@@ -110,12 +110,7 @@ Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
 
     // Stores upper diagonal in second row
     for (int colNum = 1; colNum < M; colNum++) {
-        double value;
-        if (colNum == 1) {
-            value = - Cbeta2 / 2.;
-        } else {
-            value = - Cbeta2 / 4.;
-        }
+        double value = - Cbeta2 / 4.;
         A_static[M + colNum] = value;
     }
 
@@ -128,23 +123,6 @@ Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
     for (int colNum = 0; colNum < M - 1; colNum++) {
         A_static[3 * M + colNum] = - Cbeta2 / 4;
     }
-}
-
-
-void B_multiply(double *result, double *w_arr) {
-/* Multiplies the membrane array w_arr by the matrix B, saving in the result
-array */
-    
-    // Row 0
-    rhs[0] = (2 - Cbeta2) * w_arr[0] + Cbeta2 * w_arr[1]; 
-    
-    // Rows 1 to M - 2
-    for (int i = 1; i < M - 1; i++) {
-        rhs[i] = Cbeta2 * w_arr[i - 1] / 2 + (2 - Cbeta2) * w_arr[i] + Cbeta2 * w_arr[i + 1] / 2;
-    }
-
-    // Row M - 1
-    rhs[M - 1] = Cbeta2 * w_arr[M - 2] / 2 + (2 - Cbeta2) * w_arr[M - 1];
 }
 
 void initialise_membrane() {
@@ -173,8 +151,8 @@ in time scheme. w is set to a known position, and q is set to 0
         sscanf(line, "%lf, %lf", &x, &w_val);
         
         // Saves w_val into w_previous
-        if (i < M) {
-            w_previous[i] = w_val;
+        if ((i > 0) && (i < M + 1)) {
+            w_previous[i - 1] = w_val;
         }
        
         // Increment i
@@ -191,7 +169,7 @@ in time scheme. w is set to a known position, and q is set to 0
 
     /* Initialise w by solving the matrix equation */
     // Sets rhs to be equal to 0.5 * B * w_previous
-    rhs[0] = 0.5 * ((2 - Cbeta2) * w_previous[0] + Cbeta2 * w_previous[1]); 
+    rhs[0] = 0.5 * ((2 - Cbeta2) * w_previous[0] + Cbeta2 * w_previous[1] / 2); 
     for (int i = 1; i < M - 1; i++) {
         rhs[i] = 0.5 * (Cbeta2 * w_previous[i - 1] / 2 + (2 - Cbeta2) * w_previous[i] + Cbeta2 * w_previous[i + 1] / 2);
     }
@@ -231,15 +209,16 @@ Outputs the x positions of the membrane into a text file
     // FILE *w_deriv_file = fopen(w_deriv_filename, "w");
 
     // Outputs from x = 0 to L - dx
+    fprintf(w_file, "%.10f, %.10f\n", 0.0, 0.0);
+
     for (int i = 0; i < M; i++) {
-        double x = i * Deltax;
+        double x = (i + 1) * Deltax;
         fprintf(w_file, "%.10f, %.10f\n", x, w_arr[i]);
         // fprintf(w_deriv_file, "%.10f, %.10f\n", x, q[i]);
     }
 
     // Outputs x = L, where w and w_deriv = 0
-    double x = M * Deltax;
-    fprintf(w_file, "%.10f, %.10f\n", x, 0.0);
+    fprintf(w_file, "%.10f, %.10f\n", (N_MEMBRANE - 1) * Deltax, 0.0);
     // fprintf(w_deriv_file, "%.10f, %.10f", x, 0.0);
 
     fclose(w_file);
@@ -254,8 +233,8 @@ void run() {
         printf("t = %g\n", t);
         
         /* Configures right-hand-side vector */
-        rhs[0] = (2 - Cbeta2) * w[0] + Cbeta2 * w[1] \
-            - ((1 + Cbeta2 / 2) * w_previous[0] - Cbeta2 * w_previous[1] / 2);
+        rhs[0] = (2 - Cbeta2) * w[0] + Cbeta2 * w[1] / 2 \
+            - ((1 + Cbeta2 / 2) * w_previous[0] - Cbeta2 * w_previous[1] / 4);
         
         for (int i = 1; i < M - 1; i++) {
             rhs[i] = Cbeta2 * w[i - 1] / 2 + (2 - Cbeta2) * w[i] + Cbeta2 * w[i + 1] / 2 \
