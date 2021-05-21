@@ -16,7 +16,7 @@ which is in theory an implicit, second-order in time and space discretisation.
 For our application of the wave equation, where L = c^2 w_xx, we are left with a
 matrix equation
     A W^(k+1) = B W^(k) - A W^(k-1),
-where A and B are tri-diagonal matrices, which we solve using LAPACK's dgsv 
+where A and B are tri-diagonal matrices, which we solve using LAPACK's dgbsv
 subroutine for solving banded matrix systems.
 
 Author: Michael Negus
@@ -37,7 +37,7 @@ int M; // Size of matrix
 int info, *ipiv, kl, ku, nrhs, ldab, ldb, noRows;
 
 // Array definitions
-double *w_previous, *w, *rhs, *A_static, *A;
+double *w_previous, *w, *rhs, *A_static, *B_static, *A;
 
 // Time definitions
 double t = 0; // Time variable 
@@ -45,8 +45,8 @@ int k = 0; // Timestep variable, such that t = DELTA_T * k
 
 /* Function definitions */
 void init();
-void initialise_coefficient_matrix();
-void B_multiply(double *result, double *w_arr);
+void initialise_coefficient_matrices();
+void B_multiply(double *result, double *w_arr, double scale, int ADD);
 void initialise_membrane();
 void output_membrane(double *w_arr);
 void run();
@@ -83,11 +83,12 @@ void init() {
     ldb = 1; // Leading dimension of the right-hand side vector
     noRows = 2 * kl + ku + 1; // Number of rows in coefficient matrix
 
-    // Creates coefficient matrix
-    A_static = malloc(M * noRows * sizeof(double));
+    // Creates coefficient matrices
+    A_static = malloc(M * noRows * sizeof(double)); // Used for dgbsv
+    B_static = malloc(M * noRows * sizeof(double)); // Used for matrix multiplication
 
     // Fills in the coefficient matrix
-    initialise_coefficient_matrix();
+    initialise_coefficient_matrices();
 
     /* Initialise w arrays */
     w_previous = malloc(M * sizeof(double)); // w at previous timestep
@@ -101,34 +102,67 @@ void init() {
 }
 
 
-void initialise_coefficient_matrix() {
-/* initialise_coefficient_matrix 
-Function to fill in the Mx4 coefficient matrix A, where each row is one of the 
-diagonals. Cbeta2 is the scaled term equal to:
-Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
+void initialise_coefficient_matrices() {
+/* initialise_coefficient_matrices 
+Function to fill in the Mx4 coefficient matrices A and B, where each row is one 
+of the diagonals. Dbeta2 is the scaled term equal to:
+Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
 */
 
+    /* Fills in A_static, used for dgbsv */
     // Stores upper diagonal in second row
-    for (int colNum = 1; colNum < M; colNum++) {
-        double value;
-        if (colNum == 1) {
-            value = -0.5;
-        } else {
-            value = -0.25;
-        }
-        A_static[M + colNum] = value;
+    int colNum = 1;
+    A_static[M + colNum] = -0.5;
+    B_static[M + colNum] = 1;
+    for (colNum = 2; colNum < M; colNum++) {
+        A_static[M + colNum] = -0.25;
+        B_static[M + colNum] = 0.5;
     }
 
     // Stores main diagonal in third row
-    for (int colNum = 0; colNum < M; colNum++) {
+    for (colNum = 0; colNum < M; colNum++) {
         A_static[2 * M + colNum] = Dbeta2 + 0.5;
+        B_static[2 * M + colNum] = 2 * Dbeta2 - 1;
     }
 
     // Stores lower diagonal in fourth row
-    for (int colNum = 0; colNum < M - 1; colNum++) {
+    for (colNum = 0; colNum < M - 1; colNum++) {
         A_static[3 * M + colNum] = -0.25;
+        B_static[3 * M + colNum] = 0.5;
     }
 }
+
+
+
+void matrix_multiply(double *y_arr, double *matrix_arr, double *x_arr, \
+    double scale, int ADD) {
+/* matrix_multiply
+Function to compute the result of the matrix muliplication 
+    y_arr = ADD * y_arr + scale * matrix_arr * x_arr, 
+where scale is a real scaling factor, y_arr and x_arr are length M arrays and 
+matrix_arr is a coefficient matrix in banded format, equal to either A_static or
+B_static. If ADD = 0, then this sets y_arr = scale * matrix_arr * x_arr, whereas if
+ADD = 1, then this adds scale * matrix_arr * x_arr to y
+*/
+    // First entry, ignoring the lower diagonal
+    y_arr[0] = ADD * y_arr[0] \
+        + scale * (matrix_arr[2 * M] * x_arr[0] \
+                 + matrix_arr[M + 1] * x_arr[1]);
+
+    // Main entries, with all diagonals
+    for (int i = 1; i < M - 1; i++) {
+        y_arr[i] = ADD * y_arr[i] \
+            + scale * (matrix_arr[3 * M + i - 1] * x_arr[i - 1]\
+                     + matrix_arr[2 * M + i] * x_arr[i] \
+                     + matrix_arr[M + i + 1] * x_arr[i + 1]);
+    }
+
+    // Last entry, ignoring the upper diagonal
+    y_arr[M - 1] = ADD * y_arr[M - 1] \
+        + scale * (matrix_arr[3 * M + M - 2] * x_arr[M - 2] \
+                 + matrix_arr[2 * M + M - 1] * x_arr[M - 1]);
+}
+
 
 void initialise_membrane() {
 /* initialise_membrane 
@@ -174,11 +208,7 @@ in time scheme. w is set to a known position, and q is set to 0
 
     /* Initialise w by solving the matrix equation */
     // Sets rhs to be equal to 0.5 * B * w_previous
-    rhs[0] = 0.5 * ((2. * Dbeta2 - 1.) * w_previous[0] + w_previous[1]); 
-    for (int i = 1; i < M - 1; i++) {
-        rhs[i] = 0.5 * (0.5 * w_previous[i - 1]  + (2. * Dbeta2 - 1.) * w_previous[i] + 0.5 * w_previous[i + 1]);
-    }
-    rhs[M - 1] = 0.5 * (0.5 * w_previous[M - 2] + (2. * Dbeta2 - 1.) * w_previous[M - 1]);
+    matrix_multiply(rhs, B_static, w_previous, 0.5, 0);
 
     // Copies over elements to A
     memcpy(A, A_static, M * noRows * sizeof(double));
@@ -237,15 +267,22 @@ void run() {
         printf("t = %g\n", t);
         
         /* Configures right-hand-side vector */
-        rhs[0] = (2. * Dbeta2 - 1.) * w[0] + w[1] \
-            - ((Dbeta2 + 0.5) * w_previous[0] - 0.5 * w_previous[1]);
+
+        // Sets rhs = B * w
+        matrix_multiply(rhs, B_static, w, 1, 0);
+
+        // Sets rhs = rhs - A * w_previous
+        matrix_multiply(rhs, A_static, w_previous, -1, 1);
+
+        // rhs[0] = (2. * Dbeta2 - 1.) * w[0] + w[1] \
+        //     - ((Dbeta2 + 0.5) * w_previous[0] - 0.5 * w_previous[1]);
         
-        for (int i = 1; i < M - 1; i++) {
-            rhs[i] = 0.5 * w[i - 1] + (2. * Dbeta2 - 1.) * w[i] + 0.5 * w[i + 1] \
-                + 0.25 * w_previous[i - 1] - (Dbeta2 + 0.5) * w_previous[i] + 0.25 * w_previous[i + 1];
-        }
-        rhs[M - 1] = 0.5 * w[M - 2] + (2. * Dbeta2 - 1.) * w[M - 1] \
-                + 0.25 * w_previous[M - 2] - (Dbeta2 + 0.5) * w_previous[M - 1];
+        // for (int i = 1; i < M - 1; i++) {
+        //     rhs[i] = 0.5 * w[i - 1] + (2. * Dbeta2 - 1.) * w[i] + 0.5 * w[i + 1] \
+        //         + 0.25 * w_previous[i - 1] - (Dbeta2 + 0.5) * w_previous[i] + 0.25 * w_previous[i + 1];
+        // }
+        // rhs[M - 1] = 0.5 * w[M - 2] + (2. * Dbeta2 - 1.) * w[M - 1] \
+        //         + 0.25 * w_previous[M - 2] - (Dbeta2 + 0.5) * w_previous[M - 1];
 
         /* Solves matrix  equation */
         // Copies over elements to A
