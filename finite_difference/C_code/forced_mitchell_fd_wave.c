@@ -1,0 +1,391 @@
+/* mitchell_fd_wave.c 
+Solves the wave equation 
+    w_tt = c^2 w_xx,
+with boundary conditions
+    w_x = 0 at x = 0, w = 0 at x = L,
+using the Mitchell method. We discretise the spatial domain 
+with N_MEMBRANE points, with a grid size Deltax = L / (N_MEMBRANE - 1), and
+we discretise in time with a timestep of DELTA_T.
+
+In general, the Mitchell method involves discretising a second-order in time PDE
+    w_tt = L(x, t, w, w_x, w_xx, w_xxx, w_xxxx),
+in the following way
+    (w_n^(k-1) - 2 w_n^k + w_n^(k+1))/(DELTA_T^2) \
+        = L_n^(k-1) / 4 + L_n^k / 2 + L_n^(k+1) / 4,
+which is in theory an implicit, second-order in time and space discretisation. 
+For our application of the wave equation, where L = c^2 w_xx, we are left with a
+matrix equation
+    A W^(k+1) = B W^(k) - A W^(k-1),
+where A and B are tri-diagonal matrices, which we solve using LAPACK's dgbsv
+subroutine for solving banded matrix systems.
+
+Author: Michael Negus
+*/
+
+#include <stdio.h> // For text output
+#include <lapacke.h> // For solving linear algebra
+#include <math.h> // For pi
+#include <string.h> // For memcpy
+#include "parameters.h" // Parameter file
+
+/* Global variables */
+// Finite-difference parameters
+double Deltax, Dbeta2; 
+int M; // Size of matrix 
+
+// LAPACK parameters
+int info, *ipiv, kl, ku, nrhs, ldab, ldb, noRows;
+
+// Array definitions
+double *w_previous, *w, *rhs, *A_static, *B_static, *A;
+double *p_previous, *p, *p_next;
+// Time definitions
+double t = 0; // Time variable 
+int k = 0; // Timestep variable, such that t = DELTA_T * k
+
+/* Function definitions */
+void analytical_pressure(double *p_arr, double t);
+void init();
+void initialise_coefficient_matrices();
+void B_multiply(double *result, double *w_arr, double scale, int ADD);
+void initialise_membrane();
+void output_membrane(double *w_arr);
+void run();
+
+
+int main (int argc, const char * argv[]) {
+
+    /* Intialise problem */
+    init();
+
+    /* Loops over all timesteps */
+    run();
+
+    /* Finish */
+    printf("Finished with t = %g\n", t);
+}
+
+
+void analytical_pressure(double *p_arr, double t) {
+/* analytical_pressure
+Outputs an analytical pressure solution into the length M array p_arr, which is
+given by the function
+    p(x, t) = 2 / sqrt(d(t)^2 - x^2) for x < d(t), 
+            = 0, otherwise
+where
+    d(t) = 2 * sqrt(t) for t > 0.
+*/
+    // double d = 2 * sqrt(t);
+    // double pmax = 1 / (2 * t); // Theoretical maximum value of t
+
+    // for (int i = 0; i < M; i++) {
+    //     double x = i * Deltax;
+    //     if (x < d) {
+    //         p_arr[i] = 2.0 / sqrt(d * d - x * x);
+    //         if (p_arr[i] > pmax) {
+    //             p_arr[i] = 0;
+    //         }
+    //     } else {
+    //         p_arr[i] = 0;
+    //     }
+    // }
+    double As[3] = {10, 5, 2.5};
+    for (int i = 0; i < M; i++) {
+        double x = i * Deltax;
+        double p_val = 0;
+        for (int n = 1; n <= 3; n++) {
+            double lambda = M_PI * (2 * n - 1) / (2 * L);
+            double l = sqrt(BETA * pow(lambda, 2) + GAMMA * pow(lambda, 4)) / sqrt(ALPHA);
+            double k = 10 * l;
+            p_val += As[n - 1] * cos(k * t) * cos(lambda * x);
+        }
+        p_arr[i] = p_val;
+    }
+}
+
+void init() {
+    /* Derived parameters */
+    Deltax = L / (N_MEMBRANE - 1); // Spatial grid size
+    Dbeta2 = (ALPHA * Deltax * Deltax) / (BETA * DELTA_T * DELTA_T);
+    M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
+
+    /* Matrix equations set-up */
+
+    // LAPACKE constants
+    info; // Output for the dgbsv LAPACKE subroutine
+    ipiv = malloc(M * sizeof(int)); // Pivot array for dgbsv
+    kl = 1; // Number of sub-diagonals
+    ku = 1; // Number of super-diagonals
+    nrhs = 1; // Number of right-hand side vectors
+    ldab = M; // Leading dimension of A
+    ldb = 1; // Leading dimension of the right-hand side vector
+    noRows = 2 * kl + ku + 1; // Number of rows in coefficient matrix
+
+    // Creates coefficient matrices
+    A_static = malloc(M * noRows * sizeof(double)); // Used for dgbsv
+    B_static = malloc(M * noRows * sizeof(double)); // Used for matrix multiplication
+
+    // Fills in the coefficient matrix
+    initialise_coefficient_matrices();
+
+    /* Initialise arrays */
+    w_previous = malloc(M * sizeof(double)); // w at previous timestep
+    w = malloc(M * sizeof(double)); // w at current timestep
+    rhs = malloc(M * sizeof(double)); // Right-hand-side vector
+    A = malloc(M * noRows * sizeof(double)); // Coefficient matrix
+    p_previous = malloc(M * sizeof(double));
+    p = malloc(M * sizeof(double));
+    p_next = malloc(M * sizeof(double));
+
+    // Initialise w_previous and w using second-order initial conditions
+    initialise_membrane();
+
+}
+
+
+void initialise_coefficient_matrices() {
+/* initialise_coefficient_matrices 
+Function to fill in the Mx4 coefficient matrices A and B, where each row is one 
+of the diagonals. Dbeta2 is the scaled term equal to:
+Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
+*/
+
+    /* Fills in A_static, used for dgbsv */
+    // Stores upper diagonal in second row
+    int colNum = 1;
+    A_static[M + colNum] = -0.5;
+    B_static[M + colNum] = 1;
+    for (colNum = 2; colNum < M; colNum++) {
+        A_static[M + colNum] = -0.25;
+        B_static[M + colNum] = 0.5;
+    }
+
+    // Stores main diagonal in third row
+    for (colNum = 0; colNum < M; colNum++) {
+        A_static[2 * M + colNum] = Dbeta2 + 0.5;
+        B_static[2 * M + colNum] = 2 * Dbeta2 - 1;
+    }
+
+    // Stores lower diagonal in fourth row
+    for (colNum = 0; colNum < M - 1; colNum++) {
+        A_static[3 * M + colNum] = -0.25;
+        B_static[3 * M + colNum] = 0.5;
+    }
+}
+
+
+void matrix_multiply(double *y_arr, double *matrix_arr, double *x_arr, \
+    double scale, int ADD) {
+/* matrix_multiply
+Function to compute the result of the matrix muliplication 
+    y_arr = ADD * y_arr + scale * matrix_arr * x_arr, 
+where scale is a real scaling factor, y_arr and x_arr are length M arrays and 
+matrix_arr is a coefficient matrix in banded format, equal to either A_static or
+B_static. If ADD = 0, then this sets y_arr = scale * matrix_arr * x_arr, whereas if
+ADD = 1, then this adds scale * matrix_arr * x_arr to y
+*/
+    // First entry, ignoring the lower diagonal
+    y_arr[0] = ADD * y_arr[0] \
+        + scale * (matrix_arr[2 * M] * x_arr[0] \
+                 + matrix_arr[M + 1] * x_arr[1]);
+
+    // Main entries, with all diagonals
+    for (int i = 1; i < M - 1; i++) {
+        y_arr[i] = ADD * y_arr[i] \
+            + scale * (matrix_arr[3 * M + i - 1] * x_arr[i - 1]\
+                     + matrix_arr[2 * M + i] * x_arr[i] \
+                     + matrix_arr[M + i + 1] * x_arr[i + 1]);
+    }
+
+    // Last entry, ignoring the upper diagonal
+    y_arr[M - 1] = ADD * y_arr[M - 1] \
+        + scale * (matrix_arr[3 * M + M - 2] * x_arr[M - 2] \
+                 + matrix_arr[2 * M + M - 1] * x_arr[M - 1]);
+}
+
+
+void initialise_membrane() {
+/* initialise_membrane 
+Initialises the membrane position arrays w and q using a second-order
+in time scheme. w is set to a known position, and q is set to 0
+*/
+
+    /* Initialise pressure arrays, where p_previous and p == 0, and p_next is
+    set to be the analytical pressure at t = DELTA_T */
+    // for (int i = 0; i < M; i++) {
+    //     p_previous[i] = 0;
+    //     p[i] = 0;
+    // }
+    analytical_pressure(p_previous, -DELTA_T);
+    analytical_pressure(p, 0.0);
+    analytical_pressure(p_next, DELTA_T);
+
+    // Copies over elements to A
+    memcpy(A, A_static, M * noRows * sizeof(double));
+    
+    /* Initialise w_previous from file */
+    // Line reading values
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    // Reads the intial condition for w_previous from the initial_condition.txt file
+    FILE *initial_condition_file = fopen("initial_condition.txt", "r");
+
+    // Loops over all lines in file
+    int i = 0;
+    while ((read = getline(&line, &len, initial_condition_file)) != -1) {
+        // Read x and w_val from the file
+        double x, w_val;
+        sscanf(line, "%lf, %lf", &x, &w_val);
+        
+        // Saves w_val into w_previous
+        if (i < M) {
+            w_previous[i] = w_val;
+        }
+       
+        // Increment i
+        i++;
+    }
+    fclose(initial_condition_file);
+
+    // Outputs w_previous
+    output_membrane(w_previous);
+
+    // Increments the time t and timestep k
+    t += DELTA_T;
+    k++;
+
+    /* Initialise w by solving the matrix equation */
+    // Sets rhs to be equal to 0.5 * B * w_previous
+    matrix_multiply(rhs, B_static, w_previous, 0.5, 0);
+
+    // Adds pressure terms onto rhs
+    for (int i = 0; i < M; i++) {
+        rhs[i] += 0.5 * (Deltax * Deltax / BETA) * (0.25 * p_previous[i] + 0.5 * p[i] + 0.25 * p_next[i]);
+    }
+
+    // Copies over elements to A
+    memcpy(A, A_static, M * noRows * sizeof(double));
+
+    // Uses LAPACK to solve the matrix equation, saving result in rhs
+    info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, rhs, ldb);
+
+    // Swaps rhs and w
+    double *temp1 = w; 
+    w = rhs;
+    rhs = temp1;
+
+    // Swaps around pressures
+    double *temp2 = p_previous;
+    p_previous = p;
+    p = p_next;
+    p_next = temp2;
+    analytical_pressure(p_next, t + DELTA_T);
+
+    /* First-order initial condition */
+    // for (int i = 0; i < M; i++) {
+    //     w[i] = w_previous[i];
+    // }
+
+    // Outputs w
+    output_membrane(w);
+}
+
+
+void output_membrane(double *w_arr) {
+/* output_membrane
+Outputs the x positions of the membrane into a text file
+*/
+    char w_filename[40];
+    sprintf(w_filename, "mitchell_outputs/w_%d.txt", k);
+    FILE *w_file = fopen(w_filename, "w");
+
+    char p_filename[40];
+    sprintf(p_filename, "mitchell_outputs/p_%d.txt", k);
+    FILE *p_file = fopen(p_filename, "w");
+
+    // char w_deriv_filename[40];
+    // sprintf(w_deriv_filename, "mitchell_outputs/w_deriv_%d.txt", k);
+    // FILE *w_deriv_file = fopen(w_deriv_filename, "w");
+
+    // Outputs from x = 0 to L - dx
+    for (int i = 0; i < M; i++) {
+        double x = i * Deltax;
+        fprintf(w_file, "%.10f, %.10f\n", x, w_arr[i]);
+        fprintf(p_file, "%.10f, %.10f\n", x, p[i]);
+        // fprintf(w_deriv_file, "%.10f, %.10f\n", x, q[i]);
+    }
+
+    // Outputs x = L, where w and w_deriv = 0
+    double x = M * Deltax;
+    fprintf(w_file, "%.10f, %.10f\n", x, 0.0);
+    fprintf(p_file, "%.10f, %.10f\n", x, 0.0);
+    // fprintf(w_deriv_file, "%.10f, %.10f", x, 0.0);
+
+    fclose(w_file);
+    fclose(p_file);
+    // fclose(w_deriv_file);
+
+}
+
+
+void run() {
+/* Loops over all time values solving the equations */
+    while (t <= T_MAX) {
+        printf("t = %g\n", t);
+        
+        /* Configures right-hand-side vector */
+
+        // Sets rhs = B * w
+        matrix_multiply(rhs, B_static, w, 1, 0);
+
+        // Sets rhs = rhs - A * w_previous
+        matrix_multiply(rhs, A_static, w_previous, -1, 1);
+
+        // Sets rhs = rhs + pressure term
+        for (int i = 0; i < M; i++) {
+            rhs[i] += (Deltax * Deltax / BETA) * (0.25 * p_previous[i] + 0.5 * p[i] + 0.25 * p_next[i]);
+        }
+
+
+        // rhs[0] = (2. * Dbeta2 - 1.) * w[0] + w[1] \
+        //     - ((Dbeta2 + 0.5) * w_previous[0] - 0.5 * w_previous[1]);
+        
+        // for (int i = 1; i < M - 1; i++) {
+        //     rhs[i] = 0.5 * w[i - 1] + (2. * Dbeta2 - 1.) * w[i] + 0.5 * w[i + 1] \
+        //         + 0.25 * w_previous[i - 1] - (Dbeta2 + 0.5) * w_previous[i] + 0.25 * w_previous[i + 1];
+        // }
+        // rhs[M - 1] = 0.5 * w[M - 2] + (2. * Dbeta2 - 1.) * w[M - 1] \
+        //         + 0.25 * w_previous[M - 2] - (Dbeta2 + 0.5) * w_previous[M - 1];
+
+        /* Solves matrix  equation */
+        // Copies over elements to A
+        memcpy(A, A_static, M * noRows * sizeof(double));
+
+        // Uses LAPACK to solve the matrix equation, saving result in rhs
+        info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, rhs, ldb);
+
+        /* Outputting and swapping */
+        // Swaps arrays, updating w and w_previous
+        double *temp1 = w_previous;
+        w_previous = w;
+        w = rhs;
+        rhs = temp1;
+
+        // Increments time
+        t += DELTA_T;
+        k++;
+
+        // Swaps around pressures
+        double *temp2 = p_previous;
+        p_previous = p;
+        p = p_next;
+        p_next = temp2;
+        analytical_pressure(p_next, t + DELTA_T);
+
+        // Outputs the new value of w
+        output_membrane(w);
+        
+    }
+}
