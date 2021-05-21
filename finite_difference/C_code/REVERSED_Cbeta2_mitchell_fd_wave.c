@@ -30,7 +30,7 @@ Author: Michael Negus
 
 /* Global variables */
 // Finite-difference parameters
-double Deltax, Cbeta2; 
+double Deltax, Dbeta2; 
 int M; // Size of matrix 
 
 // LAPACK parameters
@@ -68,7 +68,7 @@ int main (int argc, const char * argv[]) {
 void init() {
     /* Derived parameters */
     Deltax = L / (N_MEMBRANE - 1); // Spatial grid size
-    Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax);
+    Dbeta2 = (ALPHA * Deltax * Deltax) / (BETA * DELTA_T * DELTA_T);
     M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
 
     /* Matrix equations set-up */
@@ -112,21 +112,21 @@ Cbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
     for (int colNum = 1; colNum < M; colNum++) {
         double value;
         if (colNum == 1) {
-            value = - 1. / 2.;
+            value = -0.5;
         } else {
-            value = - 1. / 4.;
+            value = -0.25;
         }
         A_static[M + colNum] = value;
     }
 
     // Stores main diagonal in third row
     for (int colNum = 0; colNum < M; colNum++) {
-        A_static[2 * M + colNum] = 1. / Cbeta2 + 1. / 2.;
+        A_static[2 * M + colNum] = Dbeta2 + 0.5;
     }
 
     // Stores lower diagonal in fourth row
     for (int colNum = 0; colNum < M - 1; colNum++) {
-        A_static[3 * M + colNum] = - 1. / 4.;
+        A_static[3 * M + colNum] = -0.25;
     }
 }
 
@@ -174,11 +174,11 @@ in time scheme. w is set to a known position, and q is set to 0
 
     /* Initialise w by solving the matrix equation */
     // Sets rhs to be equal to 0.5 * B * w_previous
-    rhs[0] = 0.5 * ((2. / Cbeta2 - 1.) * w_previous[0] + w_previous[1]); 
+    rhs[0] = 0.5 * ((2. * Dbeta2 - 1.) * w_previous[0] + w_previous[1]); 
     for (int i = 1; i < M - 1; i++) {
-        rhs[i] = 0.5 * (w_previous[i - 1] / 2. + (2. / Cbeta2 - 1.) * w_previous[i] + w_previous[i + 1] / 2.);
+        rhs[i] = 0.5 * (0.5 * w_previous[i - 1]  + (2. * Dbeta2 - 1.) * w_previous[i] + 0.5 * w_previous[i + 1]);
     }
-    rhs[M - 1] = 0.5 * (w_previous[M - 2] / 2. + (2. / Cbeta2 - 1.) * w_previous[M - 1]);
+    rhs[M - 1] = 0.5 * (0.5 * w_previous[M - 2] + (2. * Dbeta2 - 1.) * w_previous[M - 1]);
 
     // Copies over elements to A
     memcpy(A, A_static, M * noRows * sizeof(double));
@@ -237,15 +237,15 @@ void run() {
         printf("t = %g\n", t);
         
         /* Configures right-hand-side vector */
-        rhs[0] = (2. / Cbeta2 - 1.) * w[0] + w[1] \
-            - ((1. / Cbeta2 + 1. / 2.) * w_previous[0] - w_previous[1] / 2.);
+        rhs[0] = (2. * Dbeta2 - 1.) * w[0] + w[1] \
+            - ((Dbeta2 + 0.5) * w_previous[0] - 0.5 * w_previous[1]);
         
         for (int i = 1; i < M - 1; i++) {
-            rhs[i] = w[i - 1] / 2. + (2. / Cbeta2 - 1.) * w[i] + w[i + 1] / 2. \
-                + w_previous[i - 1] / 4. - (1 / Cbeta2 + 1. / 2.) * w_previous[i] +  w_previous[i + 1] / 4.;
+            rhs[i] = 0.5 * w[i - 1] + (2. * Dbeta2 - 1.) * w[i] + 0.5 * w[i + 1] \
+                + 0.25 * w_previous[i - 1] - (Dbeta2 + 0.5) * w_previous[i] + 0.25 * w_previous[i + 1];
         }
-        rhs[M - 1] = w[M - 2] / 2. + (2. / Cbeta2 - 1.) * w[M - 1] \
-                + w_previous[M - 2] / 4. - (1. / Cbeta2 + 1. / 2.) * w_previous[M - 1];
+        rhs[M - 1] = 0.5 * w[M - 2] + (2. * Dbeta2 - 1.) * w[M - 1] \
+                + 0.25 * w_previous[M - 2] - (Dbeta2 + 0.5) * w_previous[M - 1];
 
         /* Solves matrix  equation */
         // Copies over elements to A
