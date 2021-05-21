@@ -21,12 +21,12 @@ mkdir mitchell_outputs
 # Varying spatial grid size
 ##############################
 
-# # Pick a specific timestep value
-# DT=1e-3
+# Pick a specific timestep value
+# DT=1e-4
 # sed -i "/const double DELTA_T/c\const double DELTA_T = $DT; // Timestep size" parameters.h
 
 # # Loop over grid sizes
-# for N in 16 32 64 128 256 512 1024  
+# for N in 16 32 64 128 256 512 1024 2048 4096
 # do
 #     # Edit the value of N_MEMBRANE in the parameters.h file
 #     sed -i "/const int N_MEMBRANE/c\const int N_MEMBRANE = $N; // Number of grid points on the membrane" parameters.h
@@ -35,7 +35,7 @@ mkdir mitchell_outputs
 #     ./run_code.sh exact_membrane.c 
 
 #     # Run the implicit solution
-#     ./run_code.sh FIXED_ORIGIN_mitchell_fd_wave.c 
+#     ./run_code.sh REVERSED_Cbeta2_mitchell_fd_wave.c 
 
 #     # Make a new directory in the validation data directory
 #     rm -r ../validation/validation_data/N_MEMBRANE_$N 
@@ -62,13 +62,15 @@ mkdir mitchell_outputs
 ##############################
 
 # # Pick a specific membrane size
-N=1024
+N=4096
 sed -i "/const int N_MEMBRANE/c\const int N_MEMBRANE = $N; // Number of grid points on the membrane" parameters.h
 
 # Loop over timestep values
-for DTPOWER in 1 2 3 4
+# for DTPOWER in 1 2 3 3.5 4 4.5 5
+DTPOWER=1
+for DT in 1e-1 3e-2 1e-2 3e-3 1e-3 3e-4 1e-4 3e-5 1e-5
 do
-    DT=1e-$DTPOWER
+    # DT=1e-($(DTPOWER))
     # Edit the value of N_MEMBRANE in the parameters.h file
     sed -i "/const double DELTA_T/c\const double DELTA_T = $DT; // Timestep size" parameters.h
 
@@ -78,7 +80,7 @@ do
     # # Run the implicit solution
     # ./run_code.sh mitchell_fd_wave.c 
     # Run the mitchell solution
-    ./run_code.sh FIXED_ORIGIN_mitchell_fd_wave.c 
+    ./run_code.sh REVERSED_Cbeta2_mitchell_fd_wave.c 
 
     # Make a new directory in the validation data directory
     rm -r ../validation/validation_data/DT_$DTPOWER
@@ -98,4 +100,6 @@ do
 
     # Output DT
     echo Finished DT = $DT
+
+    DTPOWER=$((DTPOWER+1))
 done
