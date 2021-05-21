@@ -2,6 +2,8 @@
 % Conducts validation by comparing the FD solution to the exact solution
 % for varying grid sizes and timestep sizes
 
+close all;
+
 % Parent directory where all of the data is stored
 parent_dir = "validation_data";
 
@@ -9,7 +11,7 @@ parent_dir = "validation_data";
 MAX_TIMESTEP = 249; % Max value of the timestep in all the dirs
 
 % Values of N_MEMBRANE
-N_MEMBRANES = [16, 32, 64, 128, 256, 512, 1024];
+N_MEMBRANES = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 
 N_errors = zeros(size(N_MEMBRANES));
 
@@ -39,13 +41,13 @@ close(figure(1));
 figure(1);
 loglog(N_MEMBRANES, N_errors, '-o');
 hold on;
-plot(N_MEMBRANES, 2 ./ N_MEMBRANES.^2);
+plot(N_MEMBRANES, 0.25 ./ N_MEMBRANES.^2);
 xlabel("Number of nodes, N");
 ylabel("Max norm error");
 ylim([0.5 * min(N_errors), 1.5 * max(N_errors)]);
 grid on;
 legend(["Data", "y ~ 1 / N^2"]);
-title("Data for DT = 1e-5");
+title("Data for DT = 1e-4");
 exportgraphics(gcf, "grid_size_convergence.png");
 
 %% Timestep validation
@@ -54,7 +56,7 @@ exportgraphics(gcf, "grid_size_convergence.png");
 N_MEMBRANE = 1024;
 
 % Timestep powers
-DTS = [1e-1, 1e-2, 1e-3, 1e-4];
+DTS = [1e-1 3e-2 1e-2 3e-3 1e-3 3e-4 1e-4 3e-5 1e-5];
 tmax = 0.25;
 timestep_errors = zeros(size(DTS));
 max_idxs = zeros(size(timestep_errors));
@@ -80,6 +82,8 @@ for k = 1 : length(DTS)
           max_error = max_diff;
           max_idx  = I;
       end
+      q
+      timestep_errors
     end
 
 %     % Compare just w_1
@@ -89,17 +93,10 @@ for k = 1 : length(DTS)
 %     max_error = max(abs(exact_mat(:, 2) - implicit_mat(:, 2)))
 
 
-
+    
     timestep_errors(k) = max_error
-    max_idxs(k) = max_idx
+%     max_idxs(k) = max_idx
 end
-
-%%
-figure(7);
-hold on;
-plot(exact_mat(:, 2), '-o');
-plot(implicit_mat(:, 2), '-o');
-
 
 %% Plot timestep errors
 timestep_errors
@@ -109,14 +106,12 @@ figure(2);
 loglog(DTS, timestep_errors, '-o');
 hold on;
 plot(DTS, 40 * DTS.^2);
-plot(DTS, 15 * DTS.^1.5);
-% plot(DTS, 0.5 * DTS);
 set(gca, 'XDir','reverse');
 xlabel("Timestep, dt");
 ylabel("Max norm error");
-title("Data for N = 1024");
+title("Data for N = 2048");
 grid on;
-legend("Data", "y ~ dt^2", "y ~ dt^{1.5}", "y ~ dt");
+legend("Data", "y ~ dt^2");
 exportgraphics(gcf, "timestep_convergence.png");
 
 
