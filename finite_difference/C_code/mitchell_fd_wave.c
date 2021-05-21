@@ -133,7 +133,6 @@ Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
 }
 
 
-
 void matrix_multiply(double *y_arr, double *matrix_arr, double *x_arr, \
     double scale, int ADD) {
 /* matrix_multiply
