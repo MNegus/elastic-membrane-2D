@@ -1,4 +1,4 @@
-/* implicit_fd_membrane.c 
+/* exact_homogeneous_membrane.c 
 Solves the membrane equation 
     ALPHA * w_tt - BETA * w_xx + GAMMA * w_xxxx = 0,
 with boundary conditions
@@ -13,17 +13,6 @@ and A_n given by integrating the initial condition
 We consider simple initial conditions of the form 
     w(x, 0) = sum_{n=1}^{N0} A_n cos(lambda_n x),
 for a finite value of N0, so that we just know A_n exactly at the start.
-
-. We discretise the spatial domain 
-with N_MEMBRANE points, with a grid size Deltax = L / (N_MEMBRANE - 1), and
-we discretise in time with a timestep of DELTA_T.
-
-Due to the w = 0 term at x = L, we do not need to calculate the 
-n = N_MEMBRANE - 1 term, and hence we are left with a matrix equation
-A w^(k+1) = 2 * w^k - w^(k-1),
-with A being an MxM banded matrix, with M = N_MEMBRANE - 1. To this end, we use 
-the dgsbv subroutine from LAPACKE, the C-wrapper to LAPACK, to solve the banded 
-matrix equation. 
 
 Author: Michael Negus
 */
