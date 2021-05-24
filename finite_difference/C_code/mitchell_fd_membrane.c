@@ -1,8 +1,8 @@
-/* mitchell_fd_wave.c 
-Solves the wave equation 
-    w_tt = c^2 w_xx,
+/* mitchell_fd_membrane.c 
+Solves the membrane equation 
+    ALPHA * w_tt = BETA * w_xx - GAMMA * w_xxxx,
 with boundary conditions
-    w_x = 0 at x = 0, w = 0 at x = L,
+    w_x = w_xxx = 0 at x = 0, w = w_xx = 0 at x = L,
 using the Mitchell method. We discretise the spatial domain 
 with N_MEMBRANE points, with a grid size Deltax = L / (N_MEMBRANE - 1), and
 we discretise in time with a timestep of DELTA_T.
@@ -30,7 +30,7 @@ Author: Michael Negus
 
 /* Global variables */
 // Finite-difference parameters
-double Deltax, Dbeta2; 
+double Deltax, Calpha, Cbeta; 
 int M; // Size of matrix 
 
 // LAPACK parameters
@@ -46,7 +46,8 @@ int k = 0; // Timestep variable, such that t = DELTA_T * k
 /* Function definitions */
 void init();
 void initialise_coefficient_matrices();
-void B_multiply(double *result, double *w_arr, double scale, int ADD);
+void matrix_multiply(double *y_arr, double *matrix_arr, double *x_arr, \
+    double scale, int ADD);
 void initialise_membrane();
 void output_membrane(double *w_arr);
 void run();
@@ -56,6 +57,43 @@ int main (int argc, const char * argv[]) {
 
     /* Intialise problem */
     init();
+
+    // Print params
+    // printf("Calpha = %g\n", Calpha);
+    // printf("Cbeta = %g\n", Cbeta);
+
+    // // Output A and B
+    // printf("A = \n");
+    // for (int i = 0; i < noRows; i++) {
+    //     printf("[");
+    //     for (int colNum = 0; colNum < M; colNum++) {
+    //         printf("%g, ", A_static[i * M + colNum]);
+    //     }
+    //     printf("]\n");
+    // }
+
+    // printf("B = \n");
+    // for (int i = 0; i < noRows; i++) {
+    //     printf("[");
+    //     for (int colNum = 0; colNum < M; colNum++) {
+    //         printf("%g, ", B_static[i * M + colNum]);
+    //     }
+    //     printf("]\n");
+    // }
+
+    // // Test multiply
+    // double *test_arr = malloc(M * sizeof(double));
+    // double *test_res = malloc(M * sizeof(double));
+    // for (int i = 0; i < M; i++) {
+    //     test_arr[i] = 1;
+    // }
+
+    // matrix_multiply(test_res, A_static, test_arr, 1, 0);
+    // printf("test_res = [");
+    // for (int i = 0; i < M; i++) {
+    //     printf("%g, ", test_res[i]);
+    // }
+    // printf("]\n");
 
     /* Loops over all timesteps */
     run();
@@ -68,7 +106,8 @@ int main (int argc, const char * argv[]) {
 void init() {
     /* Derived parameters */
     Deltax = L / (N_MEMBRANE - 1); // Spatial grid size
-    Dbeta2 = (ALPHA * Deltax * Deltax) / (BETA * DELTA_T * DELTA_T);
+    Calpha = ALPHA * pow(Deltax, 4) / (GAMMA * pow(DELTA_T, 2));
+    Cbeta = BETA * pow(Deltax, 2) / GAMMA;
     M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
 
     /* Matrix equations set-up */
@@ -76,8 +115,8 @@ void init() {
     // LAPACKE constants
     info; // Output for the dgbsv LAPACKE subroutine
     ipiv = malloc(M * sizeof(int)); // Pivot array for dgbsv
-    kl = 1; // Number of sub-diagonals
-    ku = 1; // Number of super-diagonals
+    kl = 2; // Number of sub-diagonals
+    ku = 2; // Number of super-diagonals
     nrhs = 1; // Number of right-hand side vectors
     ldab = M; // Leading dimension of A
     ldb = 1; // Leading dimension of the right-hand side vector
@@ -109,26 +148,61 @@ of the diagonals. Dbeta2 is the scaled term equal to:
 Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
 */
 
-    /* Fills in A_static, used for dgbsv */
-    // Stores upper diagonal in second row
-    int colNum = 1;
-    A_static[M + colNum] = -0.5;
-    B_static[M + colNum] = 1;
-    for (colNum = 2; colNum < M; colNum++) {
-        A_static[M + colNum] = -0.25;
-        B_static[M + colNum] = 0.5;
+    // Stores upper-upper-diagonal in third row
+    for (int colNum = 2; colNum < M; colNum++) {
+        double A_value, B_value;
+        if (colNum == 2) {
+            A_value = -2;
+            B_value = 4;
+        } else {
+            A_value = -1;
+            B_value = 2;
+        }
+        A_static[2 * M + colNum] = A_value;
+        B_static[2 * M + colNum] = B_value;
     }
 
-    // Stores main diagonal in third row
-    for (colNum = 0; colNum < M; colNum++) {
-        A_static[2 * M + colNum] = Dbeta2 + 0.5;
-        B_static[2 * M + colNum] = 2 * Dbeta2 - 1;
+    // Stores upper-diagonal in fourth row
+    for (int colNum = 1; colNum < M; colNum++) {
+        double A_value, B_value;
+        if (colNum == 1) {
+            A_value = 8 - 2 * Cbeta;
+            B_value = 4 * Cbeta - 16;
+        } else {
+            A_value = 4 - Cbeta;
+            B_value = 2 * Cbeta - 8;
+        }
+        A_static[3 * M + colNum] = A_value;
+        B_static[3 * M + colNum] = B_value;
     }
 
-    // Stores lower diagonal in fourth row
-    for (colNum = 0; colNum < M - 1; colNum++) {
-        A_static[3 * M + colNum] = -0.25;
-        B_static[3 * M + colNum] = 0.5;
+    // Stores main diagonal in fifth row
+    for (int colNum = 0; colNum < M; colNum++) {
+        double A_value, B_value;
+        if (colNum == 1) {
+            A_value = 4 * Calpha + 2 * Cbeta - 7;
+            B_value = 14 + 8 * Calpha - 4 * Cbeta; 
+        } else if (colNum == M - 1) {
+            A_value = 4 * Calpha + 2 * Cbeta - 5;
+            B_value = 10 + 8 * Calpha - 4 * Cbeta; 
+        } else {
+            A_value = 4 * Calpha + 2 * Cbeta - 6;
+            B_value = 12 + 8 * Calpha - 4 * Cbeta; 
+        }
+        A_static[4 * M + colNum] = A_value;
+        B_static[4 * M + colNum] = B_value;
+    }
+
+    // Stores lower-diagonal in sixth row
+    for (int colNum = 0; colNum < M - 1; colNum++) {
+        A_static[5 * M + colNum] = 4 - Cbeta;
+        B_static[5 * M + colNum] = 2 * Cbeta - 8;
+    }
+
+    // Stores lower-lower diagonal in seventh row
+    for (int colNum = 0; colNum < M - 2; colNum++) {
+        A_static[6 * M + colNum] = -1;
+        B_static[6 * M + colNum] = 2;
     }
 }
 
@@ -143,14 +217,13 @@ matrix_arr is a coefficient matrix in banded format, equal to either A_static or
 B_static. If ADD = 0, then this sets y_arr = scale * matrix_arr * x_arr, whereas if
 ADD = 1, then this adds scale * matrix_arr * x_arr to y
 */
-
     // Loop over points in x_arr
     for (int i = 0; i < M; i++) {
         double y_val = 0;
 
         // Loop over the appropriate diagonals
-        for (int j = fmax(i - 1, 0); j <= fmin(i + 1, M - 1); j++) {
-            y_val += matrix_arr[(2 + i - j) * M + j] * x_arr[j];
+        for (int j = fmax(i - 2, 0); j <= fmin(i + 2, M - 1); j++) {
+            y_val += matrix_arr[(4 + i - j) * M + j] * x_arr[j];
         }
         y_arr[i] = ADD * y_arr[i] + scale * y_val;
     }
@@ -266,16 +339,6 @@ void run() {
 
         // Sets rhs = rhs - A * w_previous
         matrix_multiply(rhs, A_static, w_previous, -1, 1);
-
-        // rhs[0] = (2. * Dbeta2 - 1.) * w[0] + w[1] \
-        //     - ((Dbeta2 + 0.5) * w_previous[0] - 0.5 * w_previous[1]);
-        
-        // for (int i = 1; i < M - 1; i++) {
-        //     rhs[i] = 0.5 * w[i - 1] + (2. * Dbeta2 - 1.) * w[i] + 0.5 * w[i + 1] \
-        //         + 0.25 * w_previous[i - 1] - (Dbeta2 + 0.5) * w_previous[i] + 0.25 * w_previous[i + 1];
-        // }
-        // rhs[M - 1] = 0.5 * w[M - 2] + (2. * Dbeta2 - 1.) * w[M - 1] \
-        //         + 0.25 * w_previous[M - 2] - (Dbeta2 + 0.5) * w_previous[M - 1];
 
         /* Solves matrix  equation */
         // Copies over elements to A
