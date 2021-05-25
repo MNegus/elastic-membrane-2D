@@ -59,15 +59,15 @@ int main (int argc, const char * argv[]) {
     init();
 
     // Print params
-    // printf("Calpha = %g\n", Calpha);
-    // printf("Cbeta = %g\n", Cbeta);
+    printf("Calpha = %g\n", Calpha);
+    printf("Cbeta = %g\n", Cbeta);
 
     // // Output A and B
     // printf("A = \n");
     // for (int i = 0; i < noRows; i++) {
     //     printf("[");
     //     for (int colNum = 0; colNum < M; colNum++) {
-    //         printf("%g, ", A_static[i * M + colNum]);
+    //         printf("%.10f, ", A_static[i * M + colNum]);
     //     }
     //     printf("]\n");
     // }
@@ -76,7 +76,7 @@ int main (int argc, const char * argv[]) {
     // for (int i = 0; i < noRows; i++) {
     //     printf("[");
     //     for (int colNum = 0; colNum < M; colNum++) {
-    //         printf("%g, ", B_static[i * M + colNum]);
+    //         printf("%.10f, ", B_static[i * M + colNum]);
     //     }
     //     printf("]\n");
     // }
@@ -96,7 +96,7 @@ int main (int argc, const char * argv[]) {
     // printf("]\n");
 
     /* Loops over all timesteps */
-    run();
+    // run();
 
     /* Finish */
     printf("Finished with t = %g\n", t);
@@ -152,11 +152,11 @@ Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
     for (int colNum = 2; colNum < M; colNum++) {
         double A_value, B_value;
         if (colNum == 2) {
-            A_value = -2;
-            B_value = 4;
+            A_value = 2;
+            B_value = -4;
         } else {
-            A_value = -1;
-            B_value = 2;
+            A_value = 1;
+            B_value = -2;
         }
         A_static[2 * M + colNum] = A_value;
         B_static[2 * M + colNum] = B_value;
@@ -166,11 +166,11 @@ Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
     for (int colNum = 1; colNum < M; colNum++) {
         double A_value, B_value;
         if (colNum == 1) {
-            A_value = 8 - 2 * Cbeta;
-            B_value = 4 * Cbeta - 16;
+            A_value = -2 * Cbeta - 8;
+            B_value = 4 * Cbeta + 16;
         } else {
-            A_value = 4 - Cbeta;
-            B_value = 2 * Cbeta - 8;
+            A_value = -Cbeta - 4;
+            B_value = 2 * Cbeta + 8;
         }
         A_static[3 * M + colNum] = A_value;
         B_static[3 * M + colNum] = B_value;
@@ -180,14 +180,14 @@ Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
     for (int colNum = 0; colNum < M; colNum++) {
         double A_value, B_value;
         if (colNum == 1) {
-            A_value = 4 * Calpha + 2 * Cbeta - 7;
-            B_value = 14 + 8 * Calpha - 4 * Cbeta; 
+            A_value = 4 * Calpha + 2 * Cbeta + 7;
+            B_value = 8 * Calpha - 4 * Cbeta - 14; 
         } else if (colNum == M - 1) {
-            A_value = 4 * Calpha + 2 * Cbeta - 5;
-            B_value = 10 + 8 * Calpha - 4 * Cbeta; 
+            A_value = 4 * Calpha + 2 * Cbeta + 5;
+            B_value = 8 * Calpha - 4 * Cbeta - 10; 
         } else {
-            A_value = 4 * Calpha + 2 * Cbeta - 6;
-            B_value = 12 + 8 * Calpha - 4 * Cbeta; 
+            A_value = 4 * Calpha + 2 * Cbeta + 6;
+            B_value = 8 * Calpha - 4 * Cbeta - 12; 
         }
         A_static[4 * M + colNum] = A_value;
         B_static[4 * M + colNum] = B_value;
@@ -195,14 +195,14 @@ Dbeta2 = BETA * DELTA_T * DELTA_T / (ALPHA * Deltax * Deltax).
 
     // Stores lower-diagonal in sixth row
     for (int colNum = 0; colNum < M - 1; colNum++) {
-        A_static[5 * M + colNum] = 4 - Cbeta;
-        B_static[5 * M + colNum] = 2 * Cbeta - 8;
+        A_static[5 * M + colNum] = - Cbeta - 4;
+        B_static[5 * M + colNum] = 2 * Cbeta + 8;
     }
 
     // Stores lower-lower diagonal in seventh row
     for (int colNum = 0; colNum < M - 2; colNum++) {
-        A_static[6 * M + colNum] = -1;
-        B_static[6 * M + colNum] = 2;
+        A_static[6 * M + colNum] = 1;
+        B_static[6 * M + colNum] = -2;
     }
 }
 
@@ -217,7 +217,7 @@ matrix_arr is a coefficient matrix in banded format, equal to either A_static or
 B_static. If ADD = 0, then this sets y_arr = scale * matrix_arr * x_arr, whereas if
 ADD = 1, then this adds scale * matrix_arr * x_arr to y
 */
-    // Loop over points in x_arr
+    /* Loop addition */
     for (int i = 0; i < M; i++) {
         double y_val = 0;
 
@@ -227,6 +227,43 @@ ADD = 1, then this adds scale * matrix_arr * x_arr to y
         }
         y_arr[i] = ADD * y_arr[i] + scale * y_val;
     }
+
+    /* Manual addition */
+    // First entry, ignoring the lower diagonals
+    // y_arr[0] = ADD * y_arr[0] \
+    //     + scale * (matrix_arr[4 * M] * x_arr[0] \
+    //              + matrix_arr[3 * M + 1] * x_arr[1] \
+    //              + matrix_arr[2 * M + 2] * x_arr[2]);
+
+    // // Second entry, ignoring the lower-lower diagonal
+    // y_arr[1] = ADD * y_arr[1] \
+    //     + scale * (matrix_arr[5 * M] * x_arr[0] \
+    //              + matrix_arr[4 * M + 1] * x_arr[1] \
+    //              + matrix_arr[3 * M + 2] * x_arr[2] \
+    //              + matrix_arr[2 * M + 3] * x_arr[3]);
+
+    // // Main entries, with all diagonals
+    // for (int i = 2; i < M - 2; i++) {
+    //     y_arr[i] = ADD * y_arr[i] \
+    //         + scale * (matrix_arr[6 * M + i - 2] * x_arr[i - 2]
+    //                  + matrix_arr[5 * M + i - 1] * x_arr[i - 1] \
+    //                  + matrix_arr[4 * M + i] * x_arr[i] \
+    //                  + matrix_arr[3 * M + i + 1] * x_arr[i + 1] \
+    //                  + matrix_arr[2 * M + i + 2] * x_arr[i + 2]);
+    // }
+
+    // // Penultimate entry, ignoring the upper-upper diagonal
+    // y_arr[M - 2] = ADD * y_arr[M - 2] \
+    //     + scale * (matrix_arr[6 * M + M - 4] * x_arr[M - 4]
+    //              + matrix_arr[5 * M + M - 3] * x_arr[M - 3] \
+    //              + matrix_arr[4 * M + M - 2] * x_arr[M - 2] \
+    //              + matrix_arr[3 * M + M - 1] * x_arr[M - 1]);
+
+    // // Last entry, ignoring the upper diagonal
+    // y_arr[M - 1] = ADD * y_arr[M - 1] \
+    //     + scale * (matrix_arr[6 * M + M - 3] * x_arr[M - 3]
+    //              + matrix_arr[5 * M + M - 2] * x_arr[M - 2] \
+    //              + matrix_arr[4 * M + M - 1] * x_arr[M - 1]);
 }
 
 
