@@ -5,10 +5,10 @@
 close all;
 
 % Parent directory where all of the data is stored
-parent_dir = "validation_data";
+parent_dir = "unforced_membrane_validation_data";
 
 %% N_MEMBRANE validation
-MAX_TIMESTEP = 249; % Max value of the timestep in all the dirs
+MAX_TIMESTEP = 2499; % Max value of the timestep in all the dirs
 
 % Values of N_MEMBRANE
 N_MEMBRANES = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
@@ -53,7 +53,7 @@ exportgraphics(gcf, "grid_size_convergence.png");
 %% Timestep validation
 
 % Values o N_MEMBRANE
-N_MEMBRANE = 1024;
+N_MEMBRANE = 4096;
 
 % Timestep powers
 DTS = [1e-1 3e-2 1e-2 3e-3 1e-3 3e-4 1e-4 3e-5 1e-5];
@@ -109,7 +109,7 @@ plot(DTS, 40 * DTS.^2);
 set(gca, 'XDir','reverse');
 xlabel("Timestep, dt");
 ylabel("Max norm error");
-title("Data for N = 2048");
+title("Data for N = 4096");
 grid on;
 legend("Data", "y ~ dt^2");
 exportgraphics(gcf, "timestep_convergence.png");

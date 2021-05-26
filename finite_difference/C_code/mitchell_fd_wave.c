@@ -37,18 +37,22 @@ int M; // Size of matrix
 int info, *ipiv, kl, ku, nrhs, ldab, ldb, noRows;
 
 // Array definitions
-double *w_previous, *w, *rhs, *A_static, *B_static, *A;
+double *w_previous, *w, *w_deriv, *rhs, *A_static, *B_static, *A;
 
 // Time definitions
 double t = 0; // Time variable 
 int k = 0; // Timestep variable, such that t = DELTA_T * k
+
+// Output values
+char w_name[40] = "w";
+char w_deriv_name[40] = "w_deriv";
 
 /* Function definitions */
 void init();
 void initialise_coefficient_matrices();
 void B_multiply(double *result, double *w_arr, double scale, int ADD);
 void initialise_membrane();
-void output_membrane(double *w_arr);
+void output_membrane(double *w_arr, char *name);
 void run();
 
 
@@ -93,6 +97,7 @@ void init() {
     /* Initialise w arrays */
     w_previous = malloc(M * sizeof(double)); // w at previous timestep
     w = malloc(M * sizeof(double)); // w at current timestep
+    w_deriv = malloc(M * sizeof(double)); // Time derivative of w
     rhs = malloc(M * sizeof(double)); // Right-hand-side vector
     A = malloc(M * noRows * sizeof(double)); // Coefficient matrix
 
@@ -182,9 +187,10 @@ in time scheme. w is set to a known position, and q is set to 0
         double x, w_val;
         sscanf(line, "%lf, %lf", &x, &w_val);
         
-        // Saves w_val into w_previous
+        // Saves w_val into w_previous, and sets w_deriv to 0
         if (i < M) {
             w_previous[i] = w_val;
+            w_deriv[i] = 0;
         }
        
         // Increment i
@@ -192,8 +198,9 @@ in time scheme. w is set to a known position, and q is set to 0
     }
     fclose(initial_condition_file);
 
-    // Outputs w_previous
-    output_membrane(w_previous);
+    // Outputs w_previous and w_deriv
+    output_membrane(w_previous, w_name);
+    output_membrane(w_deriv, w_deriv_name);
 
     // Increments the time t and timestep k
     t += DELTA_T;
@@ -220,37 +227,29 @@ in time scheme. w is set to a known position, and q is set to 0
     // }
 
     // Outputs w
-    output_membrane(w);
+    output_membrane(w, w_name);
 }
 
 
-void output_membrane(double *w_arr) {
+void output_membrane(double *w_arr, char *name) {
 /* output_membrane
 Outputs the x positions of the membrane into a text file
 */
     char w_filename[40];
-    sprintf(w_filename, "mitchell_outputs/w_%d.txt", k);
+    sprintf(w_filename, "mitchell_outputs/%s_%d.txt", name, k);
     FILE *w_file = fopen(w_filename, "w");
-
-    // char w_deriv_filename[40];
-    // sprintf(w_deriv_filename, "mitchell_outputs/w_deriv_%d.txt", k);
-    // FILE *w_deriv_file = fopen(w_deriv_filename, "w");
 
     // Outputs from x = 0 to L - dx
     for (int i = 0; i < M; i++) {
         double x = i * Deltax;
         fprintf(w_file, "%.10f, %.10f\n", x, w_arr[i]);
-        // fprintf(w_deriv_file, "%.10f, %.10f\n", x, q[i]);
     }
 
     // Outputs x = L, where w and w_deriv = 0
     double x = M * Deltax;
     fprintf(w_file, "%.10f, %.10f\n", x, 0.0);
-    // fprintf(w_deriv_file, "%.10f, %.10f", x, 0.0);
 
     fclose(w_file);
-    // fclose(w_deriv_file);
-
 }
 
 
@@ -267,22 +266,18 @@ void run() {
         // Sets rhs = rhs - A * w_previous
         matrix_multiply(rhs, A_static, w_previous, -1, 1);
 
-        // rhs[0] = (2. * Dbeta2 - 1.) * w[0] + w[1] \
-        //     - ((Dbeta2 + 0.5) * w_previous[0] - 0.5 * w_previous[1]);
-        
-        // for (int i = 1; i < M - 1; i++) {
-        //     rhs[i] = 0.5 * w[i - 1] + (2. * Dbeta2 - 1.) * w[i] + 0.5 * w[i + 1] \
-        //         + 0.25 * w_previous[i - 1] - (Dbeta2 + 0.5) * w_previous[i] + 0.25 * w_previous[i + 1];
-        // }
-        // rhs[M - 1] = 0.5 * w[M - 2] + (2. * Dbeta2 - 1.) * w[M - 1] \
-        //         + 0.25 * w_previous[M - 2] - (Dbeta2 + 0.5) * w_previous[M - 1];
-
         /* Solves matrix  equation */
         // Copies over elements to A
         memcpy(A, A_static, M * noRows * sizeof(double));
 
         // Uses LAPACK to solve the matrix equation, saving result in rhs
         info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, rhs, ldb);
+
+        /* Saves w_deriv, given that rhs = w_next */
+        for (int i = 0; i < M; i++) {
+            w_deriv[i] = (rhs[i] - w_previous[i]) / (2 * DELTA_T);
+        }
+        output_membrane(w_deriv, w_deriv_name);
 
         /* Outputting and swapping */
         // Swaps arrays, updating w and w_previous
@@ -296,7 +291,7 @@ void run() {
         k++;
 
         // Outputs the new value of w
-        output_membrane(w);
+        output_membrane(w, w_name);
         
     }
 }
