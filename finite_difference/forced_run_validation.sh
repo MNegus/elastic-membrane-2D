@@ -22,41 +22,41 @@ mkdir mitchell_outputs
 # Varying spatial grid size
 ##############################
 
-# # Pick a specific timestep value
-# DT=1e-4
-# sed -i "/const double DELTA_T/c\const double DELTA_T = $DT; // Timestep size" parameters.h
+# Pick a specific timestep value
+DT=1e-4
+sed -i "/const double DELTA_T/c\const double DELTA_T = $DT; // Timestep size" parameters.h
 
-# # Loop over grid sizes
-# for N in 16 32 64 128 256 512 1024 2048 4096
-# do
-#     # Edit the value of N_MEMBRANE in the parameters.h file
-#     sed -i "/const int N_MEMBRANE/c\const int N_MEMBRANE = $N; // Number of grid points on the membrane" parameters.h
+# Loop over grid sizes
+for N in 16 32 64 128 256 512 1024 2048 4096
+do
+    # Edit the value of N_MEMBRANE in the parameters.h file
+    sed -i "/const int N_MEMBRANE/c\const int N_MEMBRANE = $N; // Number of grid points on the membrane" parameters.h
 
-#     # Run the exact solution
-#     ./run_code.sh exact_forced_membrane.c 
+    # Run the exact solution
+    ./run_code.sh exact_forced_membrane.c 
 
-#     # Run the implicit solution
-#     ./run_code.sh forced_mitchell_fd_wave.c 
+    # Run the implicit solution
+    ./run_code.sh forced_mitchell_fd_wave.c 
 
-#     # Make a new directory in the validation data directory
-#     rm -r ../validation/forced_validation_data/N_MEMBRANE_$N 
-#     mkdir ../validation/forced_validation_data/N_MEMBRANE_$N 
+    # Make a new directory in the validation data directory
+    rm -r ../validation/forced_validation_data/N_MEMBRANE_$N 
+    mkdir ../validation/forced_validation_data/N_MEMBRANE_$N 
 
-#     # Copy parameters file into the data directory
-#     cp parameters.h ../validation/forced_validation_data/N_MEMBRANE_$N 
-#     cp anim_all.gp ../validation/forced_validation_data/N_MEMBRANE_$N 
+    # Copy parameters file into the data directory
+    cp parameters.h ../validation/forced_validation_data/N_MEMBRANE_$N 
+    cp anim_all.gp ../validation/forced_validation_data/N_MEMBRANE_$N 
 
-#     # Move outputs into the data directory
-#     mv exact_outputs ../validation/forced_validation_data/N_MEMBRANE_$N/
-#     mv mitchell_outputs ../validation/forced_validation_data/N_MEMBRANE_$N 
+    # Move outputs into the data directory
+    mv exact_outputs ../validation/forced_validation_data/N_MEMBRANE_$N/
+    mv mitchell_outputs ../validation/forced_validation_data/N_MEMBRANE_$N 
 
-#     # Create new directories for next time
-#     mkdir exact_outputs
-#     mkdir mitchell_outputs
+    # Create new directories for next time
+    mkdir exact_outputs
+    mkdir mitchell_outputs
 
-#     # Output N 
-#     echo Finished N = $N
-# done
+    # Output N 
+    echo Finished N = $N
+done
 
 ##############################
 # Varying timestep size
