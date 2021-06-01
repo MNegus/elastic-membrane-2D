@@ -102,7 +102,7 @@ relevant parameters and pressure arrays as input.
     memcpy(A, A_static, M * noRows * sizeof(double));
 
     // Sets rhs = w to be equal to 0.5 * B * w_previous
-    matrix_multiply(w, B_static, w_previous, 0.5, 0);
+    multiply_matrix(w, B_static, w_previous, 0.5, 0);
 
     // Adds pressure terms onto rhs = w
     for (int i = 0; i < M; i++) {
@@ -128,10 +128,10 @@ the value of w_next.
 
     /* Configures right-hand-side vector */
     // Sets w_next = B * w
-    matrix_multiply(w_next, B_static, w, 1, 0);
+    multiply_matrix(w_next, B_static, w, 1, 0);
 
     // Sets w_next = w_next - A * w_previous
-    matrix_multiply(w_next, A_static, w_previous, -1, 1);
+    multiply_matrix(w_next, A_static, w_previous, -1, 1);
 
     // Sets w_next = w_next + pressure term
     for (int i = 0; i < M; i++) {
@@ -149,9 +149,9 @@ the value of w_next.
 } 
 
 
-void matrix_multiply(double *y_arr, double *matrix_arr, double *x_arr, \
+void multiply_matrix(double *y_arr, double *matrix_arr, double *x_arr, \
     double scale, int ADD) {
-/* matrix_multiply
+/* multiply_matrix
 Function to compute the result of the matrix muliplication 
     y_arr = ADD * y_arr + scale * matrix_arr * x_arr, 
 where scale is a real scaling factor, y_arr and x_arr are length M arrays and 
