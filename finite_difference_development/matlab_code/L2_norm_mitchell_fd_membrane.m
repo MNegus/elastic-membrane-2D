@@ -3,11 +3,11 @@
 % to the exact solution
 
 %% Parameters
-ALPHA = 1; BETA = 1; GAMMA = 1; 
+ALPHA = 0.1; BETA = 0.001; GAMMA = 0.0001; 
 L = 4;
 % N_MEMBRANES = [512, 1024, 2048, 4096, 8192];
-N_MEMBRANES = 4096;
-T_MAX = 0.1;
+N_MEMBRANES = 128;
+T_MAX = 0.2;
 % DELTA_POWERS = linspace(-1, -5, 5);
 % DELTA_TS = 10.^DELTA_POWERS;
 DELTA_TS = 1e-4;
@@ -15,6 +15,15 @@ DELTA_TS = 1e-4;
 Deltaxs = L ./ (N_MEMBRANES - 1);
 Cbetas = BETA * Deltaxs.^2 / GAMMA
 Calphas = ALPHA * Deltaxs.^4 ./ (GAMMA * DELTA_TS'.^2)
+
+%% Anonymous functions
+lambda = @(n) pi * (2 * n - 1) / (2 * L);
+l = @(n) sqrt(BETA * lambda(n).^2 + GAMMA * lambda(n).^4) / sqrt(ALPHA);
+
+
+%% Initial condition
+N0 = 3; % Take 3 terms
+As = [1, 0.5, 0.25]; % Size of A_n
 
 %% Numerically solves and compare
 close(figure(2));
@@ -26,19 +35,25 @@ set(gca, 'xscale', 'log');
 for N_MEMBRANE = N_MEMBRANES
     M = N_MEMBRANE - 1; % We ignore the end point
     xs = linspace(0, L, N_MEMBRANE);
+    reduced_xs = xs(1 : end - 1);
     Deltax = L / (N_MEMBRANE - 1); 
     
     L2_norms = zeros(size(DELTA_TS));
 
     for k = 1 : length(DELTA_TS)
         % Reset figure
-        close(figure(1));
-        figure(1);
-
+%         close(figure(1));
+%         figure(1);
+%         
+        
         % Setting DELTA_T
         DELTA_T = DELTA_TS(k);
+        tvals = 0 : DELTA_T : T_MAX;
         Cbeta = BETA * Deltax^2 / GAMMA;
         Calpha = ALPHA * Deltax^4 / (GAMMA * DELTA_T^2);
+        
+        % Saving abs error in time
+        abs_errors = zeros(size(tvals));
 
         % A definition
         A_upper_upper = ones(M, 1);
@@ -74,16 +89,18 @@ for N_MEMBRANE = N_MEMBRANES
 
         B = spdiags([B_lower_lower B_lower B_main B_upper B_upper_upper], -2:2, M, M);
 
+%         
+%         eigenvalues = eig(full(A));
+%         figure(8);
+%         plot(eigenvalues);
+%         determinant = det(A)
+%         prod(eigenvalues)
+%         length(eigenvalues)
+
         % Initial conditions
         t = 0
         w_exact = homogeneous_exact_solution(xs, t, ALPHA, BETA, GAMMA, L);
         w_previous = w_exact(1 : end - 1);
-
-%         plot(xs(1 : end - 1), w_previous);
-%         hold on;
-%         plot(xs, w_exact);
-%         hold off;
-%         pause(0.01);
 
         % Solve for first w
         t = t + DELTA_T
@@ -95,15 +112,9 @@ for N_MEMBRANE = N_MEMBRANES
         % Initialise error norm
         L2_norm = sum((w - w_exact(1 : end - 1)).^2);
 
-% 
-%         plot(xs(1 : end - 1), w);
-%         hold on;
-%         plot(xs, w_exact);
-%         hold off;
-%         pause(0.01);
-
         % Loops
-        while (t < T_MAX) 
+        q = 2;
+        while (t <= T_MAX) 
             rhs = B * w - A * w_previous;
             w_next = A \ rhs;
 
@@ -122,40 +133,51 @@ for N_MEMBRANE = N_MEMBRANES
             L2_norm = L2_norm + sum((w - w_exact(1 : end - 1)).^2);
             L2_norms
 
-            % Plots
-    %         plot(xs(1 : end - 1), w);
-    %         hold on;
-    %         plot(xs, w_exact);
-    %         hold off;
-            plot(xs(1 : end - 1), w - w_exact(1 : end - 1));
-            hold on;
-            max_diff = max(w - w_exact(1 : end - 1));
-            plot(xs, max_diff * cos(7 * pi * xs / (2 * L)));
-            hold off;
+%             Plots full
+            figure(1);
+            plot(xs, w_exact);
+
+%             title("Full");
+%             legend(["Exact", "Numerical"]);
+            
+
+            % Save errors
+            max(abs(w - w_exact(1 : end - 1)))
+            abs_errors(q) = max(abs(w - w_exact(1 : end - 1)));
+            q = q + 1;
 
             pause(0.01);
 
         end
+        
+        
 
         % Saves L2_norm
         L2_norm = sqrt(L2_norm / (length(xs) * (T_MAX / DELTA_T)));
         L2_norms(k) = L2_norm
     end
-    figure(2);
-    hold on;
-    plot(DELTA_TS, L2_norms, '-o');
+%     figure(2);
+%     hold on;
+%     plot(DELTA_TS, L2_norms, '-o');
     
 end
 
+%%
+% close(figure(2));
+% figure(2);
+% plot(tvals, abs_errors);
+% hold on;
+% plot(tvals, 0.000009 * tvals.^2);
+% legend(["Measured", "Guessed"]);
 %% Plot max errors
-hold on;
-% plot(DELTA_TS, 40 * DELTA_TS.^2);
-% plot(DTS, 15 * DTS.^1.5);
-% % plot(DTS, 0.5 * DTS);
-set(gca, 'yscale','log');
-set(gca, 'xscale', 'log');
-legend(["N = 512", "N = 1024", "N = 2048", "N = 4096", "N = 8192", "y ~ 1 / dt^2"]);
-exportgraphics(gca, "timestep_validation.png");
+% hold on;
+% % plot(DELTA_TS, 40 * DELTA_TS.^2);
+% % plot(DTS, 15 * DTS.^1.5);
+% % % plot(DTS, 0.5 * DTS);
+% set(gca, 'yscale','log');
+% set(gca, 'xscale', 'log');
+% legend(["N = 512", "N = 1024", "N = 2048", "N = 4096", "N = 8192", "y ~ 1 / dt^2"]);
+% exportgraphics(gca, "timestep_validation.png");
 
 %% Plots exact solution
 % figure(1);

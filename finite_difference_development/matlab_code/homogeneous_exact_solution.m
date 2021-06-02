@@ -25,8 +25,8 @@ l = @(n) sqrt(BETA * lambda(n).^2 + GAMMA * lambda(n).^4) / sqrt(ALPHA);
 
 
 %% Initial condition
-N0 = 4; % Take 3 terms
-As = [1, 0.5, 0.25, 0.125]; % Size of A_n
+N0 = 3; % Take 3 terms
+As = [0.1, 0.05, 0.025]; % Size of A_n
 
 %% Output w
 ws = zeros(size(xs));
