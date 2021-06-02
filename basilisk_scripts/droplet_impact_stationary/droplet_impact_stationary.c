@@ -8,14 +8,13 @@
     Author: Michael Negus
 */
 
-#include <omp.h> // For openMP parallel
+#include "parameters.h" // Includes all defined parameters
 #include "navier-stokes/centered.h" // To solve the Navier-Stokes
 #include "two-phase.h" // Implements two-phase flow
-#include "view.h" // Creating movies using bview
-#include "tension.h" // Surface tension of droplet
-#include "tag.h" // For removing small droplets
-#include "parameters.h" // Includes all defined parameters
-#include "wave-equation.h" // Solution of the wave equation
+// #include "view.h" // Creating movies using bview
+// #include "tension.h" // Surface tension of droplet
+// #include "tag.h" // For removing small droplets
+// #include <omp.h> // For openMP parallel
 
 
 /* Computational constants derived from parameters */
@@ -25,12 +24,6 @@ double MEMBRANE_REFINE_NO; // Number of grid cells above the membrane to refine
 double MEMBRANE_REFINED_HEIGHT; // Width of the refined area above the membrane 
 double DROP_CENTRE; // Initial centre position of the droplet
 double IMPACT_TIME; // Theoretical time of impact
-int N_MEMBRANE; // Number of points on the membrane
-int M; // Number of points on the membrane after the point at x = L is removed
-
-/* Arrays */
-double *w_previous, *w, *w_next; // Membrane position arrays
-double *p_arr_previous, *p_arr, *p_arr_next; // Pressure along membrane arrays
 
 /* Global variables */
 double start_wall_time; // Time the simulation was started
@@ -67,7 +60,7 @@ int main() {
     rho2 = RHO_R; // Density of air phase
     mu1 = 1. / REYNOLDS; // Viscosity of water phase
     mu2 = mu1 * MU_R; // Viscosity of air phase
-    f.sigma = 1. / WEBER; // Surface tension at interface
+    // f.sigma = 1. / WEBER; // Surface tension at interface
 
     /* Derived constants */
     MIN_CELL_SIZE = BOX_WIDTH / pow(2, MAXLEVEL); // Size of the smallest cell
@@ -76,19 +69,11 @@ int main() {
     IMPACT_TIME = INITIAL_DROP_HEIGHT / (-DROP_VEL); // Theoretical impact time
     MEMBRANE_REFINE_NO = 4; // Number of cells above membrane to refine by
     MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
-    N_MEMBRANE = (int) floor(MEMBRANE_RADIUS / MIN_CELL_SIZE);
-    M = N_MEMBRANE - 1;
-
-    /* Initialise arrays */
-    w_previous = malloc(M * sizeof(double)); // w at previous timestep
-    w = malloc(M * sizeof(double)); // w at current timestep
-    w_next = malloc(M * sizeof(double)); // w at next timestep
-    p_arr_previous = malloc(M * sizeof(double)); // p_arr at previous timestep
-    p_arr = malloc(M * sizeof(double)); // p_arr at current timestep
-    p_arr_next = malloc(M * sizeof(double)); // p_arr at next timestep
 
     /* Runs the simulation */
+    fprintf(stderr, "Started!\n");
     run(); 
+    fprintf(stderr, "Finished!\n");
 }
 
 
@@ -128,24 +113,24 @@ event refinement (i++) {
 }
 
 
-event gravity (i++) {
-/* Adds acceleration due to gravity in the vertical direction */
-    face vector av = a; // Acceleration at each face
-    foreach_face(x) av.y[] -= 1./sq(FR); // Adds acceleration due to gravity
-}
+// event gravity (i++) {
+// /* Adds acceleration due to gravity in the vertical direction */
+//     face vector av = a; // Acceleration at each face
+//     foreach_face(x) av.y[] -= 1./sq(FR); // Adds acceleration due to gravity
+// }
 
 
-event small_droplet_removal (i++) {
-/* Removes any small droplets or bubbles that have formed, that are smaller than
-    a specific size */
-    // Removes droplets of diameter 5 cells or less
-    int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
-    // int remove_droplet_radius = (int)(0.25 / MIN_CELL_SIZE);
-    remove_droplets(f, remove_droplet_radius);
+// event small_droplet_removal (i++) {
+// /* Removes any small droplets or bubbles that have formed, that are smaller than
+//     a specific size */
+//     // Removes droplets of diameter 5 cells or less
+//     int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
+//     // int remove_droplet_radius = (int)(0.25 / MIN_CELL_SIZE);
+//     remove_droplets(f, remove_droplet_radius);
 
-    // Also remove air bubbles
-    remove_droplets(f, remove_droplet_radius, 1e-4, true);
-}
+//     // Also remove air bubbles
+//     remove_droplets(f, remove_droplet_radius, 1e-4, true);
+// }
 
 
 event output_data (t += LOG_OUTPUT_TIMESTEP) {
