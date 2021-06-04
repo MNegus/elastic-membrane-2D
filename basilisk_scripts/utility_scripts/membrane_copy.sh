@@ -23,4 +23,4 @@ cp -a ${LOCAL_DIR}/. ${DEST_DIR}/${SUB_DIR_NAME}/code
 cp {run_simulation.sh,Makefile,parameters.h} ${DEST_DIR}/${SUB_DIR_NAME}/code
 
 # Copies the membrane equation file over
-cp ../membrane_scripts/{main_prescribed_pressure.c,wave-equation.c,wave-equation.h,run_membrane.sh,membrane_anim.gp} ${DEST_DIR}/${SUB_DIR_NAME}/code
+cp ../membrane_scripts/{main_prescribed_pressure.c,wave-equation.c,wave-equation.h} ${DEST_DIR}/${SUB_DIR_NAME}/code
