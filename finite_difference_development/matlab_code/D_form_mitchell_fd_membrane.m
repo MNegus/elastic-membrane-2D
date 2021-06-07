@@ -6,35 +6,44 @@ clear;
 close all;
 %% Parameters
 
-L = 1;
-% N_MEMBRANES = [512, 1024, 2048, 4096];
-% N_MEMBRANES = [512, 1024, 2048, 4096, 8192, 16384];
-N_MEMBRANES = [4096, 8192, 16384];
-Deltaxs =  L ./ (N_MEMBRANES - 1)
-T_MAX = 0.1;
-% DELTA_POWERS = linspace(-1, -5, 19)
-DELTA_POWERS = -2 : -0.25 : -5;
-DELTA_TS = 10.^DELTA_POWERS;
-% DELTA_TS = 1e-4;
+L = 4;
+N_MEMBRANES = [1365, 2730, 5461, 10922];
+N_legend = strings(size(N_MEMBRANES));
+for n = 1 : length(N_legend)
+   N_legend(n) = "$N$ = " + N_MEMBRANES(n);
+end
 
-% ALPHA = 0.02; 
-% BETA = ALPHA * min(Deltaxs)^2 / ((1e-2)^2)
-% GAMMA = ALPHA * min(Deltaxs)^4 / ((1e-2)^2)
+Deltaxs =  L ./ (N_MEMBRANES - 1)
+
+T_MAX = 0.4;
+DELTA_POWERS = linspace(-1, -5, 9)
+DELTA_TS = 10.^DELTA_POWERS
+DT_legend = strings(size(DELTA_TS));
+for k = 1 : length(DT_legend)
+   DT_legend(k) = "$\Delta t$ = " + DELTA_TS(k); 
+end
+DT_legend
+
+
+ALPHA = 1;
+BETA = 1;
+GAMMA = 1;
 % 
 % Dbetas = BETA * DELTA_TS.^2 ./ (ALPHA * Deltaxs'.^2)
 % Dgammas = GAMMA * DELTA_TS.^2 ./ (ALPHA * Deltaxs'.^4)
-ALPHA = 0.002;
-BETA = 7;
-GAMMA = 0.0001;
+
 
 
 %% Numerically solves and compare
+max_errors = zeros(length(DELTA_TS), length(Deltaxs));
+L2_norms = zeros(length(DELTA_TS), length(Deltaxs));
 
-for N_MEMBRANE = N_MEMBRANES
+
+for n = 1 : length(N_MEMBRANES)
+    N_MEMBRANE = N_MEMBRANES(n);
     M = N_MEMBRANE - 1; % We ignore the end point
     xs = linspace(0, L, N_MEMBRANE);
     Deltax = L / (N_MEMBRANE - 1)
-    max_errors = zeros(size(DELTA_TS));
 
     for k = 1 : length(DELTA_TS)
         % Reset figure
@@ -105,11 +114,8 @@ for N_MEMBRANE = N_MEMBRANES
         w_exact = homogeneous_exact_solution(xs, t, ALPHA, BETA, GAMMA, L);
 
 
-%         plot(xs(1 : end - 1), w);
-%         hold on;
-%         plot(xs, w_exact);
-%         hold off;
-%         pause(0.01);
+        % Initialise error norm
+        L2_norm = sum((w - w_exact(1 : end - 1)).^2);
 
 %         Loops
         max_diff = 0
@@ -134,6 +140,8 @@ for N_MEMBRANE = N_MEMBRANES
                max_error = max_diff; 
             end
             
+            L2_norm = L2_norm + sum((w - w_exact(1 : end - 1)).^2);
+            
 %             % Plots both
 %             figure(1);
 %             plot(xs(1 : end - 1), w);
@@ -147,21 +155,111 @@ for N_MEMBRANE = N_MEMBRANES
 %             pause(0.01);
 
         end
-        max_errors(k) = max_diff;
+        max_errors(k, n) = max_diff;
+        
+        % Saves L2_norm
+        L2_norm = sqrt(L2_norm / (length(xs) * (T_MAX / DELTA_T)));
+        L2_norms(k, n) = L2_norm
     end
     
-    figure(3);
-    hold on;
-    plot(DELTA_TS, max_errors, '-o');
+%     figure(3);
+%     hold on;
+%     plot(DELTA_TS, max_errors, '-o');
+%     
+%     figure(4);
+%     hold on;
+%     plot(DELTA_TS, L2_norms, '-o');
     
 end
 
-%% Change plot
+%% Max norm vs DT
+close(figure(3));
 figure(3);
+hold on;
+for n = 1 : length(N_MEMBRANES)
+    plot(DELTA_TS, max_errors(:, n), '-o', 'linewidth', 1.5);
+end
+plot(DELTA_TS, 0.3 * DELTA_TS.^2, 'linestyle', '--', 'color', 'black', 'linewidth', 2);
 set(gca, 'XDir','reverse');
 set(gca, 'yscale','log');
 set(gca, 'xscale', 'log');
-legend(["N = 512", "N = 1024", "N = 2048", "N = 4096", "N = 8192"]);
+set(gca,'TickLabelInterpreter','latex');
+set(gca,'fontsize', 12);
+% set(gca,'ticklabel
+legend([N_legend, "$y \sim \Delta t^2$"], "Interpreter", "latex", "fontsize", 12);
+xlabel("$\Delta t$", "interpreter", "latex", "fontsize", 12);
+ylabel("Max norm error", "interpreter", "latex", "fontsize", 12);
+title(["$\alpha$ = " + ALPHA + ", $\beta$ = " + BETA + ", $\gamma$ = " + GAMMA + ", $L$ = " + L], "Interpreter", "latex");
+exportgraphics(gca, "timestep_validation_max.png", "resolution", 300);
 
+%% Max norm vs DX
+close(figure(4));
+figure(4);
+hold on;
+for k = 1 : length(DELTA_TS)
+    plot(N_MEMBRANES, max_errors(k, :), '-o', 'linewidth', 1.5);
+end
+plot(N_MEMBRANES, 0.1./ N_MEMBRANES.^2, 'linestyle', '--', 'color', 'black', 'linewidth', 2);
+set(gca, 'yscale','log');
+set(gca, 'xscale', 'log');
+set(gca,'TickLabelInterpreter','latex');
+set(gca,'fontsize', 12);
+legend([DT_legend, "$y \sim 1 / N^2$"], "Interpreter", "latex", "fontsize", 12, "location", "eastoutside");
+xlabel("$N$", "interpreter", "latex", "fontsize", 12);
+ylabel("Max norm error", "interpreter", "latex", "fontsize", 12);
+title(["$\alpha$ = " + ALPHA + ", $\beta$ = " + BETA + ", $\gamma$ = " + GAMMA + ", $L$ = " + L], "Interpreter", "latex");
+exportgraphics(gca, "gridsize_validation_max.png", "resolution", 300);
+
+
+%% L2 norm vs DT
+close(figure(5));
+figure(5);
+hold on;
+for n = 1 : length(N_MEMBRANES)
+    plot(DELTA_TS, L2_norms(:, n), '-o', 'linewidth', 1.5);
+end
+plot(DELTA_TS, 0.1 * DELTA_TS.^2, 'linestyle', '--', 'color', 'black', 'linewidth', 2);
+set(gca, 'XDir','reverse');
+set(gca, 'yscale','log');
+set(gca, 'xscale', 'log');
+set(gca,'TickLabelInterpreter','latex');
+set(gca,'fontsize', 12);
+% set(gca,'ticklabel
+legend([N_legend, "$y \sim \Delta t^2$"], "Interpreter", "latex", "fontsize", 12);
+xlabel("$\Delta t$", "interpreter", "latex", "fontsize", 12);
+ylabel("$L_2$ norm error", "interpreter", "latex", "fontsize", 12);
+title(["$\alpha$ = " + ALPHA + ", $\beta$ = " + BETA + ", $\gamma$ = " + GAMMA + ", $L$ = " + L], "Interpreter", "latex");
+exportgraphics(gca, "timestep_validation_L2.png", "resolution", 300);
+
+%% L2 norm vs DX
+close(figure(6));
+figure(6);
+hold on;
+for k = 1 : length(DELTA_TS)
+    plot(N_MEMBRANES, L2_norms(k, :), '-o', 'linewidth', 1.5);
+end
+plot(N_MEMBRANES, 0.03./ N_MEMBRANES.^2, 'linestyle', '--', 'color', 'black', 'linewidth', 2);
+set(gca, 'yscale','log');
+set(gca, 'xscale', 'log');
+set(gca,'TickLabelInterpreter','latex');
+set(gca,'fontsize', 12);
+legend([DT_legend, "$y \sim 1 / N^2$"], "Interpreter", "latex", "fontsize", 12, "location", "eastoutside");
+xlabel("$N$", "interpreter", "latex", "fontsize", 12);
+ylabel("$L_2$ norm error", "interpreter", "latex", "fontsize", 12);
+title(["$\alpha$ = " + ALPHA + ", $\beta$ = " + BETA + ", $\gamma$ = " + GAMMA + ", $L$ = " + L], "Interpreter", "latex");
+exportgraphics(gca, "gridsize_validation_L2.png", "resolution", 300);
+
+% %% L2 norm plot 
+% figure(4);
+% set(gca, 'XDir','reverse');
+% set(gca, 'yscale','log');
+% set(gca, 'xscale', 'log');
+% set(gca,'TickLabelInterpreter','latex');
+% set(gca,'fontsize', 12);
+% xlabel("$\Delta t$", "interpreter", "latex", "fontsize", 12);
+% ylabel("$L_2$ norm error", "interpreter", "latex", "fontsize", 12);
+% legend(["$N$ = 512", "$N$ = 1024", "$N$ = 2048", "$N$ = 4096", "$N$ = 8192"], "Interpreter", "latex", "fontsize", 12);
+% title(["$\alpha$ = " + ALPHA + ", $\beta$ = " + BETA + ", $\gamma$ = " + GAMMA + ", $L$ = " + L], "Interpreter", "latex");
+% exportgraphics(gca, "timestep_validation_L2.png");
 
 

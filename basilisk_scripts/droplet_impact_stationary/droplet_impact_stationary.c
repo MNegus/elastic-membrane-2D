@@ -8,13 +8,16 @@
     Author: Michael Negus
 */
 
+#define FILTERED
+#define mu(f)  (1./(clamp(f,0,1)*(1./mu1 - 1./mu2) + 1./mu2))
+
 #include "parameters.h" // Includes all defined parameters
 #include "navier-stokes/centered.h" // To solve the Navier-Stokes
 #include "two-phase.h" // Implements two-phase flow
-// #include "view.h" // Creating movies using bview
-// #include "tension.h" // Surface tension of droplet
-// #include "tag.h" // For removing small droplets
-// #include <omp.h> // For openMP parallel
+#include "view.h" // Creating movies using bview
+#include "tension.h" // Surface tension of droplet
+#include "tag.h" // For removing small droplets
+#include <omp.h> // For openMP parallel
 
 
 /* Computational constants derived from parameters */
@@ -67,13 +70,11 @@ int main() {
     DROP_REFINED_WIDTH = 0.05; // Refined region around droplet
     DROP_CENTRE = INITIAL_DROP_HEIGHT + DROP_RADIUS; // Initial centre of drop
     IMPACT_TIME = INITIAL_DROP_HEIGHT / (-DROP_VEL); // Theoretical impact time
-    MEMBRANE_REFINE_NO = 4; // Number of cells above membrane to refine by
+    MEMBRANE_REFINE_NO = 8; // Number of cells above membrane to refine by
     MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
 
     /* Runs the simulation */
-    fprintf(stderr, "Started!\n");
     run(); 
-    fprintf(stderr, "Finished!\n");
 }
 
 
@@ -86,6 +87,7 @@ event init(t = 0) {
     /* Refines around the droplet */
     refine(sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH) \
         && sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH) \
+        || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT)) \
         && level < MAXLEVEL);
     
     /* Initialises the droplet volume fraction */
@@ -108,29 +110,29 @@ event refinement (i++) {
         minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
     // Refines above the membrane
-    // refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
-    //     && level < MAXLEVEL);
+    refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
+        && level < MAXLEVEL);
 }
 
 
-// event gravity (i++) {
-// /* Adds acceleration due to gravity in the vertical direction */
-//     face vector av = a; // Acceleration at each face
-//     foreach_face(x) av.y[] -= 1./sq(FR); // Adds acceleration due to gravity
-// }
+event gravity (i++) {
+/* Adds acceleration due to gravity in the vertical direction */
+    face vector av = a; // Acceleration at each face
+    foreach_face(x) av.y[] -= 1./sq(FR); // Adds acceleration due to gravity
+}
 
 
-// event small_droplet_removal (i++) {
-// /* Removes any small droplets or bubbles that have formed, that are smaller than
-//     a specific size */
-//     // Removes droplets of diameter 5 cells or less
-//     int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
-//     // int remove_droplet_radius = (int)(0.25 / MIN_CELL_SIZE);
-//     remove_droplets(f, remove_droplet_radius);
+event small_droplet_removal (i++) {
+/* Removes any small droplets or bubbles that have formed, that are smaller than
+    a specific size */
+    // Removes droplets of diameter 5 cells or less
+    int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
+    // int remove_droplet_radius = (int)(0.25 / MIN_CELL_SIZE);
+    remove_droplets(f, remove_droplet_radius);
 
-//     // Also remove air bubbles
-//     remove_droplets(f, remove_droplet_radius, 1e-4, true);
-// }
+    // Also remove air bubbles
+    remove_droplets(f, remove_droplet_radius, 1e-4, true);
+}
 
 
 event output_data (t += LOG_OUTPUT_TIMESTEP) {

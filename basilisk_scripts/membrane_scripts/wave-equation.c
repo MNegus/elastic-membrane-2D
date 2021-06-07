@@ -22,6 +22,7 @@ subroutine for solving banded matrix systems.
 Author: Michael Negus
 */
 
+#include "wave-equation.h"
 #include <stdio.h> // For text output
 #include <stdlib.h>
 #include <lapacke.h> // For solving linear algebra
