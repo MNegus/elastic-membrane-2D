@@ -63,7 +63,7 @@ int main() {
     rho2 = RHO_R; // Density of air phase
     mu1 = 1. / REYNOLDS; // Viscosity of water phase
     mu2 = mu1 * MU_R; // Viscosity of air phase
-    // f.sigma = 1. / WEBER; // Surface tension at interface
+    f.sigma = 1. / WEBER; // Surface tension at interface
 
     /* Derived constants */
     MIN_CELL_SIZE = BOX_WIDTH / pow(2, MAXLEVEL); // Size of the smallest cell
@@ -85,10 +85,8 @@ event init(t = 0) {
     start_wall_time = omp_get_wtime();
 
     /* Refines around the droplet */
-    refine(sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH) \
-        && sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH) \
-        || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT)) \
-        && level < MAXLEVEL);
+    refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
+        && (level < MAXLEVEL));
     
     /* Initialises the droplet volume fraction */
     fraction(f, -sq(x) - sq(y - DROP_CENTRE) + sq(DROP_RADIUS));
@@ -106,7 +104,7 @@ event refinement (i++) {
 /* Adaptive grid refinement */
 
     // Adapts with respect to velocities and volume fraction 
-    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-2},
+    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
         minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
     // Refines above the membrane
