@@ -1,3 +1,6 @@
+# MATLAB autosave files
+*.m~
+
 # Prerequisites
 *.d
 
@@ -50,3 +53,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Data files and directories
+*_data/
+*_data_*/
+*_outputs/
+*.png
+*.avi
