@@ -18,7 +18,7 @@ int k;
 
 // Function declarations
 void analytical_pressure(double *p_arr, double t);
-void output_membrane(double *w_arr);
+void output_arrays(double *w_arr);
 
 
 int main (int argc, const char * argv[]) {
@@ -45,13 +45,13 @@ int main (int argc, const char * argv[]) {
     initialise_membrane(w_previous, w, p_previous, p, p_next, N_MEMBRANE, DELTA_T, L, ALPHA, BETA);
 
     // Output w_previous
-    output_membrane(w_previous);
+    output_arrays(w_previous);
     
 
     // Output w
     t += DELTA_T;
     k++;
-    output_membrane(w);
+    output_arrays(w);
 
     // Update pressures
     double *temp = p_previous;
@@ -74,7 +74,7 @@ int main (int argc, const char * argv[]) {
         w_previous = w;
         w = w_next;
         w_next = temp1;
-        output_membrane(w);
+        output_arrays(w);
 
         // Update pressures
         double *temp2 = p_previous;
@@ -111,7 +111,7 @@ for given coefficients A_n, k_n and lambda_n.
 }
 
 
-void output_membrane(double *w_arr) {
+void output_arrays(double *w_arr) {
 /* output_membrane
 Outputs the x positions of the membrane into a text file
 */
