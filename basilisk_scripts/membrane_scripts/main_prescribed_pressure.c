@@ -25,7 +25,7 @@ int kmax; // Maximum value of k
 
 
 // Function declarations
-void output_membrane(double *w_arr);
+void output_arrays(double *w_arr, double *p_arr);
 void read_pressure(double *p_arr, int k);
 
 
@@ -43,22 +43,35 @@ int main (int argc, const char * argv[]) {
     p_previous = malloc(M * sizeof(double));
     p = malloc(M * sizeof(double));
     p_next = malloc(M * sizeof(double));
+
+    /* For the first two timesteps, output a stationary membrane, waiting for 
+    the Basilisk pressure output to calm down */
+    for (k = 0; k < 10; k++) {
+        for (int i = 0; i < M; i++) {
+            w[i] = 0.0;
+            p[i] = 0.0;
+        }
+        output_arrays(w, p);
+        t += DELTA_T;
+    }
     
-    // Initialise pressures
-    read_pressure(p_previous, 0);
-    read_pressure(p, 0);
-    read_pressure(p_next, 1);
+    // Initialise pressures at k = 2
+    t = 10 * DELTA_T;
+    k = 10;
+    read_pressure(p_previous, k - 1);
+    read_pressure(p, k);
+    read_pressure(p_next, k + 1);
 
     // Initialise membrane
     initialise_membrane(w_previous, w, p_previous, p, p_next, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA);
 
     // Output w_previous
-    output_membrane(w_previous);
+    output_arrays(w_previous, p_previous);
 
     // Output w
     t += DELTA_T;
     k++;
-    output_membrane(w);
+    output_arrays(w, p);
 
     // Update pressures
     double *temp = p_previous;
@@ -81,7 +94,7 @@ int main (int argc, const char * argv[]) {
         w_previous = w;
         w = w_next;
         w_next = temp1;
-        output_membrane(w);
+        output_arrays(w, p);
 
         // Update pressures
         if (t + DELTA_T <= MAX_TIME) {
@@ -131,7 +144,7 @@ pressure outputs directory
 }
 
 
-void output_membrane(double *w_arr) {
+void output_arrays(double *w_arr, double *p_arr) {
 /* output_membrane
 Outputs the x positions of the membrane into a text file
 */
@@ -151,7 +164,7 @@ Outputs the x positions of the membrane into a text file
     for (int i = 0; i < M; i++) {
         double x = i * Deltax;
         fprintf(w_file, "%.10f, %.10f\n", x, w_arr[i]);
-        fprintf(p_file, "%.10f, %.10f\n", x, p[i]);
+        fprintf(p_file, "%.10f, %.10f\n", x, p_arr[i]);
         // fprintf(w_deriv_file, "%.10f, %.10f\n", x, q[i]);
     }
 
