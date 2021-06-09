@@ -48,7 +48,7 @@ void analytical_pressure(double *p_arr, double t);
 void init(double *w_previous, double *w, double *p_previous, double *p, double *p_next);
 void matrix_multiply(double *y_arr, double *matrix_arr, double *x_arr, \
     double scale, int ADD);
-void output_membrane(double *w_arr);
+void output_arrays(double *w_arr);
 void membrane_timestep(double *w_previous, double *w, double *w_next, \
     double *p_previous, double *p, double *p_next);
 
@@ -73,12 +73,12 @@ int main (int argc, const char * argv[]) {
 
     init(w_previous, w, p_previous, p, p_next);
 
-    output_membrane(w_previous);
+    output_arrays(w_previous);
 
     k++;
     t += DELTA_T;
 
-    output_membrane(w);
+    output_arrays(w);
 
     // Swaps pressures
     double *temp = p_previous;
@@ -117,7 +117,7 @@ int main (int argc, const char * argv[]) {
         analytical_pressure(p_next, t + DELTA_T);
 
         // Outputs the new value of w
-        output_membrane(w);
+        output_arrays(w);
     }
     
 
@@ -258,7 +258,7 @@ ADD = 1, then this adds scale * matrix_arr * x_arr to y
 }
 
 
-void output_membrane(double *w_arr) {
+void output_arrays(double *w_arr) {
 /* output_membrane
 Outputs the x positions of the membrane into a text file
 */
