@@ -4,7 +4,7 @@ clear;
 
 parent_directory = "/home/michael/scratch/stationary_max_levels";
 
-MAX_LEVELS = [8, 9, 10, 11];
+MAX_LEVELS = [8, 9, 10, 11, 12];
 % MAX_LEVELS = 10;
 legend_entries = strings(size(MAX_LEVELS));
 for q = 1 : length(legend_entries)
