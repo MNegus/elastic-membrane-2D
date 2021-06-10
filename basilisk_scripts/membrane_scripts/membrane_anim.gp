@@ -4,10 +4,4 @@ do for [ii=0:4000] {
        	plot '../membrane_outputs/w_'.ii.'.txt' with lines smooth unique 
         pause 0.01
 }
-pause -1
-~                                                                                                                                 
-~                                                                                                                                 
-~                                                                                                                                 
-~                                                                                                                                 
-~                                                                                                                                 
-~                  
+pause -1       

@@ -40,9 +40,9 @@ int info, *ipiv, kl, ku, nrhs, ldab, ldb, noRows;
 double *A_static, *B_static, *A;
 
 
-void initialise_membrane(double *w_previous, double *w, double *p_previous, \
-    double *p, double *p_next, int N_MEMBRANE, double DELTA_T, double L, \
-    double ALPHA, double BETA) {
+void initialise_membrane(double *w_previous, double *w, double *w_deriv, 
+    double *p_previous, double *p, double *p_next, int N_MEMBRANE, 
+    double DELTA_T, double L, double ALPHA, double BETA) {
 /* initialise_membrane
 Function initialises the problem, setting w_previous and w, and requiring the 
 relevant parameters and pressure arrays as input. 
@@ -92,9 +92,10 @@ relevant parameters and pressure arrays as input.
     /* Initialise arrays */
     A = malloc(M * noRows * sizeof(double)); // Coefficient matrix
 
-    /* Sets w_previous to 0 everywhere */
+    /* Sets w_previous and w_deriv to 0 everywhere */
     for (int i = 0; i < M; i++) {
         w_previous[i] = 0.0;
+        w_deriv[i] = 0.0;
     }
 
     /* Determines w at the first timestep using a second-order accurate initial 
@@ -120,8 +121,9 @@ relevant parameters and pressure arrays as input.
 }
 
 
-void membrane_timestep(double *w_previous, double *w, double *w_next, \
-    double *p_previous, double *p, double *p_next) {
+void membrane_timestep(double *w_previous, double *w, double *w_next, 
+    double *w_deriv, double *p_previous, double *p, double *p_next, 
+    double DELTA_T) {
 /* membrane_timestep 
 Function performs once timestep of the Mitchell method algorithm, determining 
 the value of w_next. 
@@ -136,7 +138,7 @@ the value of w_next.
 
     // Sets w_next = w_next + pressure term
     for (int i = 0; i < M; i++) {
-        w_next[i] += Dpressure * (0.25 * p_previous[i] + 0.5 * p[i] + 0.25 * p_next[i]);
+        w_next[i] += Dpressure * 0.25 * (p_previous[i] + 2 * p[i] + p_next[i]);
     }
 
 
@@ -146,6 +148,11 @@ the value of w_next.
 
     // Uses LAPACK to solve the matrix equation, saving result in w_next
     info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, w_next, ldb);
+
+    /* Determines w_deriv */
+    for (int i = 0; i < M; i++) {
+        w_deriv[i] = (w_next[i] - w_previous[i]) / (2 * DELTA_T);
+    }
 
 } 
 
