@@ -1,8 +1,9 @@
-/* droplet_impact.c
-    A 2D droplet falling towards an impermeable, rigid surface lying 
-    along the boundary at y = 0. 
+/* droplet_impact_coupled.c
+    A 2D droplet falling towards an elastic membrane lying 
+    along the boundary at y = 0. The solution for the membrane is given as a 
+    function of pressure by the routines defined in wave-equation.h
 
-    Run until the turnover point approximately reaches the initial droplet 
+    Runs until the turnover point approximately reaches the initial droplet 
     radius. 
 
     Author: Michael Negus
@@ -17,7 +18,9 @@
 #include "view.h" // Creating movies using bview
 #include "tension.h" // Surface tension of droplet
 #include "tag.h" // For removing small droplets
+#include "wave-equation.h" // For solving the wave equation
 #include <omp.h> // For openMP parallel
+#include <stdlib.h>
 
 
 /* Computational constants derived from parameters */
@@ -28,11 +31,22 @@ double MEMBRANE_REFINED_HEIGHT; // Width of the refined area above the membrane
 double DROP_CENTRE; // Initial centre position of the droplet
 double IMPACT_TIME; // Theoretical time of impact
 
+/* Membrane parameters and arrays */
+double Deltax; // Spatial grid size
+int M; // Number of grid nodes for membrane solution
+double *w_previous, *w, *w_next, *w_deriv; // Membrane position arrays
+double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
+
 /* Global variables */
 double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
-int gfs_output_no = 1; // Records how many GFS files have been outputted
+int gfs_output_no = 0; // Records how many GFS files have been outputted
 int log_output_no = 0; // Records how many plate data files there have been
+int membrane_output_no = 0; // Records how many membrane outputs there have been
+int start_membrane = 0; // Boolean to indicate if membrane motion has started
+
+/* Function definitions */
+void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr);
 
 /* Boundary conditions */
 // Symmetry on left boundary
@@ -72,6 +86,17 @@ int main() {
     IMPACT_TIME = INITIAL_DROP_HEIGHT / (-DROP_VEL); // Theoretical impact time
     MEMBRANE_REFINE_NO = 8; // Number of cells above membrane to refine by
     MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
+    M = (int) floor(pow(2, MAXLEVEL) * MEMBRANE_RADIUS / BOX_WIDTH);
+    Deltax = BOX_WIDTH / M;
+
+    /* Define membrane arrays */
+    w_previous = malloc(M * sizeof(double)); // w at previous timestep
+    w = malloc(M * sizeof(double)); // w at current timestep
+    w_next = malloc(M * sizeof(double)); // w at next timestep
+    w_deriv = malloc(M * sizeof(double)); // Time derivative of w
+    p_previous_arr = malloc(M * sizeof(double)); // p at previous timestep
+    p_arr = malloc(M * sizeof(double)); // p at current timestep
+    p_next_arr = malloc(M * sizeof(double)); // p at next timestep
 
     /* Runs the simulation */
     run(); 
@@ -96,7 +121,15 @@ event init(t = 0) {
         u.y[] = DROP_VEL * f[];
     }
     boundary ((scalar *){u});
-    
+
+    /* Initialises membrane arrays */
+    for (int i = 0; i < M; i++) {
+        w_previous[i] = 0.0;
+        w[i] = 0.0;
+        w_deriv[i] = 0.0;
+        p_previous_arr[i] = 0.0;
+        p_arr[i] = 0.0;
+    }
 }
 
 
@@ -130,6 +163,52 @@ event small_droplet_removal (i++) {
 
     // Also remove air bubbles
     remove_droplets(f, remove_droplet_radius, 1e-4, true);
+}
+
+event update_membrane(t += DELTA_T) {
+/* Updates the membrane arrays by solving the membrane equation, and outputs*/
+    fprintf(stderr, "Entered update membrane at i = %d\n", i);
+    /* Update pressure arrays */
+    // Swaps
+    double *temp1 = p_previous_arr;
+    p_previous_arr = p_arr;
+    p_arr = p_next_arr;
+    p_next_arr = temp1;
+
+    // Fills pressure in from boundary nodes
+    foreach_boundary(bottom) {
+        if (x <= MEMBRANE_RADIUS) {
+            int k = (int) (x / Deltax);
+            p_next_arr[k] = p[];
+        }
+    }
+
+    /* Updates membrane position after the start time */
+    if (t >= MEMBRANE_START_TIME) {
+        if (start_membrane == 0) {
+            /* Initialise membrane motion */
+            start_membrane = 1; // Indicates membrane motion has started
+
+            // Initialises w and w_deriv
+            initialise_membrane(w_previous, w, w_deriv, p_previous_arr, p_arr, \
+                p_next_arr, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA);
+        } else {
+            /* Solve membrane equation to determine w_next */
+            membrane_timestep(w_previous, w, w_next, w_deriv, p_previous_arr, \
+                p_arr, p_next_arr, DELTA_T);
+        }
+    }
+
+    /* Outputs membrane arrays */
+    output_arrays(w, w_deriv, p_arr);
+
+    // Swaps membrane arrays 
+    double *temp2 = w_previous;
+    w_previous = w;
+    w = w_next;
+    w_next = temp2;
+
+    fprintf(stderr, "Left update membrane at i = %d\n", i);
 }
 
 
@@ -172,3 +251,42 @@ event end (t = MAX_TIME) {
     fprintf(stderr, "Finished after %g seconds\n", \
         end_wall_time - start_wall_time);
 }
+
+
+void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr) {
+/* output_membrane
+Outputs the x positions of the membrane into a text file
+*/
+    char w_filename[40];
+    sprintf(w_filename, "w_%d.txt", membrane_output_no);
+    FILE *w_file = fopen(w_filename, "w");
+
+    char w_deriv_filename[40];
+    sprintf(w_deriv_filename, "w_deriv_%d.txt", membrane_output_no);
+    FILE *w_deriv_file = fopen(w_deriv_filename, "w");
+
+    char p_filename[40];
+    sprintf(p_filename, "p_%d.txt", membrane_output_no);
+    FILE *p_file = fopen(p_filename, "w");
+
+    // Outputs from x = 0 to L - dx
+    for (int i = 0; i < M; i++) {
+        double x = i * Deltax;
+        fprintf(w_file, "%.10f, %.10f\n", x, w_arr[i]);
+        fprintf(w_deriv_file, "%.10f, %.10f\n", x, w_deriv_arr[i]);
+        fprintf(p_file, "%.10f, %.10f\n", x, p_arr[i]);
+    }
+
+    // Outputs x = L, where w and w_deriv = 0
+    double x = M * Deltax;
+    fprintf(w_file, "%.10f, %.10f\n", x, 0.0);
+    fprintf(p_file, "%.10f, %.10f\n", x, 0.0);
+    fprintf(w_deriv_file, "%.10f, %.10f", x, 0.0);
+
+    fclose(w_file);
+    fclose(p_file);
+    fclose(w_deriv_file);
+
+    membrane_output_no++;
+}
+
