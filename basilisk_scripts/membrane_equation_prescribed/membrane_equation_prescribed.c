@@ -47,12 +47,13 @@ int main (int argc, const char * argv[]) {
 
     /* For the first few timesteps, output a stationary membrane, waiting for 
     the Basilisk pressure output to calm down */
-    for (k = 0; k < 10; k++) {
-        for (int i = 0; i < M; i++) {
+    for (int i = 0; i < M; i++) {
             w[i] = 0.0;
             w_deriv[i] = 0.0;
             p[i] = 0.0;
-        }
+    }
+
+    for (k = 0; k < 10; k++) {
         output_arrays(w, w_deriv, p);
         t += DELTA_T;
     }
