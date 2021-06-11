@@ -20,7 +20,7 @@ mkdir ${DEST_DIR}/${SUB_DIR_NAME}/code
 cp -a ${LOCAL_DIR}/. ${DEST_DIR}/${SUB_DIR_NAME}/code
 
 # Copies the run script, Makefile and parameters over to the destination
-cp {run_simulation.sh,Makefile,parameters.h} ${DEST_DIR}/${SUB_DIR_NAME}/code
+cp {run_simulation.sh,run_simulation_coupled.sh,Makefile,parameters.h} ${DEST_DIR}/${SUB_DIR_NAME}/code
 
 # Copies the membrane equation file over
-cp ../membrane_scripts/{main_prescribed_pressure.c,wave-equation.c,wave-equation.h,run_membrane.sh,membrane_anim.gp} ${DEST_DIR}/${SUB_DIR_NAME}/code
+cp ../membrane_scripts/{wave-equation.c,wave-equation.h,run_membrane.sh,membrane_anim.gp,membrane_deriv_anim.gp} ${DEST_DIR}/${SUB_DIR_NAME}/code
