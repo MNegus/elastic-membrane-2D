@@ -4,7 +4,7 @@ Solves the wave equation
 with boundary conditions
     w_x = 0 at x = 0, w = 0 at x = L,
 using the Mitchell method. We discretise the spatial domain 
-with N_MEMBRANE points, with a grid size Deltax = L / (N_MEMBRANE - 1), and
+with N_MEMBRANE points, with a grid size DELTA_X = L / (N_MEMBRANE - 1), and
 we discretise in time with a timestep of DELTA_T.
 
 In general, the Mitchell method involves discretising a second-order in time PDE
@@ -30,7 +30,7 @@ Author: Michael Negus
 
 /* Global variables */
 // Finite-difference parameters
-double Deltax, Dbeta2, Dpressure; 
+double DELTA_X, Dbeta2, Dpressure; 
 int M; // Size of matrix 
 
 // LAPACK parameters
@@ -49,9 +49,9 @@ relevant parameters and pressure arrays as input.
 */
 
     /* Derived parameters */
-    Deltax = L / (N_MEMBRANE - 1); // Spatial grid size
-    Dbeta2 = (ALPHA * Deltax * Deltax) / (BETA * DELTA_T * DELTA_T);
-    Dpressure = Deltax * Deltax / BETA; // Scaled term in front of pressure
+    DELTA_X = L / (N_MEMBRANE - 1); // Spatial grid size
+    Dbeta2 = (ALPHA * DELTA_X * DELTA_X) / (BETA * DELTA_T * DELTA_T);
+    Dpressure = DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure
     M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
 
     /* LAPACKE constants */
@@ -67,6 +67,12 @@ relevant parameters and pressure arrays as input.
     /* Initialise coefficient matrices */
     A_static = malloc(M * noRows * sizeof(double)); // Used for dgbsv
     B_static = malloc(M * noRows * sizeof(double)); // Used for matrix multiplication
+
+    // Set all entries to zero to start
+    for (int k = 0; k < M * noRows; k++) {
+        A_static[k] = 0;
+        B_static[k] = 0;
+    }
 
     // Stores upper diagonal in second row
     int colNum = 1;
@@ -93,9 +99,9 @@ relevant parameters and pressure arrays as input.
     A = malloc(M * noRows * sizeof(double)); // Coefficient matrix
 
     /* Sets w_previous and w_deriv to 0 everywhere */
-    for (int i = 0; i < M; i++) {
-        w_previous[i] = 0.0;
-        w_deriv[i] = 0.0;
+    for (int k = 0; k < M; k++) {
+        w_previous[k] = 0.0;
+        w_deriv[k] = 0.0;
     }
 
     /* Determines w at the first timestep using a second-order accurate initial 
@@ -107,9 +113,9 @@ relevant parameters and pressure arrays as input.
     multiply_matrix(w, B_static, w_previous, 0.5, 0);
 
     // Adds pressure terms onto rhs = w
-    for (int i = 0; i < M; i++) {
-        w[i] += 0.5 * Dpressure \
-            * (0.25 * p_previous[i] + 0.5 * p[i] + 0.25 * p_next[i]);
+    for (int k = 0; k < M; k++) {
+        w[k] += 0.5 * Dpressure \
+            * (0.25 * p_previous[k] + 0.5 * p[k] + 0.25 * p_next[k]);
     }
 
     // Copies over elements to A
@@ -118,6 +124,11 @@ relevant parameters and pressure arrays as input.
     // Uses LAPACK to solve the matrix equation, saving result in w
     info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, w, ldb);
 
+    // Exits if dgbsv fails
+    if (info) {
+        fprintf(stderr, "LAPACKE_dgbsv failed with info = %d\n", info);
+        exit(1);
+    }
 }
 
 
@@ -137,10 +148,9 @@ the value of w_next.
     multiply_matrix(w_next, A_static, w_previous, -1, 1);
 
     // Sets w_next = w_next + pressure term
-    for (int i = 0; i < M; i++) {
-        w_next[i] += Dpressure * 0.25 * (p_previous[i] + 2 * p[i] + p_next[i]);
+    for (int k = 0; k < M; k++) {
+        w_next[k] += Dpressure * 0.25 * (p_previous[k] + 2 * p[k] + p_next[k]);
     }
-
 
     /* Solves matrix equation */
     // Copies over elements to A
@@ -149,11 +159,11 @@ the value of w_next.
     // Uses LAPACK to solve the matrix equation, saving result in w_next
     info = LAPACKE_dgbsv(LAPACK_ROW_MAJOR, M, kl, ku, nrhs, A, ldab, ipiv, w_next, ldb);
 
-    /* Determines w_deriv */
-    for (int i = 0; i < M; i++) {
-        w_deriv[i] = (w_next[i] - w_previous[i]) / (2 * DELTA_T);
+    // Exits if dgbsv fails
+    if (info) {
+        fprintf(stderr, "LAPACKE_dgbsv failed with info = %d\n", info);
+        exit(1);
     }
-
 } 
 
 
@@ -173,11 +183,11 @@ ADD = 1, then this adds scale * matrix_arr * x_arr to y
                  + matrix_arr[M + 1] * x_arr[1]);
 
     // Main entries, with all diagonals
-    for (int i = 1; i < M - 1; i++) {
-        y_arr[i] = ADD * y_arr[i] \
-            + scale * (matrix_arr[3 * M + i - 1] * x_arr[i - 1]\
-                     + matrix_arr[2 * M + i] * x_arr[i] \
-                     + matrix_arr[M + i + 1] * x_arr[i + 1]);
+    for (int k = 1; k < M - 1; k++) {
+        y_arr[k] = ADD * y_arr[k] \
+            + scale * (matrix_arr[3 * M + k - 1] * x_arr[k - 1]\
+                     + matrix_arr[2 * M + k] * x_arr[k] \
+                     + matrix_arr[M + k + 1] * x_arr[k + 1]);
     }
 
     // Last entry, ignoring the upper diagonal
