@@ -32,7 +32,7 @@ double DROP_CENTRE; // Initial centre position of the droplet
 double IMPACT_TIME; // Theoretical time of impact
 
 /* Membrane parameters and arrays */
-double Deltax; // Spatial grid size
+double DELTA_X; // Spatial grid size
 int M; // Number of grid nodes for membrane solution
 double *w_previous, *w, *w_next, *w_deriv; // Membrane position arrays
 double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
@@ -87,7 +87,7 @@ int main() {
     MEMBRANE_REFINE_NO = 8; // Number of cells above membrane to refine by
     MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
     M = (int) floor(pow(2, MAXLEVEL) * MEMBRANE_RADIUS / BOX_WIDTH);
-    Deltax = BOX_WIDTH / M;
+    DELTA_X = MEMBRANE_RADIUS / M;
 
     /* Define membrane arrays */
     w_previous = malloc(M * sizeof(double)); // w at previous timestep
@@ -110,8 +110,9 @@ event init(t = 0) {
     start_wall_time = omp_get_wtime();
 
     /* Refines around the droplet */
-    refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
-        && (level < MAXLEVEL));
+    // refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
+    //     && (level < MAXLEVEL));
+    refine(level < MAXLEVEL);
     
     /* Initialises the droplet volume fraction */
     fraction(f, -sq(x) - sq(y - DROP_CENTRE) + sq(DROP_RADIUS));
@@ -123,12 +124,12 @@ event init(t = 0) {
     boundary ((scalar *){u});
 
     /* Initialises membrane arrays */
-    for (int i = 0; i < M; i++) {
-        w_previous[i] = 0.0;
-        w[i] = 0.0;
-        w_deriv[i] = 0.0;
-        p_previous_arr[i] = 0.0;
-        p_arr[i] = 0.0;
+    for (int k = 0; k < M; k++) {
+        w_previous[k] = 0.0;
+        w[k] = 0.0;
+        w_deriv[k] = 0.0;
+        p_previous_arr[k] = 0.0;
+        p_arr[k] = 0.0;
     }
 }
 
@@ -136,13 +137,14 @@ event init(t = 0) {
 event refinement (i++) {
 /* Adaptive grid refinement */
 
-    // Adapts with respect to velocities and volume fraction 
-    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
-        minlevel = MINLEVEL, maxlevel = MAXLEVEL);
+    // // Adapts with respect to velocities and volume fraction 
+    // adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
+    //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
-    // Refines above the membrane
-    refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
-        && level < MAXLEVEL);
+    // // Refines above the membrane
+    // refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
+    //     && level < MAXLEVEL);
+    refine(level < MAXLEVEL);
 }
 
 
@@ -167,7 +169,7 @@ event small_droplet_removal (i++) {
 
 event update_membrane(t += DELTA_T) {
 /* Updates the membrane arrays by solving the membrane equation, and outputs*/
-    fprintf(stderr, "Entered update membrane at i = %d\n", i);
+
     /* Update pressure arrays */
     // Swaps
     double *temp1 = p_previous_arr;
@@ -178,7 +180,7 @@ event update_membrane(t += DELTA_T) {
     // Fills pressure in from boundary nodes
     foreach_boundary(bottom) {
         if (x <= MEMBRANE_RADIUS) {
-            int k = (int) (x / Deltax);
+            int k = (int) (x / DELTA_X);
             p_next_arr[k] = p[];
         }
     }
@@ -207,8 +209,6 @@ event update_membrane(t += DELTA_T) {
     w_previous = w;
     w = w_next;
     w_next = temp2;
-
-    fprintf(stderr, "Left update membrane at i = %d\n", i);
 }
 
 
@@ -270,15 +270,15 @@ Outputs the x positions of the membrane into a text file
     FILE *p_file = fopen(p_filename, "w");
 
     // Outputs from x = 0 to L - dx
-    for (int i = 0; i < M; i++) {
-        double x = i * Deltax;
-        fprintf(w_file, "%.10f, %.10f\n", x, w_arr[i]);
-        fprintf(w_deriv_file, "%.10f, %.10f\n", x, w_deriv_arr[i]);
-        fprintf(p_file, "%.10f, %.10f\n", x, p_arr[i]);
+    for (int k = 0; k < M; k++) {
+        double x = k * DELTA_X;
+        fprintf(w_file, "%.10f, %.10f\n", x, w_arr[k]);
+        fprintf(w_deriv_file, "%.10f, %.10f\n", x, w_deriv_arr[k]);
+        fprintf(p_file, "%.10f, %.10f\n", x, p_arr[k]);
     }
 
     // Outputs x = L, where w and w_deriv = 0
-    double x = M * Deltax;
+    double x = M * DELTA_X;
     fprintf(w_file, "%.10f, %.10f\n", x, 0.0);
     fprintf(p_file, "%.10f, %.10f\n", x, 0.0);
     fprintf(w_deriv_file, "%.10f, %.10f", x, 0.0);
