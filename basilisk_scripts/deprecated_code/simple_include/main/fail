@@ -1,0 +1,242 @@
+qcc -autolink -llapacke -llapack -g -Wall -pipe -D_FORTIFY_SOURCE=2 -o main/main main.c  -lm
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:23: error: ‘s’ undeclared here (not in a function)
+ 1476 | @define VT _attribute[s.i].v.y
+      |                       ^
+/home/michael/basilisk_1/src/grid/tree.h:1476:27: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1476 | @define VT _attribute[s.i].v.y
+      |                           ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+/home/michael/basilisk_1/src/grid/tree.h:1230:13: error: expected ‘;’, ‘,’ or ‘)’ before ‘.’ token
+ 1230 | @define VR v.z
+      |             ^
+make: *** [main.s] Error 1

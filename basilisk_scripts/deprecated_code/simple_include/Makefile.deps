@@ -1,0 +1,54 @@
+# Automatically generated using 'make Makefile.tests'
+# DO NOT EDIT, edit 'Makefile' instead
+ALLTESTS = \
+	main.c \
+	simple_header.c \
+
+plots: \
+
+TESTS = \
+
+SPECIAL_TESTS = \
+
+ALLPAGES = \
+
+main.s:	\
+	/home/michael/basilisk_1/src/navier-stokes/centered.h \
+	/home/michael/basilisk_1/src/run.h \
+	/home/michael/basilisk_1/src/timestep.h \
+	/home/michael/basilisk_1/src/bcg.h \
+	/home/michael/basilisk_1/src/viscosity-embed.h \
+	/home/michael/basilisk_1/src/viscosity.h \
+	/home/michael/basilisk_1/src/poisson.h \
+	/home/michael/basilisk_1/src/poisson.h \
+	/home/michael/basilisk_1/src/utils.h \
+	/home/michael/basilisk_1/src/output.h \
+	/home/michael/basilisk_1/src/grid/quadtree.h \
+	/home/michael/basilisk_1/src/grid/tree.h \
+	/home/michael/basilisk_1/src/grid/mempool.h \
+	/home/michael/basilisk_1/src/grid/foreach_cell.h \
+	/home/michael/basilisk_1/src/grid/neighbors.h \
+	/home/michael/basilisk_1/src/grid/tree-common.h \
+	/home/michael/basilisk_1/src/grid/tree-mpi.h \
+	/home/michael/basilisk_1/src/grid/balance.h \
+	/home/michael/basilisk_1/src/grid/multigrid-common.h \
+	/home/michael/basilisk_1/src/grid/cartesian-common.h \
+	/home/michael/basilisk_1/src/grid/events.h \
+	/home/michael/basilisk_1/src/grid/fpe.h \
+	/home/michael/basilisk_1/src/common.h \
+
+simple_header.s:	\
+	/home/michael/basilisk_1/src/grid/quadtree.h \
+	/home/michael/basilisk_1/src/grid/tree.h \
+	/home/michael/basilisk_1/src/grid/mempool.h \
+	/home/michael/basilisk_1/src/grid/foreach_cell.h \
+	/home/michael/basilisk_1/src/grid/neighbors.h \
+	/home/michael/basilisk_1/src/grid/tree-common.h \
+	/home/michael/basilisk_1/src/grid/tree-mpi.h \
+	/home/michael/basilisk_1/src/grid/balance.h \
+	/home/michael/basilisk_1/src/grid/multigrid-common.h \
+	/home/michael/basilisk_1/src/grid/cartesian-common.h \
+	/home/michael/basilisk_1/src/grid/events.h \
+	/home/michael/basilisk_1/src/grid/fpe.h \
+	/home/michael/basilisk_1/src/common.h \
+
