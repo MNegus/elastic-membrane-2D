@@ -1,7 +1,9 @@
-/* droplet_impact_coupled.c
+/* droplet_impact_decoupled.c
     A 2D droplet falling towards an elastic membrane lying 
     along the boundary at y = 0. The solution for the membrane is given as a 
-    function of pressure by the routines defined in wave-equation.h
+    function of pressure by the routines defined in wave-equation.h, but its 
+    velocity is not fed back into the simulation, so therefore the droplet 
+    dynamics are decoupled from the membrane.
 
     Runs until the turnover point approximately reaches the initial droplet 
     radius. 
