@@ -5,7 +5,8 @@ mkdir ${script_name}
 
 /home/michael/basilisk_0/src/qcc -MD -o ${script_name}.s.d ${script_name}.c
 
-qcc -O2 -c ${script_name}.c 
+# qcc -O2 -fopenmp -c ${script_name}.c 
+qcc -O2 -L/home/michael/basilisk_0/src/gl -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -c ${script_name}.c 
 
 gcc -O2 -c wave-equation.c 
 
