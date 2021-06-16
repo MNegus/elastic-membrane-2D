@@ -125,6 +125,7 @@ event init(t = 0) {
     boundary ((scalar *){u});
 
     /* Initialises membrane arrays */
+    #pragma omp parallel for
     for (int k = 0; k < M; k++) {
         w_previous[k] = 0.0;
         w[k] = 0.0;
@@ -271,6 +272,7 @@ Outputs the x positions of the membrane into a text file
     FILE *p_file = fopen(p_filename, "w");
 
     // Outputs from x = 0 to L - dx
+    #pragma omp parallel for
     for (int k = 0; k < M; k++) {
         double x = k * DELTA_X;
         fprintf(w_file, "%.10f, %.10f\n", x, w_arr[k]);

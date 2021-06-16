@@ -112,9 +112,9 @@ event init(t = 0) {
     start_wall_time = omp_get_wtime();
 
     /* Refines around the droplet */
-    // refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
-    //     && (level < MAXLEVEL));
-    refine(level < MAXLEVEL);
+    refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
+        && (level < MAXLEVEL));
+    // refine(level < MAXLEVEL);
     
     /* Initialises the droplet volume fraction */
     fraction(f, -sq(x) - sq(y - DROP_CENTRE) + sq(DROP_RADIUS));
@@ -126,6 +126,7 @@ event init(t = 0) {
     boundary ((scalar *){u});
 
     /* Initialises membrane arrays */
+    #pragma omp parallel for
     for (int k = 0; k < M; k++) {
         w_previous[k] = 0.0;
         w[k] = 0.0;
@@ -139,14 +140,14 @@ event init(t = 0) {
 event refinement (i++) {
 /* Adaptive grid refinement */
 
-    // // Adapts with respect to velocities and volume fraction 
-    // adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
-    //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
+    // Adapts with respect to velocities and volume fraction 
+    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
+        minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
-    // // Refines above the membrane
-    // refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
-    //     && level < MAXLEVEL);
-    refine(level < MAXLEVEL);
+    // Refines above the membrane
+    refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
+        && level < MAXLEVEL);
+    // refine(level < MAXLEVEL);
 }
 
 
@@ -272,6 +273,7 @@ Outputs the x positions of the membrane into a text file
     FILE *p_file = fopen(p_filename, "w");
 
     // Outputs from x = 0 to L - dx
+    #pragma omp parallel for
     for (int k = 0; k < M; k++) {
         double x = k * DELTA_X;
         fprintf(w_file, "%.10f, %.10f\n", x, w_arr[k]);
