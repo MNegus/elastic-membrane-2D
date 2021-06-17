@@ -100,6 +100,10 @@ int main() {
     p_arr = malloc(M * sizeof(double)); // p at current timestep
     p_next_arr = malloc(M * sizeof(double)); // p at next timestep
 
+    /* Creates log file */
+    FILE *logfile = fopen("log", "w");
+    fclose(logfile);
+
     /* Runs the simulation */
     run(); 
 }
@@ -114,7 +118,6 @@ event init(t = 0) {
     /* Refines around the droplet */
     refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
         && (level < MAXLEVEL));
-    // refine(level < MAXLEVEL);
     
     /* Initialises the droplet volume fraction */
     fraction(f, -sq(x) - sq(y - DROP_CENTRE) + sq(DROP_RADIUS));
@@ -147,7 +150,6 @@ event refinement (i++) {
     // Refines above the membrane
     refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
         && level < MAXLEVEL);
-    // refine(level < MAXLEVEL);
 }
 
 
@@ -204,8 +206,10 @@ event update_membrane(t += DELTA_T) {
         }
     }
 
-    /* Updates boundary condition */
-    uf.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
+    /* Updates boundary condition if COUPLED is set*/
+    if (COUPLED) {
+        uf.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
+    }
 
     /* Outputs membrane arrays */
     output_arrays(w, w_deriv, p_arr);
@@ -221,8 +225,12 @@ event update_membrane(t += DELTA_T) {
 event output_data (t += LOG_OUTPUT_TIMESTEP) {
 /* Outputs data about the flow */
     /* Outputs data to log file */
-    fprintf(stderr, \
-        "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
+    // fprintf(stderr, \
+    //     "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
+    
+    FILE *logfile = fopen("log", "a");
+    fprintf(logfile, "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
+    fclose(logfile);
 
     /* Outputs info about cells along membrane */
     char output_filename[80];
@@ -230,9 +238,7 @@ event output_data (t += LOG_OUTPUT_TIMESTEP) {
     FILE *output_file = fopen(output_filename, "w");
 
     foreach_boundary(bottom) {
-        // if (x <= MEMBRANE_RADIUS) {
-            fprintf(output_file, "%g %g %g\n", x, p[], uf.y[]);
-        // }
+        fprintf(output_file, "%g %g %g\n", x, p[], uf.y[]);
     }
     fclose(output_file);
 
@@ -254,8 +260,12 @@ event end (t = MAX_TIME) {
 
     end_wall_time = omp_get_wtime(); // Records the time of finish
 
-    fprintf(stderr, "Finished after %g seconds\n", \
-        end_wall_time - start_wall_time);
+    // fprintf(stderr, "Finished after %g seconds\n", \
+    //     end_wall_time - start_wall_time);
+    FILE *logfile = fopen("log", "a");
+    fprintf(logfile, "Finished after %g seconds\n", end_wall_time - start_wall_time);
+    fclose(logfile);
+
 }
 
 double membrane_bc(double x, double *w_deriv_arr) {
