@@ -255,6 +255,78 @@ event gfs_output (t += GFS_OUTPUT_TIMESTEP) {
 }
 
 
+event movies (t += 1e-3) {
+/* Produces movies using bview */ 
+    if (MOVIES) {
+        // Creates a string with the time to put on the plots
+        char time_str[80];
+        sprintf(time_str, "t = %g\n", t);
+
+        /* Zoomed out view */
+        // Set up bview box
+        // view (width = 1024, height = 1024, fov = 18.0, ty = -0.4, \
+        //     quat = {0, 0, -0.707, 0.707});
+        view (width = 1024, height = 1024, fov = 12.0, ty = -0.31, tx = -0.31);
+
+        /* Movie of the volume fraction of the droplet */
+        clear();
+        draw_vof("f", lw = 2);
+        squares("f", linear = true, spread = -1, linear = true, map = cool_warm); // RC - minor changes here and beyond
+        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        save ("tracer.mp4");
+
+        // /* Movie of the vertical velocity */
+        // clear();
+        // draw_vof("f", lw = 2);
+        // squares("u.x", linear = false, spread = -1, linear = true, map = cool_warm);
+        // mirror ({0,1}) {
+        //     draw_vof("f", lw = 2);
+        //     squares("u.x", linear = false, spread = -1, linear = true, map = cool_warm);
+        // }
+        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        // save ("vertical_vel.mp4");
+
+
+        // /* Movie of the horizontal velocity */
+        // clear();
+        // draw_vof("f", lw = 2);
+        // squares("u.y", linear = false, spread = -1, linear = true, map = cool_warm);
+        // mirror ({0,1}) {
+        //     draw_vof("f", lw = 2);
+        //     squares("u.y", linear = false, spread = -1, linear = true, map = cool_warm);
+        // }
+        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        // save ("horizontal_vel.mp4");
+
+        // /* Movie of the pressure */
+        // clear();
+        // draw_vof("f", lw = 2);
+        // squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        // mirror ({0,1}) {
+        //     draw_vof("f", lw = 2);
+        //     squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        // }
+        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        // save ("pressure.mp4");
+
+        // /* Zoomed in view of pressure around entrapped bubble */
+        // // Set up bview box
+        // view (width = 1024, height = 1024, fov = 5.0, ty = -0.1, \
+        //     quat = {0, 0, -0.707, 0.707});
+
+        // clear();
+        // draw_vof("f", lw = 2);
+        // squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        // mirror ({0,1}) {
+        //     draw_vof("f", lw = 2);
+        //     squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        // }
+        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        // save ("zoomed_pressure.mp4");
+    }
+}
+
+
 event end (t = MAX_TIME) {
 /* Ends the simulation */ 
 
