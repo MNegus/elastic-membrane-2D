@@ -3,14 +3,14 @@ script_name=$1
 rm -r ${script_name}
 mkdir ${script_name}
 
-/home/michael/basilisk_0/src/qcc -MD -o ${script_name}.s.d ${script_name}.c
+$BASILISK/qcc -MD -o ${script_name}.s.d ${script_name}.c
 
 # qcc -O2 -fopenmp -c ${script_name}.c 
-qcc -O2 -L/home/michael/basilisk_0/src/gl -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -c ${script_name}.c 
+qcc -O2 -L$BASILISK/gl -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -c ${script_name}.c 
 
 gcc -O2 -c wave-equation.c 
 
-qcc wave-equation.o ${script_name}.o -O2 -L/home/michael/basilisk_0/src/gl -llapacke -llapack -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -o ${script_name}/${script_name} -lm
+qcc wave-equation.o ${script_name}.o -O2 -L$BASILISK/gl -llapacke -llapack -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -o ${script_name}/${script_name} -lm
 
 cd ${script_name}
 
