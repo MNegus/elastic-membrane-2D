@@ -164,6 +164,11 @@ the value of w_next.
         fprintf(stderr, "LAPACKE_dgbsv failed with info = %d\n", info);
         exit(1);
     }
+
+    /* Determines w_deriv */
+    for (int k = 0; k < M; k++) {
+        w_deriv[k] = (w_next[k] - w_previous[k]) / (2 * DELTA_T);
+    }
 } 
 
 
