@@ -1,5 +1,6 @@
 # MATLAB autosave files
 *.m~
+*.asv
 
 # Prerequisites
 *.d
