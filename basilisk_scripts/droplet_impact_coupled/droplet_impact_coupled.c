@@ -47,6 +47,7 @@ int membrane_output_no = 0; // Records how many membrane outputs there have been
 int start_membrane = 0; // Boolean to indicate if membrane motion has started
 
 /* Function definitions */
+double membrane_bc(double x, double *w_deriv_arr);
 void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr);
 
 /* Boundary conditions */
@@ -111,9 +112,9 @@ event init(t = 0) {
     start_wall_time = omp_get_wtime();
 
     /* Refines around the droplet */
-    // refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
-    //     && (level < MAXLEVEL));
-    refine(level < MAXLEVEL);
+    refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
+        && (level < MAXLEVEL));
+    // refine(level < MAXLEVEL);
     
     /* Initialises the droplet volume fraction */
     fraction(f, -sq(x) - sq(y - DROP_CENTRE) + sq(DROP_RADIUS));
@@ -139,14 +140,14 @@ event init(t = 0) {
 event refinement (i++) {
 /* Adaptive grid refinement */
 
-    // // Adapts with respect to velocities and volume fraction 
-    // adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
-    //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
+    // Adapts with respect to velocities and volume fraction 
+    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
+        minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
-    // // Refines above the membrane
-    // refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
-    //     && level < MAXLEVEL);
-    refine(level < MAXLEVEL);
+    // Refines above the membrane
+    refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
+        && level < MAXLEVEL);
+    // refine(level < MAXLEVEL);
 }
 
 
@@ -203,6 +204,9 @@ event update_membrane(t += DELTA_T) {
         }
     }
 
+    /* Updates boundary condition */
+    uf.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
+
     /* Outputs membrane arrays */
     output_arrays(w, w_deriv, p_arr);
 
@@ -226,9 +230,9 @@ event output_data (t += LOG_OUTPUT_TIMESTEP) {
     FILE *output_file = fopen(output_filename, "w");
 
     foreach_boundary(bottom) {
-        if (x <= MEMBRANE_RADIUS) {
-            fprintf(output_file, "%g %g\n", x, p[]);
-        }
+        // if (x <= MEMBRANE_RADIUS) {
+            fprintf(output_file, "%g %g %g\n", x, p[], uf.y[]);
+        // }
     }
     fclose(output_file);
 
@@ -254,6 +258,18 @@ event end (t = MAX_TIME) {
         end_wall_time - start_wall_time);
 }
 
+double membrane_bc(double x, double *w_deriv_arr) {
+/* membrane_bc
+Outputs the boundary condition for the vertical face velocity, uf.n, at the 
+bottom boundary, which matches the velocity of the membrane 
+*/
+    if (x >= MEMBRANE_RADIUS) {
+        return 0.;
+    } else {
+        int k = (int) (x / DELTA_X);
+        return -w_deriv_arr[k];
+    }
+}
 
 void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr) {
 /* output_membrane
