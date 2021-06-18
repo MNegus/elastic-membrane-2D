@@ -20,17 +20,24 @@ MAX_TIMESTEP = 4000;
 for k = 0 : 10 : MAX_TIMESTEP
     t = k * 1e-4;
     for MAX_LEVEL = MAX_LEVELS 
-        % Reads in ws
+        % Membrane plot
         membrane_mat = dlmread(sprintf("%s/max_level_%d/membrane_outputs/w_%d.txt", parent_directory, MAX_LEVEL, k));
-        xs = membrane_mat(:, 1);
-        ws = membrane_mat(:, 2);
+        unsorted_xs = membrane_mat(:, 1);
+        unsorted_ws = membrane_mat(:, 2);
+        [xs, idxs] = sort(unsorted_xs);
+        ws = unsorted_ws(idxs);
+        
         subplot(2, 1, 1);
         plot(xs, ws, 'linewidth', 1.5);
         hold on;
         
+        % Pressure plot
         pressure_mat = dlmread(sprintf("%s/max_level_%d/pressure_outputs/p_%d.txt", parent_directory, MAX_LEVEL, k));
-        xs = pressure_mat(:, 1);
-        ps = pressure_mat(:, 2);
+        unsorted_xs = pressure_mat(:, 1);
+        unsorted_ps = pressure_mat(:, 2);
+        [xs, idxs] = sort(unsorted_xs);
+        ps = unsorted_ps(idxs);
+        
         subplot(2, 1, 2);
         plot(xs, ps, 'linewidth', 1.5);
         hold on;
