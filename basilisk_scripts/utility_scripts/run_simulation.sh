@@ -1,33 +1,28 @@
-#!/bin/bash
-
-# run_simulation.sh
-# Bash script to run a simulation. It takes two inputs:
-# Input 1: Name of the C file (without the .C extension)
-# Input 2: Number of threads to run the simulation on (default 1)
-# It removes any previous outputs, runs the code and then moves the output into 
-# a directory one level up called "raw_data"
-
-# Saves script name, which will also be the name of the directory that the 
-#output gets saved for (crucially this does not contain the .c extension)
 script_name=$1
 
-# Sets the number of OpenMP threads
+rm -r ${script_name}
+mkdir ${script_name}
+
+$BASILISK/qcc -MD -o ${script_name}.s.d ${script_name}.c
+
+# qcc -O2 -fopenmp -c ${script_name}.c 
+qcc -O2 -L$BASILISK/gl -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -c ${script_name}.c 
+
+gcc -O2 -c wave-equation.c 
+
+qcc wave-equation.o ${script_name}.o -O2 -L$BASILISK/gl -llapacke -llapack -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -o ${script_name}/${script_name} -lm
+
+cd ${script_name}
+
 export OMP_NUM_THREADS=$2
 
-# Deletes the previous directory and test files
-rm -r ${script_name}
-rm *.s
-rm *.s.d
-rm *.tests 
-rm *.deps
-rm *.tst
+./${script_name}
 
-# Runs the code using the Makefile
-make ${script_name}.tst 
+# Moves back upwards
+cd ../
 
 # Remove any existing raw data in the parent directory
 rm -r ../raw_data 
 
 # Moves the new data to the parent directory
 mv ${script_name} ../raw_data
-
