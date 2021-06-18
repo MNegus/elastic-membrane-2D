@@ -275,39 +275,27 @@ event movies (t += 1e-3) {
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
         save ("tracer.mp4");
 
-        // /* Movie of the vertical velocity */
-        // clear();
-        // draw_vof("f", lw = 2);
-        // squares("u.x", linear = false, spread = -1, linear = true, map = cool_warm);
-        // mirror ({0,1}) {
-        //     draw_vof("f", lw = 2);
-        //     squares("u.x", linear = false, spread = -1, linear = true, map = cool_warm);
-        // }
-        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        // save ("vertical_vel.mp4");
+        /* Movie of the vertical velocity */
+        clear();
+        draw_vof("f", lw = 2);
+        squares("u.x", linear = false, spread = -1, linear = true, map = cool_warm);
+        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        save ("vertical_vel.mp4");
 
 
-        // /* Movie of the horizontal velocity */
-        // clear();
-        // draw_vof("f", lw = 2);
-        // squares("u.y", linear = false, spread = -1, linear = true, map = cool_warm);
-        // mirror ({0,1}) {
-        //     draw_vof("f", lw = 2);
-        //     squares("u.y", linear = false, spread = -1, linear = true, map = cool_warm);
-        // }
-        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        // save ("horizontal_vel.mp4");
+        /* Movie of the horizontal velocity */
+        clear();
+        draw_vof("f", lw = 2);
+        squares("u.y", linear = false, spread = -1, linear = true, map = cool_warm);
+        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        save ("horizontal_vel.mp4");
 
-        // /* Movie of the pressure */
-        // clear();
-        // draw_vof("f", lw = 2);
-        // squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
-        // mirror ({0,1}) {
-        //     draw_vof("f", lw = 2);
-        //     squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
-        // }
-        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        // save ("pressure.mp4");
+        /* Movie of the pressure */
+        clear();
+        draw_vof("f", lw = 2);
+        squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        save ("pressure.mp4");
 
         // /* Zoomed in view of pressure around entrapped bubble */
         // // Set up bview box
