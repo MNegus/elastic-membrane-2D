@@ -1,5 +1,4 @@
-/* Function definitions */
-
+/* wave-equation.h */
 
 void initialise_membrane(double *w_previous, double *w, double *w_deriv, 
     double *p_previous, double *p, double *p_next, int N_MEMBRANE,  

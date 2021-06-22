@@ -13,8 +13,9 @@ in the following way
     (w_n^(k-1) - 2 w_n^k + w_n^(k+1))/(DELTA_T^2) \
         = L_n^(k-1) / 4 + L_n^k / 2 + L_n^(k+1) / 4,
 which is in theory an implicit, second-order in time and space discretisation. 
-For our application of the wave equation, where L = c^2 w_xx, we are left with a
-matrix equation
+For our application of the wave equation, where 
+    L = (1 / ALPHA) * (BETA w_xx + p(x, t)), 
+and we are left with a matrix equation
     A W^(k+1) = B W^(k) - A W^(k-1),
 where A and B are tri-diagonal matrices, which we solve using LAPACK's dgbsv
 subroutine for solving banded matrix systems.
