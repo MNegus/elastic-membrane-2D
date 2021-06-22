@@ -19,7 +19,8 @@
 #include "view.h" // Creating movies using bview
 #include "tension.h" // Surface tension of droplet
 #include "tag.h" // For removing small droplets
-#include "wave-equation.h" // For solving the wave equation
+// #include "wave-equation.h" // For solving the wave equation
+#include "membrane-equation.h"
 #include <omp.h> // For openMP parallel
 #include <stdlib.h>
 
@@ -197,8 +198,10 @@ event update_membrane(t += DELTA_T) {
             start_membrane = 1; // Indicates membrane motion has started
 
             // Initialises w and w_deriv
+            // initialise_membrane(w_previous, w, w_deriv, p_previous_arr, p_arr, \
+            //     p_next_arr, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA);
             initialise_membrane(w_previous, w, w_deriv, p_previous_arr, p_arr, \
-                p_next_arr, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA);
+                p_next_arr, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA, GAMMA);
         } else {
             /* Solve membrane equation to determine w_next */
             membrane_timestep(w_previous, w, w_next, w_deriv, p_previous_arr, \
@@ -225,8 +228,8 @@ event update_membrane(t += DELTA_T) {
 event output_data (t += LOG_OUTPUT_TIMESTEP) {
 /* Outputs data about the flow */
     /* Outputs data to log file */
-    // fprintf(stderr, \
-    //     "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
+    fprintf(stderr, \
+        "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
     
     FILE *logfile = fopen("log", "a");
     fprintf(logfile, "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
@@ -275,20 +278,20 @@ event movies (t += 1e-3) {
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
         save ("tracer.mp4");
 
-        /* Movie of the vertical velocity */
+        /* Movie of the horiztonal velocity */
         clear();
         draw_vof("f", lw = 2);
         squares("u.x", linear = false, spread = -1, linear = true, map = cool_warm);
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("vertical_vel.mp4");
+        save ("horizontal_vel.mp4");
 
 
-        /* Movie of the horizontal velocity */
+        /* Movie of the vertical velocity */
         clear();
         draw_vof("f", lw = 2);
         squares("u.y", linear = false, spread = -1, linear = true, map = cool_warm);
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("horizontal_vel.mp4");
+        save ("vertical_vel.mp4");
 
         /* Movie of the pressure */
         clear();
