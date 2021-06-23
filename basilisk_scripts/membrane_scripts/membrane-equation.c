@@ -32,7 +32,7 @@ Author: Michael Negus
 
 /* Global variables */
 // Finite-difference parameters
-double DELTA_X, Calpha, Cbeta, Cpressure; 
+double DELTA_X, Cpressure; 
 int M; // Size of matrix 
 
 // LAPACK parameters
@@ -51,15 +51,19 @@ relevant parameters and pressure arrays as input.
 */
 
     // Checks if GAMMA == 0, in which case use wave-equation.c
-    if (GAMMA == 0) {
-        fprintf(stderr, "Error: GAMMA == 0. Use wave-equation.c instead\n");
-        exit(1);
-    }
+    // if (GAMMA == 0) {
+    //     fprintf(stderr, "Error: GAMMA == 0. Use wave-equation.c instead\n");
+    //     exit(1);
+    // }
 
     /* Derived parameters */
     DELTA_X = L / (N_MEMBRANE - 1); // Spatial grid size
     M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
-    Cpressure = pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
+    if (GAMMA == 0) {
+        Cpressure = DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure;
+    } else {
+        Cpressure = pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
+    }
     
     /* LAPACKE constants */
     info; // Output for the dgbsv LAPACKE subroutine
@@ -69,7 +73,7 @@ relevant parameters and pressure arrays as input.
     ldb = 1; // Leading dimension of the right-hand side vector
     if (GAMMA == 0) {
         kl = 1; // Number of sub-diagonals
-        ku = 1; // Number of super-diagonals
+        ku = 1; // Number of super-diagonals        
     } else {
         kl = 2; // Number of sub-diagonals
         ku = 2; // Number of super-diagonals
@@ -81,8 +85,12 @@ relevant parameters and pressure arrays as input.
     B_static = malloc(M * noRows * sizeof(double)); // Used for matrix multiplication
 
     /* Initialise coefficient matrices depending on value of GAMMA */
-    initialise_coefficient_matrices(A_static, B_static, DELTA_X, DELTA_T, 
-        M, noRows, ALPHA, BETA, GAMMA);
+    initialise_coefficient_matrices(DELTA_T, ALPHA, BETA, GAMMA);
+
+    // for (int k = 0; k < M * noRows; k++) {
+    //     fprintf(stderr, "A_static[%d] = %g\n", k, A_static[k]);
+    //     fprintf(stderr, "B_static[%d] = %g\n", k, B_static[k]);
+    // }
 
     /* Initialise arrays */
     A = malloc(M * noRows * sizeof(double)); // Coefficient matrix
@@ -161,8 +169,7 @@ the value of w_next.
 } 
 
 
-void initialise_coefficient_matrices(double *A_static, double *B_static, 
-    int M, int noRows, double DELTA_X, double DELTA_T, \
+void initialise_coefficient_matrices(double DELTA_T, \
     double ALPHA, double BETA, double GAMMA) {
 /* initialise_coefficient_matrices
 Function to initialise the coefficient matrices A_static and B_static, which 
@@ -178,9 +185,32 @@ matrices with 2 sub- and super-diagonals to solve the full membrane equation.
     }
 
     if (GAMMA == 0) {
-        fprintf(stderr, "Error: GAMMA == 0. Use wave-equation.c instead\n");
-        exit(1);
+        /* GAMMA == 0 case, with 1 sub- and super-diagonal */
+
+        // Beta-dependent scaling parameters
+        double Dbeta2 = (ALPHA * DELTA_X * DELTA_X) / (BETA * DELTA_T * DELTA_T);
+        // Stores upper diagonal in second row
+        int colNum = 1;
+        A_static[M + colNum] = -0.5;
+        B_static[M + colNum] = 1;
+        for (colNum = 2; colNum < M; colNum++) {
+            A_static[M + colNum] = -0.25;
+            B_static[M + colNum] = 0.5;
+        }
+
+        // Stores main diagonal in third row
+        for (colNum = 0; colNum < M; colNum++) {
+            A_static[2 * M + colNum] = Dbeta2 + 0.5;
+            B_static[2 * M + colNum] = 2 * Dbeta2 - 1;
+        }
+
+        // Stores lower diagonal in fourth row
+        for (colNum = 0; colNum < M - 1; colNum++) {
+            A_static[3 * M + colNum] = -0.25;
+            B_static[3 * M + colNum] = 0.5;
+        }
     } else {
+        /* GAMMA > 0 case, with 2 sub- and super-diagonals */
         // Gamma-dependent scaling parameters
         double Calpha = ALPHA * pow(DELTA_X, 4) / (GAMMA * pow(DELTA_T, 2));
         double Cbeta = BETA * pow(DELTA_X, 2) / GAMMA;
@@ -240,7 +270,7 @@ matrices with 2 sub- and super-diagonals to solve the full membrane equation.
         for (int colNum = 0; colNum < M - 2; colNum++) {
             A_static[6 * M + colNum] = 1;
             B_static[6 * M + colNum] = -2;
-        }
+        }        
     }
 }
 
@@ -260,8 +290,8 @@ ADD = 1, then this adds scale * matrix_arr * x_arr to y
         double y_val = 0;
 
         // Loop over the appropriate diagonals
-        for (int j = fmax(k - 2, 0); j <= fmin(k + 2, M - 1); j++) {
-            y_val += matrix_arr[(4 + k - j) * M + j] * x_arr[j];
+        for (int j = fmax(k - kl, 0); j <= fmin(k + ku, M - 1); j++) {
+            y_val += matrix_arr[(2 * kl + k - j) * M + j] * x_arr[j];
         }
         y_arr[k] = ADD * y_arr[k] + scale * y_val;
     }
