@@ -7,6 +7,10 @@ void initialise_membrane(double *w_previous, double *w, double *w_deriv,
 
 void multiply_matrix(double *y_arr, double *matrix_arr, double *x_arr, double scale, int ADD);
 
+void initialise_coefficient_matrices(double *A_static, double *B_static, 
+    int M, int noRows, double DELTA_X, double DELTA_T, \
+    double ALPHA, double BETA, double GAMMA);
+
 
 void membrane_timestep(double *w_previous, double *w, double *w_next, 
     double *w_deriv, double *p_previous, double *p, double *p_next, 
