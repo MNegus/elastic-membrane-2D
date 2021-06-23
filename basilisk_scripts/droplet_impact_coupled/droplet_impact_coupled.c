@@ -19,8 +19,7 @@
 #include "view.h" // Creating movies using bview
 #include "tension.h" // Surface tension of droplet
 #include "tag.h" // For removing small droplets
-// #include "wave-equation.h" // For solving the wave equation
-#include "membrane-equation.h"
+#include "membrane-equation.h" // For solving the membrane equation
 #include <omp.h> // For openMP parallel
 #include <stdlib.h>
 
@@ -198,8 +197,6 @@ event update_membrane(t += DELTA_T) {
             start_membrane = 1; // Indicates membrane motion has started
 
             // Initialises w and w_deriv
-            // initialise_membrane(w_previous, w, w_deriv, p_previous_arr, p_arr, \
-            //     p_next_arr, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA);
             initialise_membrane(w_previous, w, w_deriv, p_previous_arr, p_arr, \
                 p_next_arr, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA, GAMMA);
         } else {
@@ -267,8 +264,6 @@ event movies (t += 1e-3) {
 
         /* Zoomed out view */
         // Set up bview box
-        // view (width = 1024, height = 1024, fov = 18.0, ty = -0.4, \
-        //     quat = {0, 0, -0.707, 0.707});
         view (width = 1024, height = 1024, fov = 12.0, ty = -0.31, tx = -0.31);
 
         /* Movie of the volume fraction of the droplet */
@@ -300,20 +295,22 @@ event movies (t += 1e-3) {
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
         save ("pressure.mp4");
 
-        // /* Zoomed in view of pressure around entrapped bubble */
-        // // Set up bview box
-        // view (width = 1024, height = 1024, fov = 5.0, ty = -0.1, \
-        //     quat = {0, 0, -0.707, 0.707});
+        /* Zoomed in view of pressure around entrapped bubble */
+        /*
+        // Set up bview box
+        view (width = 1024, height = 1024, fov = 5.0, ty = -0.1, \
+            quat = {0, 0, -0.707, 0.707});
 
-        // clear();
-        // draw_vof("f", lw = 2);
-        // squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
-        // mirror ({0,1}) {
-        //     draw_vof("f", lw = 2);
-        //     squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
-        // }
-        // draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        // save ("zoomed_pressure.mp4");
+        clear();
+        draw_vof("f", lw = 2);
+        squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        mirror ({0,1}) {
+            draw_vof("f", lw = 2);
+            squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        }
+        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+        save ("zoomed_pressure.mp4");
+        */
     }
 }
 
@@ -323,8 +320,8 @@ event end (t = MAX_TIME) {
 
     end_wall_time = omp_get_wtime(); // Records the time of finish
 
-    // fprintf(stderr, "Finished after %g seconds\n", \
-    //     end_wall_time - start_wall_time);
+    fprintf(stderr, "Finished after %g seconds\n", \
+        end_wall_time - start_wall_time);
     FILE *logfile = fopen("log", "a");
     fprintf(logfile, "Finished after %g seconds\n", end_wall_time - start_wall_time);
     fclose(logfile);

@@ -32,7 +32,7 @@ Author: Michael Negus
 
 /* Global variables */
 // Finite-difference parameters
-double DELTA_X, Calpha, Cbeta, Cpressure; 
+double DELTA_X, Cpressure; 
 int M; // Size of matrix 
 
 // LAPACK parameters
@@ -51,94 +51,46 @@ relevant parameters and pressure arrays as input.
 */
 
     // Checks if GAMMA == 0, in which case use wave-equation.c
-    if (GAMMA == 0) {
-        fprintf(stderr, "Error: GAMMA == 0. Use wave-equation.c instead\n");
-        exit(1);
-    }
+    // if (GAMMA == 0) {
+    //     fprintf(stderr, "Error: GAMMA == 0. Use wave-equation.c instead\n");
+    //     exit(1);
+    // }
 
     /* Derived parameters */
     DELTA_X = L / (N_MEMBRANE - 1); // Spatial grid size
-    Calpha = ALPHA * pow(DELTA_X, 4) / (GAMMA * pow(DELTA_T, 2));
-    Cbeta = BETA * pow(DELTA_X, 2) / GAMMA;
-    Cpressure = pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
     M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
-
+    if (GAMMA == 0) {
+        Cpressure = DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure;
+    } else {
+        Cpressure = pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
+    }
+    
     /* LAPACKE constants */
     info; // Output for the dgbsv LAPACKE subroutine
     ipiv = malloc(M * sizeof(int)); // Pivot array for dgbsv
-    kl = 2; // Number of sub-diagonals
-    ku = 2; // Number of super-diagonals
     nrhs = 1; // Number of right-hand side vectors
     ldab = M; // Leading dimension of A
     ldb = 1; // Leading dimension of the right-hand side vector
+    if (GAMMA == 0) {
+        kl = 1; // Number of sub-diagonals
+        ku = 1; // Number of super-diagonals        
+    } else {
+        kl = 2; // Number of sub-diagonals
+        ku = 2; // Number of super-diagonals
+    }
     noRows = 2 * kl + ku + 1; // Number of rows in coefficient matrix
 
-    /* Initialise coefficient matrices */
+    /* Allocate memory for coefficient matrices */
     A_static = malloc(M * noRows * sizeof(double)); // Used for dgbsv
     B_static = malloc(M * noRows * sizeof(double)); // Used for matrix multiplication
 
-    // Set all entries to zero to start
-    for (int k = 0; k < M * noRows; k++) {
-        A_static[k] = 0;
-        B_static[k] = 0;
-    }
+    /* Initialise coefficient matrices depending on value of GAMMA */
+    initialise_coefficient_matrices(DELTA_T, ALPHA, BETA, GAMMA);
 
-    // Stores upper-upper-diagonal in third row
-    for (int colNum = 2; colNum < M; colNum++) {
-        double A_value, B_value;
-        if (colNum == 2) {
-            A_value = 2;
-            B_value = -4;
-        } else {
-            A_value = 1;
-            B_value = -2;
-        }
-        A_static[2 * M + colNum] = A_value;
-        B_static[2 * M + colNum] = B_value;
-    }
-
-    // Stores upper-diagonal in fourth row
-    for (int colNum = 1; colNum < M; colNum++) {
-        double A_value, B_value;
-        if (colNum == 1) {
-            A_value = -2 * Cbeta - 8;
-            B_value = 4 * Cbeta + 16;
-        } else {
-            A_value = -Cbeta - 4;
-            B_value = 2 * Cbeta + 8;
-        }
-        A_static[3 * M + colNum] = A_value;
-        B_static[3 * M + colNum] = B_value;
-    }
-
-    // Stores main diagonal in fifth row
-    for (int colNum = 0; colNum < M; colNum++) {
-        double A_value, B_value;
-        if (colNum == 1) {
-            A_value = 4 * Calpha + 2 * Cbeta + 7;
-            B_value = 8 * Calpha - 4 * Cbeta - 14; 
-        } else if (colNum == M - 1) {
-            A_value = 4 * Calpha + 2 * Cbeta + 5;
-            B_value = 8 * Calpha - 4 * Cbeta - 10; 
-        } else {
-            A_value = 4 * Calpha + 2 * Cbeta + 6;
-            B_value = 8 * Calpha - 4 * Cbeta - 12; 
-        }
-        A_static[4 * M + colNum] = A_value;
-        B_static[4 * M + colNum] = B_value;
-    }
-
-    // Stores lower-diagonal in sixth row
-    for (int colNum = 0; colNum < M - 1; colNum++) {
-        A_static[5 * M + colNum] = - Cbeta - 4;
-        B_static[5 * M + colNum] = 2 * Cbeta + 8;
-    }
-
-    // Stores lower-lower diagonal in seventh row
-    for (int colNum = 0; colNum < M - 2; colNum++) {
-        A_static[6 * M + colNum] = 1;
-        B_static[6 * M + colNum] = -2;
-    }
+    // for (int k = 0; k < M * noRows; k++) {
+    //     fprintf(stderr, "A_static[%d] = %g\n", k, A_static[k]);
+    //     fprintf(stderr, "B_static[%d] = %g\n", k, B_static[k]);
+    // }
 
     /* Initialise arrays */
     A = malloc(M * noRows * sizeof(double)); // Coefficient matrix
@@ -217,6 +169,112 @@ the value of w_next.
 } 
 
 
+void initialise_coefficient_matrices(double DELTA_T, \
+    double ALPHA, double BETA, double GAMMA) {
+/* initialise_coefficient_matrices
+Function to initialise the coefficient matrices A_static and B_static, which 
+are used when solving the membrane equation. If GAMMA == 0, then these will be
+tri-diagonal matrices to solve the wave equation, else, they will be banded 
+matrices with 2 sub- and super-diagonals to solve the full membrane equation. 
+*/
+
+    // Set all entries to zero to start
+    for (int k = 0; k < M * noRows; k++) {
+        A_static[k] = 0;
+        B_static[k] = 0;
+    }
+
+    if (GAMMA == 0) {
+        /* GAMMA == 0 case, with 1 sub- and super-diagonal */
+
+        // Beta-dependent scaling parameters
+        double Dbeta2 = (ALPHA * DELTA_X * DELTA_X) / (BETA * DELTA_T * DELTA_T);
+        // Stores upper diagonal in second row
+        int colNum = 1;
+        A_static[M + colNum] = -0.5;
+        B_static[M + colNum] = 1;
+        for (colNum = 2; colNum < M; colNum++) {
+            A_static[M + colNum] = -0.25;
+            B_static[M + colNum] = 0.5;
+        }
+
+        // Stores main diagonal in third row
+        for (colNum = 0; colNum < M; colNum++) {
+            A_static[2 * M + colNum] = Dbeta2 + 0.5;
+            B_static[2 * M + colNum] = 2 * Dbeta2 - 1;
+        }
+
+        // Stores lower diagonal in fourth row
+        for (colNum = 0; colNum < M - 1; colNum++) {
+            A_static[3 * M + colNum] = -0.25;
+            B_static[3 * M + colNum] = 0.5;
+        }
+    } else {
+        /* GAMMA > 0 case, with 2 sub- and super-diagonals */
+        // Gamma-dependent scaling parameters
+        double Calpha = ALPHA * pow(DELTA_X, 4) / (GAMMA * pow(DELTA_T, 2));
+        double Cbeta = BETA * pow(DELTA_X, 2) / GAMMA;
+
+        // Stores upper-upper-diagonal in third row
+        for (int colNum = 2; colNum < M; colNum++) {
+            double A_value, B_value;
+            if (colNum == 2) {
+                A_value = 2;
+                B_value = -4;
+            } else {
+                A_value = 1;
+                B_value = -2;
+            }
+            A_static[2 * M + colNum] = A_value;
+            B_static[2 * M + colNum] = B_value;
+        }
+
+        // Stores upper-diagonal in fourth row
+        for (int colNum = 1; colNum < M; colNum++) {
+            double A_value, B_value;
+            if (colNum == 1) {
+                A_value = -2 * Cbeta - 8;
+                B_value = 4 * Cbeta + 16;
+            } else {
+                A_value = -Cbeta - 4;
+                B_value = 2 * Cbeta + 8;
+            }
+            A_static[3 * M + colNum] = A_value;
+            B_static[3 * M + colNum] = B_value;
+        }
+
+        // Stores main diagonal in fifth row
+        for (int colNum = 0; colNum < M; colNum++) {
+            double A_value, B_value;
+            if (colNum == 1) {
+                A_value = 4 * Calpha + 2 * Cbeta + 7;
+                B_value = 8 * Calpha - 4 * Cbeta - 14; 
+            } else if (colNum == M - 1) {
+                A_value = 4 * Calpha + 2 * Cbeta + 5;
+                B_value = 8 * Calpha - 4 * Cbeta - 10; 
+            } else {
+                A_value = 4 * Calpha + 2 * Cbeta + 6;
+                B_value = 8 * Calpha - 4 * Cbeta - 12; 
+            }
+            A_static[4 * M + colNum] = A_value;
+            B_static[4 * M + colNum] = B_value;
+        }
+
+        // Stores lower-diagonal in sixth row
+        for (int colNum = 0; colNum < M - 1; colNum++) {
+            A_static[5 * M + colNum] = - Cbeta - 4;
+            B_static[5 * M + colNum] = 2 * Cbeta + 8;
+        }
+
+        // Stores lower-lower diagonal in seventh row
+        for (int colNum = 0; colNum < M - 2; colNum++) {
+            A_static[6 * M + colNum] = 1;
+            B_static[6 * M + colNum] = -2;
+        }        
+    }
+}
+
+
 void multiply_matrix(double *y_arr, double *matrix_arr, double *x_arr, \
     double scale, int ADD) {
 /* multiply_matrix
@@ -232,8 +290,8 @@ ADD = 1, then this adds scale * matrix_arr * x_arr to y
         double y_val = 0;
 
         // Loop over the appropriate diagonals
-        for (int j = fmax(k - 2, 0); j <= fmin(k + 2, M - 1); j++) {
-            y_val += matrix_arr[(4 + k - j) * M + j] * x_arr[j];
+        for (int j = fmax(k - kl, 0); j <= fmin(k + ku, M - 1); j++) {
+            y_val += matrix_arr[(2 * kl + k - j) * M + j] * x_arr[j];
         }
         y_arr[k] = ADD * y_arr[k] + scale * y_val;
     }
