@@ -6,11 +6,11 @@ clear;
 
 parent_directory = "~/scratch/gamma_varying";
 MAX_TIMESTEP = 4000;
-GAMMAS = [0, 1, 2];
+GAMMAS = [0, 0.1, 1, 2];
 
 %% Coupled-decoupled compare
 
-legend_entries = ["Gamma = 0", "Gamma = 1", "Gamma = 2"];
+legend_entries = ["Gamma = 0", "Gamma = 0.1", "Gamma = 1", "Gamma = 2"];
 writerobj = VideoWriter("gamma_compare.avi");
 open(writerobj);
 for k = 0 : 20 : MAX_TIMESTEP
@@ -19,7 +19,7 @@ for k = 0 : 20 : MAX_TIMESTEP
 
     % Loops over two cases
     for gamma = GAMMAS
-        directory = sprintf("%s/gamma_%d", parent_directory, gamma);
+        directory = sprintf("%s/gamma_%g", parent_directory, gamma);
         
         % Membrane plot
         membrane_mat = dlmread(sprintf("%s/membrane_outputs/w_%d.txt", directory, k));
