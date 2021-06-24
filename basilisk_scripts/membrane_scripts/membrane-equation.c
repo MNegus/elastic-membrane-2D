@@ -62,7 +62,7 @@ relevant parameters and pressure arrays as input.
     if (GAMMA == 0) {
         Cpressure = DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure;
     } else {
-        Cpressure = pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
+        Cpressure = 4 * pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
     }
     
     /* LAPACKE constants */
