@@ -1,17 +1,17 @@
-%% gamma_compare.m
+%% beta_compare.m
 % Compares a case with bending stiffness to one without
 
 % close all
 clear;
 
-parent_directory = "/home/michael/scratch/initial_membrane_tests/beta_0_gamma_varying";
+parent_directory = "/home/michael/scratch/initial_membrane_tests/gamma_2_beta_varying_wrong_scaling";
 MAX_TIMESTEP = 4000;
-GAMMAS = [0.01, 0.1, 1, 10, 100];
+BETAS = [0.01, 0.1, 1, 10, 100];
 
 %% Coupled-decoupled compare
 
-legend_entries = ["gamma = 0.01", "gamma = 0.1", "gamma = 1", "gamma = 10", "gamma = 100"];
-writerobj = VideoWriter("gamma_compare_beta_0.avi");
+legend_entries = ["beta = 0.01", "beta = 0.1", "beta = 1", "beta = 10", "beta = 100"];
+writerobj = VideoWriter("beta_compare_gamma_2.avi");
 open(writerobj);
 for k = 0 : 20 : MAX_TIMESTEP
     t = k * 1e-4;
@@ -20,8 +20,8 @@ for k = 0 : 20 : MAX_TIMESTEP
     % Loops over two cases
     w_max = 0;
     w_min = 1e5;
-    for gamma = GAMMAS
-        directory = sprintf("%s/gamma_%g", parent_directory, gamma);
+    for beta = BETAS
+        directory = sprintf("%s/beta_%g", parent_directory, beta);
         
         % Membrane plot
         membrane_mat = dlmread(sprintf("%s/membrane_outputs/w_%d.txt", directory, k));
@@ -82,4 +82,5 @@ for k = 0 : 20 : MAX_TIMESTEP
     pause(0.01);
 end
 close(writerobj);
+
 
