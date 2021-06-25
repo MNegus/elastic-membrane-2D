@@ -39,6 +39,7 @@ double *w_previous, *w, *w_next, *w_deriv; // Membrane position arrays
 double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
 
 /* Global variables */
+int impact = 0; // Sets to 1 once impact has happened
 double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
 int gfs_output_no = 0; // Records how many GFS files have been outputted
@@ -172,6 +173,7 @@ event small_droplet_removal (i++) {
     remove_droplets(f, remove_droplet_radius, 1e-4, true);
 }
 
+
 event update_membrane(t += DELTA_T) {
 /* Updates the membrane arrays by solving the membrane equation, and outputs*/
 
@@ -182,11 +184,40 @@ event update_membrane(t += DELTA_T) {
     p_arr = p_next_arr;
     p_next_arr = temp1;
 
-    // Fills pressure in from boundary nodes
+    /* Checks if we have impacted yet, which is defined to be when the first 
+    time a cell with f[] = 1 is found on the boundary. If so, then finds the 
+    furthest-right cell to which f > 0, and then saves the value of the pressure
+    one cell to the right of it. This will then be used as the value of pressure
+    for any cells where 0 < f < 1. */
+
+    double x_f_max = 0.0; // x value of furthest cell to the right with f > 0
+    double p_f_max = 0; // Value of p one cell to the right of x_f_max
+    foreach_boundary(bottom) {
+        // Set impact = 1 if this is the first time we have detected f[] == 1
+        if ((impact == 0) && (f[] == 1)) {
+            impact = 1; // 
+        }
+
+        if ((impact) && (f[] > 0) && (x > x_f_max)) {
+            // If post-impact, then update the value of x_f_max and p_f_max
+            x_f_max = x;
+            p_f_max = p[1, 0];
+        }
+    }
+
+    /* Fills pressure in from boundary nodes. If 0 < f[] < 1, then instead of
+    reading the pressure, we save it as p_f_max */
     foreach_boundary(bottom) {
         if (x <= MEMBRANE_RADIUS) {
             int k = (int) (x / DELTA_X);
-            p_next_arr[k] = p[];
+
+            if ((impact) &&(f[] > 0) && (f[] < 1)) {
+                // In post-impact, set mixed cells to have p = p_f_max
+                p_next_arr[k] = p_f_max;
+            } else {
+                // Else just set the value to be the read pressure
+                p_next_arr[k] = p[];
+            }
         }
     }
 
@@ -244,6 +275,7 @@ event output_data (t += LOG_OUTPUT_TIMESTEP) {
 
     log_output_no++;
 }
+
 
 event gfs_output (t += GFS_OUTPUT_TIMESTEP) {
 /* Saves a gfs file */
