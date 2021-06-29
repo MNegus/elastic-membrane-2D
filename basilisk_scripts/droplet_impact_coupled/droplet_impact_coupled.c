@@ -19,6 +19,7 @@
 #include "view.h" // Creating movies using bview
 #include "tension.h" // Surface tension of droplet
 #include "tag.h" // For removing small droplets
+#include "heights.h"
 #include "membrane-equation.h" // For solving the membrane equation
 #include <omp.h> // For openMP parallel
 #include <stdlib.h>
@@ -68,6 +69,9 @@ u.n[right] = neumann(0.); // Allows outflow through boundary
 p[right] = dirichlet(0.); // 0 pressure far from surface
 
 
+/* Field definitions */
+vector h[]; // Height function field
+
 int main() {
 /* Main function for running the simulation */
 
@@ -104,6 +108,12 @@ int main() {
     /* Creates log file */
     FILE *logfile = fopen("log", "w");
     fclose(logfile);
+
+    /* Poisson solver constants */
+    // DT = 1.0e-4; // Minimum timestep
+    // NITERMIN = 1; // Min number of iterations (default 1)
+    // NITERMAX = 300; // Max number of iterations (default 100)
+    // TOLERANCE = 1e-6; // Possion solver tolerance (default 1e-3)
 
     /* Runs the simulation */
     run(); 
@@ -166,11 +176,11 @@ event small_droplet_removal (i++) {
     a specific size */
     // Removes droplets of diameter 5 cells or less
     int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
-    // int remove_droplet_radius = (int)(0.25 / MIN_CELL_SIZE);
     remove_droplets(f, remove_droplet_radius);
 
     // Also remove air bubbles
     remove_droplets(f, remove_droplet_radius, 1e-4, true);
+    
 }
 
 
@@ -190,36 +200,144 @@ event update_membrane(t += DELTA_T) {
     one cell to the right of it. This will then be used as the value of pressure
     for any cells where 0 < f < 1. */
 
-    double x_f_max = 0.0; // x value of furthest cell to the right with f > 0
-    double p_f_max = 0; // Value of p one cell to the right of x_f_max
-    foreach_boundary(bottom) {
-        // Set impact = 1 if this is the first time we have detected f[] == 1
-        if ((impact == 0) && (f[] == 1)) {
-            impact = 1; // 
-        }
-
-        if ((impact) && (f[] > 0) && (x > x_f_max)) {
-            // If post-impact, then update the value of x_f_max and p_f_max
-            x_f_max = x;
-            p_f_max = p[1, 0];
-        }
-    }
-
-    /* Fills pressure in from boundary nodes. If 0 < f[] < 1, then instead of
-    reading the pressure, we save it as p_f_max */
-    foreach_boundary(bottom) {
-        if (x <= MEMBRANE_RADIUS) {
-            int k = (int) (x / DELTA_X);
-
-            if ((impact) &&(f[] > 0) && (f[] < 1)) {
-                // In post-impact, set mixed cells to have p = p_f_max
-                p_next_arr[k] = p_f_max;
-            } else {
-                // Else just set the value to be the read pressure
-                p_next_arr[k] = p[];
+    if (impact == 0) {
+        foreach_boundary(bottom) {
+            // Set impact = 1 if this is the first time we have detected f[] == 1
+            if (f[] == 1) {
+                impact = 1;
+                break;
             }
         }
     }
+
+    /* Saves pressure along boundary. Sets pressure to 0 if either:
+        * The boundary cell is mixed (i.e. 0 < f[] < 1)
+        * The height in the y direction at the cell is less than y_min_height 
+        * The height in the x direction at the cell is less than x_min_height
+    */
+    
+    heights(f, h); // Associates h with the heights of f
+
+    foreach_boundary(bottom) {
+        if (x <= MEMBRANE_RADIUS) {
+            int k = (int) (x / DELTA_X); // Index in the pressure array
+
+            // int p_scale = 1; // Set to 0 to set p_next_arr[k] = 0
+            p_next_arr[k] = p[];
+
+            /* Determines value of pressure to save in p_next_arr[k] */
+            if (impact) {
+                if ((f[] > 0) && (f[] < 1)) {
+                    /* If a mixed cell, output 0 */
+                    // p_scale = 0;
+                    p_next_arr[k] = 0.0;
+                } 
+                else {
+                    /* Else, f[] == 0 or 1, and we check the heights */
+
+                    // Check the vertical height, if defined
+                    if (h.y[] != nodata) {
+                        if (height(h.y[]) - 0.5 < y_min_height) {
+                            // If the interface position is less than min_height
+                            // p_scale = 0;
+                            p_next_arr[k] = 0.0;
+                        }
+                    }
+
+                    // Check the horizontal height
+                    if ((k >= x_min_height) && (k <= M - x_min_height)) {
+                        #pragma omp parallel for
+                        for (int q = -x_min_height; q <= x_min_height; q++) {
+                            if ((f[q, 0] < 1) && (f[q, 0] > 0)) {
+                                // p_scale = 0;
+                                p_next_arr[k] = 0.0;
+                                // break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Save pressure value
+            // p_next_arr[k] = p_scale * p[];
+
+            // if (impact == 0) {
+            //     /* Pre-impact, just output the value of p[] */
+            //     p_next_arr[k] = p[];
+            // } else {
+            //     /* Post-impact, apply the filtering */
+
+            //     if ((f[] > 0) && (f[] < 1)) {
+            //         // If a mixed cell, output 0
+            //         p_next_arr[k] = 0.0;
+            //     } else if (h.y[] != nodata) {
+            //         // fprintf(stderr, "h.y[] is not no data, and is equal to %g\n", h.y[]);
+            //         // If not a mixed cell, and height is defined
+            //         if (height(h.y[]) - 0.5 < min_height) {
+            //             // If the interface position is less than min_height
+            //             p_next_arr[k] = 0.0;
+            //             // fprintf(stderr, "Remove: height(h.y[]) - 0.5 = %g, k = %d, x = %g\n", height(h.y[]) - 0.5, k, x);
+            //         } else {
+            //             // Else the interface is high enough
+            //             p_next_arr[k] = p[];
+            //             fprintf(stderr, "Kept: height(h.y[]) - 0.5 = %g, k = %d, x = %g\n", height(h.y[]) - 0.5, k, x);
+            //         }
+            //     } else {
+            //         // Else this is not a mixed cell, and we are far from an interface
+            //         p_next_arr[k] = p[];
+            //     }
+            // }
+        }
+        
+        // if ((h.y[] != nodata)) {
+        //     fprintf(stderr, "x = %g, height(h.y[]) - 0.5 = %g\n", x, height(h.y[]) - 0.5);
+        // }
+    }
+
+    /* Cutoff pressure rule*/
+    // int gas_height_min = 5; 
+    // int liquid_height_min = 4; 
+
+    // int y_height_min = 3;
+    // int x_height_min = 1;
+
+    // foreach_boundary(bottom) {
+    //     if (x <= MEMBRANE_RADIUS) {
+    //         int k = (int) (x / DELTA_X); // Index in the pressure array
+
+    //         // If post-impact, determines the height of the current cell
+    //         if (impact) {
+                
+    //             // Searches for a mixed cell in the y direction
+    //             int y_height = y_height_min;
+    //             for (int q = 0; q < y_height_min; q++) {
+    //                 if ((f[0, q] < 1) && (f[0, q] > 0)) {
+    //                     y_height = q;
+    //                     break;
+    //                 } 
+    //             }
+
+    //             // Searches for a mixed cell in the x direction
+    //             int x_height = x_height_min;
+    //             if (x > x_height_min * MIN_CELL_SIZE) {
+    //                 for (int q = 0; q < x_height_min; q++) {
+    //                     if ((f[-q, 0] < 1) && (f[-q, 0] > 0)) {
+    //                         x_height = q;
+    //                         break;
+    //                     } 
+    //                 }
+    //             }
+
+    //             if ((x_height == x_height_min) && (y_height == y_height_min)) {
+    //                 p_next_arr[k] = p[];
+    //             } else {
+    //                 p_next_arr[k] = 0.0;
+    //             }
+    //         } else {
+    //             p_next_arr[k] = p[];
+    //         }
+    //     }
+    // }
 
     /* Updates membrane position after the start time */
     if (t >= MEMBRANE_START_TIME) {
