@@ -9,6 +9,7 @@ rm -r ${basilisk_script}
 mkdir ${basilisk_script}
 
 # Compiles basilisk_script.c using the desired flags with qcc
+rm ${basilisk_script}.o
 qcc -O2 -L$BASILISK/gl -lglutils -lfb_osmesa -lGLU -lOSMesa -lm -fopenmp -g -Wall -pipe -D_FORTIFY_SOURCE=2 -DDUMBGL -c ${basilisk_script}.c 
 
 # Compiles membrane-equation.c using gcc
