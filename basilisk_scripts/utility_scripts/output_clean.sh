@@ -8,13 +8,13 @@ PARENTDIR=$1 # Parent directory i.e. containing code/ and raw_data/
 
 cd $PARENTDIR
 
-rm -r boundary_outputs
+# rm -r boundary_outputs
 mkdir boundary_outputs # Directory to store boundary output files
 
-rm -r membrane_outputs
+# rm -r membrane_outputs
 mkdir membrane_outputs # Directory to store membrane outputs
 
-rm -r videos
+# rm -r videos
 mkdir videos
 
 # Works out how many boundary_output_*.txt files there are in raw_data/
