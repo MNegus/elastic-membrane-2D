@@ -226,7 +226,7 @@ event update_membrane(t += DELTA_T) {
             p_next_arr[k] = p[];
 
             /* Determines value of pressure to save in p_next_arr[k] */
-            if (impact) {
+            if ((CUTOFF) && (impact)) {
                 if ((f[] > 0) && (f[] < 1)) {
                     /* If a mixed cell, output 0 */
                     // p_scale = 0;
@@ -257,87 +257,8 @@ event update_membrane(t += DELTA_T) {
                     }
                 }
             }
-
-            // Save pressure value
-            // p_next_arr[k] = p_scale * p[];
-
-            // if (impact == 0) {
-            //     /* Pre-impact, just output the value of p[] */
-            //     p_next_arr[k] = p[];
-            // } else {
-            //     /* Post-impact, apply the filtering */
-
-            //     if ((f[] > 0) && (f[] < 1)) {
-            //         // If a mixed cell, output 0
-            //         p_next_arr[k] = 0.0;
-            //     } else if (h.y[] != nodata) {
-            //         // fprintf(stderr, "h.y[] is not no data, and is equal to %g\n", h.y[]);
-            //         // If not a mixed cell, and height is defined
-            //         if (height(h.y[]) - 0.5 < min_height) {
-            //             // If the interface position is less than min_height
-            //             p_next_arr[k] = 0.0;
-            //             // fprintf(stderr, "Remove: height(h.y[]) - 0.5 = %g, k = %d, x = %g\n", height(h.y[]) - 0.5, k, x);
-            //         } else {
-            //             // Else the interface is high enough
-            //             p_next_arr[k] = p[];
-            //             fprintf(stderr, "Kept: height(h.y[]) - 0.5 = %g, k = %d, x = %g\n", height(h.y[]) - 0.5, k, x);
-            //         }
-            //     } else {
-            //         // Else this is not a mixed cell, and we are far from an interface
-            //         p_next_arr[k] = p[];
-            //     }
-            // }
         }
-        
-        // if ((h.y[] != nodata)) {
-        //     fprintf(stderr, "x = %g, height(h.y[]) - 0.5 = %g\n", x, height(h.y[]) - 0.5);
-        // }
     }
-
-    /* Cutoff pressure rule*/
-    // int gas_height_min = 5; 
-    // int liquid_height_min = 4; 
-
-    // int y_height_min = 3;
-    // int x_height_min = 1;
-
-    // foreach_boundary(bottom) {
-    //     if (x <= MEMBRANE_RADIUS) {
-    //         int k = (int) (x / DELTA_X); // Index in the pressure array
-
-    //         // If post-impact, determines the height of the current cell
-    //         if (impact) {
-                
-    //             // Searches for a mixed cell in the y direction
-    //             int y_height = y_height_min;
-    //             for (int q = 0; q < y_height_min; q++) {
-    //                 if ((f[0, q] < 1) && (f[0, q] > 0)) {
-    //                     y_height = q;
-    //                     break;
-    //                 } 
-    //             }
-
-    //             // Searches for a mixed cell in the x direction
-    //             int x_height = x_height_min;
-    //             if (x > x_height_min * MIN_CELL_SIZE) {
-    //                 for (int q = 0; q < x_height_min; q++) {
-    //                     if ((f[-q, 0] < 1) && (f[-q, 0] > 0)) {
-    //                         x_height = q;
-    //                         break;
-    //                     } 
-    //                 }
-    //             }
-
-    //             if ((x_height == x_height_min) && (y_height == y_height_min)) {
-    //                 p_next_arr[k] = p[];
-    //             } else {
-    //                 p_next_arr[k] = 0.0;
-    //             }
-    //         } else {
-    //             p_next_arr[k] = p[];
-    //         }
-    //     }
-    // }
 
     /* Updates membrane position after the start time */
     if (t >= MEMBRANE_START_TIME) {

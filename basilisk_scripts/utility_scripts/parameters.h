@@ -33,5 +33,6 @@ const double LOG_OUTPUT_TIMESTEP = 1e-4; // Time between log outputs
 const double MAX_TIME = 0.2; // Hard maximum time 
 const double MEMBRANE_START_TIME = 1e-3; // Time which to start membrane motion
 const int MOVIES = 0; // Set to 1 if making movies
+const int CUTOFF = 0; // Set to 1 to cutoff the pressure
 const int x_min_height = 2;
 const int y_min_height = 3;
