@@ -93,8 +93,14 @@ int main() {
     IMPACT_TIME = INITIAL_DROP_HEIGHT / (-DROP_VEL); // Theoretical impact time
     MEMBRANE_REFINE_NO = 8; // Number of cells above membrane to refine by
     MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
-    M = (int) floor(pow(2, MAXLEVEL) * MEMBRANE_RADIUS / BOX_WIDTH);
-    DELTA_X = MEMBRANE_RADIUS / M;
+
+    /* Membrane constants */
+    // Number of grid points, depending on MAXLEVEL and FD_COARSEN_LEVEL
+    // M = (int) floor(pow(2, MAXLEVEL) * MEMBRANE_RADIUS / (BOX_WIDTH * pow(2, FD_COARSEN_LEVEL)));
+    // DELTA_X = MEMBRANE_RADIUS / M;
+    DELTA_X = MIN_CELL_SIZE * pow(2, FD_COARSEN_LEVEL);
+    M = (int) floor(MEMBRANE_RADIUS / DELTA_X) + 1;
+    fprintf(stderr, "M = %d, MEMBRANE_RADIUS / DELTA_X = %g\n", M, MEMBRANE_RADIUS / DELTA_X);
 
     /* Define membrane arrays */
     w_previous = malloc(M * sizeof(double)); // w at previous timestep
@@ -147,6 +153,16 @@ event init(t = 0) {
         w_deriv[k] = 0.0;
         p_previous_arr[k] = 0.0;
         p_arr[k] = 0.0;
+    }
+
+    // TEST OUTPUT
+    foreach_boundary(bottom) {
+        if (x > MEMBRANE_RADIUS) continue;
+        double fractpart, intpart;
+        fractpart = modf((x - 0.5 * MIN_CELL_SIZE) / DELTA_X, &intpart);
+        int k = (int) intpart;
+
+        fprintf(stderr, "x = %g, (x - 0.5 * MIN_CELL_SIZE) / DELTA_X = %g, intpart = %.10f, fractpart = %.10f, (fractpart == 0) = %d, k = %d\n", x, x / DELTA_X - 0.5, intpart, fractpart, (fractpart == 0), k);
     }
 }
 
@@ -215,47 +231,56 @@ event update_membrane(t += DELTA_T) {
         * The height in the y direction at the cell is less than y_min_height 
         * The height in the x direction at the cell is less than x_min_height
     */
-    
     heights(f, h); // Associates h with the heights of f
 
+    // Iterates over bottom boundary
     foreach_boundary(bottom) {
-        if (x <= MEMBRANE_RADIUS) {
-            int k = (int) (x / DELTA_X); // Index in the pressure array
 
-            // int p_scale = 1; // Set to 0 to set p_next_arr[k] = 0
-            p_next_arr[k] = p[];
+        // Skip if x is not above the membrane
+        if (x > MEMBRANE_RADIUS) continue;
 
-            /* Determines value of pressure to save in p_next_arr[k] */
-            if ((CUTOFF) && (impact)) {
-                if ((f[] > 0) && (f[] < 1)) {
-                    /* If a mixed cell, output 0 */
+        // Determines index in array
+        double fractpart, intpart;
+        fractpart = modf((x - 0.5 * MIN_CELL_SIZE) / DELTA_X, &intpart);
+        fprintf(stderr, "x = %g, (x - 0.5 * MIN_CELL_SIZE) / DELTA_X = %g,  fractpart = %g, intpart = %g\n", x, (x - 0.5 * MIN_CELL_SIZE) / DELTA_X, fractpart, intpart);
+        if (fractpart > 1e-5) continue;
+        fprintf(stderr, "Made it here at t = %g\n", t);
+        int k = (int) intpart;
+
+        // Initially fills p_next_arr[k] with the current value of pressure
+        p_next_arr[k] = p[];
+
+        // If we are pre-impact or are not doing a cutoff, then continue in loop
+        if ((CUTOFF == 0) || (impact == 0)) continue;
+
+        /* Implements cutoff */
+        if ((f[] > 0) && (f[] < 1)) {
+            /* If a mixed cell, output 0 */
+            // p_scale = 0;
+            p_next_arr[k] = 0.0;
+        } else {
+            /* Else, f[] == 0 or 1, and we check the heights */
+
+            // Check the vertical height, if defined
+            if (h.y[] != nodata) {
+                if (height(h.y[]) - 0.5 < y_min_height) {
+                    // If the interface position is less than min_height
                     // p_scale = 0;
                     p_next_arr[k] = 0.0;
-                } 
-                else {
-                    /* Else, f[] == 0 or 1, and we check the heights */
-
-                    // Check the vertical height, if defined
-                    if (h.y[] != nodata) {
-                        if (height(h.y[]) - 0.5 < y_min_height) {
-                            // If the interface position is less than min_height
-                            // p_scale = 0;
-                            p_next_arr[k] = 0.0;
-                        }
-                    }
-
-                    // Check the horizontal height
-                    if ((k >= x_min_height) && (k <= M - x_min_height)) {
-                        #pragma omp parallel for
-                        for (int q = -x_min_height; q <= x_min_height; q++) {
-                            if ((f[q, 0] < 1) && (f[q, 0] > 0)) {
-                                // p_scale = 0;
-                                p_next_arr[k] = 0.0;
-                                // break;
-                            }
-                        }
-                    }
                 }
+            }
+
+            // If too close to the edges, then skip the x cutoff
+            if ((k < x_min_height) && (k > M - x_min_height)) continue;
+
+            // x cutoff procedure
+            #pragma omp parallel for
+            for (int q = -x_min_height; q <= x_min_height; q++) {
+                // Does not cutoff a non-mixed cell
+                if ((f[q, 0] == 1) || (f[q, 0] == 0)) continue;
+                
+                // If a mixed cell is detected then set p_next_arr[k] = 0
+                p_next_arr[k] = 0.0;
             }
         }
     }
@@ -399,6 +424,7 @@ event end (t = MAX_TIME) {
 
 }
 
+
 double membrane_bc(double x, double *w_deriv_arr) {
 /* membrane_bc
 Outputs the boundary condition for the vertical face velocity, uf.n, at the 
@@ -411,6 +437,7 @@ bottom boundary, which matches the velocity of the membrane
         return -w_deriv_arr[k];
     }
 }
+
 
 void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr) {
 /* output_membrane

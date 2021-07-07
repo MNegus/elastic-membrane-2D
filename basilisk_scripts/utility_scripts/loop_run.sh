@@ -3,14 +3,23 @@
 parent_dir=$1
 code_name=$2
 
-
-for MAXLEVEL in 8 9 10 11 12 13
+for COARSEN in 0 1 2 3
 do
-    echo Max level = $MAXLEVEL
-    cd $parent_dir/max_level_$MAXLEVEL/code
+    echo COARSEN = $COARSEN
+
+    cd $parent_dir/coarsen_$COARSEN/code
 
     ./run_simulation.sh $code_name 8
 done
+
+
+# for MAXLEVEL in 8 9 10 11 12 13
+# do
+#     echo Max level = $MAXLEVEL
+#     cd $parent_dir/max_level_$MAXLEVEL/code
+
+#     ./run_simulation.sh $code_name 8
+# done
 
 # for XMIN in 0 1 2 3 4
 # do

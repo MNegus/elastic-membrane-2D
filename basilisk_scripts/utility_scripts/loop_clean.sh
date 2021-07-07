@@ -5,12 +5,17 @@
 
 PARENTDIR=$1 # Parent directory i.e. containing the max_level_* directories
 
-
-for MAXLEVEL in 8 9 10 11 12
+for COARSEN in 2
 do 
-    ./output_clean.sh $PARENTDIR/max_level_$MAXLEVEL
-
+    ./output_clean.sh $PARENTDIR/coarsen_$COARSEN
 done
+
+
+# for MAXLEVEL in 8 9 10 11 12
+# do 
+#     ./output_clean.sh $PARENTDIR/max_level_$MAXLEVEL
+
+# done
 # for XMIN in 0 1 2 3 4
 # do
 #     for YMIN in 0 1 2 3

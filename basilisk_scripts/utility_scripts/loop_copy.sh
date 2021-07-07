@@ -4,14 +4,23 @@ code_dir=$1
 dest_dir=$2
 
 
-for MAXLEVEL in 8 9 10 11 12 13
+for COARSEN in 0 1 2 3
 do
     # Changes the parameters file
-    sed -i "/MAXLEVEL/c\const int MAXLEVEL = $MAXLEVEL; // Maximum refinement level" parameters.h
+    sed -i "/FD_COARSEN_LEVEL/c\const int FD_COARSEN_LEVEL = $COARSEN;" parameters.h
 
     # Copies over the code 
-    ./code_copy.sh $code_dir $dest_dir max_level_$MAXLEVEL
+    ./code_copy.sh $code_dir $dest_dir coarsen_$COARSEN
 done
+
+# for MAXLEVEL in 8 9 10 11 12 13
+# do
+#     # Changes the parameters file
+#     sed -i "/MAXLEVEL/c\const int MAXLEVEL = $MAXLEVEL; // Maximum refinement level" parameters.h
+
+#     # Copies over the code 
+#     ./code_copy.sh $code_dir $dest_dir max_level_$MAXLEVEL
+# done
 
 # for XMIN in 0 1 2 3 4
 # do
