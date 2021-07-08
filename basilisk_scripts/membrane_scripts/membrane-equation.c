@@ -32,8 +32,7 @@ Author: Michael Negus
 
 /* Global variables */
 // Finite-difference parameters
-double DELTA_X, Cpressure; 
-int M; // Size of matrix 
+double Cpressure; 
 
 // LAPACK parameters
 int info, *ipiv, kl, ku, nrhs, ldab, ldb, noRows;
@@ -43,22 +42,14 @@ double *A_static, *B_static, *A;
 
 
 void initialise_membrane(double *w_previous, double *w, double *w_deriv, 
-    double *p_previous, double *p, double *p_next, int N_MEMBRANE, 
+    double *p_previous, double *p, double *p_next, int M, double DELTA_X, 
     double DELTA_T, double L, double ALPHA, double BETA, double GAMMA) {
 /* initialise_membrane
 Function initialises the problem, setting w_previous and w, and requiring the 
 relevant parameters and pressure arrays as input. 
 */
 
-    // Checks if GAMMA == 0, in which case use wave-equation.c
-    // if (GAMMA == 0) {
-    //     fprintf(stderr, "Error: GAMMA == 0. Use wave-equation.c instead\n");
-    //     exit(1);
-    // }
-
     /* Derived parameters */
-    DELTA_X = L / (N_MEMBRANE - 1); // Spatial grid size
-    M = N_MEMBRANE - 1; // Size of matrix once the last row has been removed
     if (GAMMA == 0) {
         Cpressure = DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure;
     } else {
@@ -85,7 +76,7 @@ relevant parameters and pressure arrays as input.
     B_static = malloc(M * noRows * sizeof(double)); // Used for matrix multiplication
 
     /* Initialise coefficient matrices depending on value of GAMMA */
-    initialise_coefficient_matrices(DELTA_T, ALPHA, BETA, GAMMA);
+    initialise_coefficient_matrices(M, DELTA_X, DELTA_T, ALPHA, BETA, GAMMA);
 
     // for (int k = 0; k < M * noRows; k++) {
     //     fprintf(stderr, "A_static[%d] = %g\n", k, A_static[k]);
@@ -107,7 +98,7 @@ relevant parameters and pressure arrays as input.
     memcpy(A, A_static, M * noRows * sizeof(double));
 
     // Sets rhs = w to be equal to 0.5 * B * w_previous
-    multiply_matrix(w, B_static, w_previous, 0.5, 0);
+    multiply_matrix(M, w, B_static, w_previous, 0.5, 0);
 
     // Adds pressure terms onto rhs = w
     for (int k = 0; k < M; k++) {
@@ -131,7 +122,7 @@ relevant parameters and pressure arrays as input.
 
 void membrane_timestep(double *w_previous, double *w, double *w_next, 
     double *w_deriv, double *p_previous, double *p, double *p_next, 
-    double DELTA_T) {
+    int M, double DELTA_X, double DELTA_T) {
 /* membrane_timestep 
 Function performs once timestep of the Mitchell method algorithm, determining 
 the value of w_next. 
@@ -139,10 +130,10 @@ the value of w_next.
 
     /* Configures right-hand-side vector */
     // Sets w_next = B * w
-    multiply_matrix(w_next, B_static, w, 1, 0);
+    multiply_matrix(M, w_next, B_static, w, 1, 0);
 
     // Sets w_next = w_next - A * w_previous
-    multiply_matrix(w_next, A_static, w_previous, -1, 1);
+    multiply_matrix(M, w_next, A_static, w_previous, -1, 1);
 
     // Sets w_next = w_next + pressure term
     for (int k = 0; k < M; k++) {
@@ -169,7 +160,7 @@ the value of w_next.
 } 
 
 
-void initialise_coefficient_matrices(double DELTA_T, \
+void initialise_coefficient_matrices(int M, double DELTA_X, double DELTA_T, \
     double ALPHA, double BETA, double GAMMA) {
 /* initialise_coefficient_matrices
 Function to initialise the coefficient matrices A_static and B_static, which 
@@ -275,7 +266,7 @@ matrices with 2 sub- and super-diagonals to solve the full membrane equation.
 }
 
 
-void multiply_matrix(double *y_arr, double *matrix_arr, double *x_arr, \
+void multiply_matrix(int M, double *y_arr, double *matrix_arr, double *x_arr, \
     double scale, int ADD) {
 /* multiply_matrix
 Function to compute the result of the matrix muliplication 

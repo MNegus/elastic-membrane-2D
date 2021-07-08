@@ -154,16 +154,6 @@ event init(t = 0) {
         p_previous_arr[k] = 0.0;
         p_arr[k] = 0.0;
     }
-
-    // TEST OUTPUT
-    foreach_boundary(bottom) {
-        if (x > MEMBRANE_RADIUS) continue;
-        double fractpart, intpart;
-        fractpart = modf((x - 0.5 * MIN_CELL_SIZE) / DELTA_X, &intpart);
-        int k = (int) intpart;
-
-        fprintf(stderr, "x = %g, (x - 0.5 * MIN_CELL_SIZE) / DELTA_X = %g, intpart = %.10f, fractpart = %.10f, (fractpart == 0) = %d, k = %d\n", x, x / DELTA_X - 0.5, intpart, fractpart, (fractpart == 0), k);
-    }
 }
 
 
@@ -242,9 +232,8 @@ event update_membrane(t += DELTA_T) {
         // Determines index in array
         double fractpart, intpart;
         fractpart = modf((x - 0.5 * MIN_CELL_SIZE) / DELTA_X, &intpart);
-        fprintf(stderr, "x = %g, (x - 0.5 * MIN_CELL_SIZE) / DELTA_X = %g,  fractpart = %g, intpart = %g\n", x, (x - 0.5 * MIN_CELL_SIZE) / DELTA_X, fractpart, intpart);
-        if (fractpart > 1e-5) continue;
-        fprintf(stderr, "Made it here at t = %g\n", t);
+        if (fractpart > 1e-6) continue;
+        
         int k = (int) intpart;
 
         // Initially fills p_next_arr[k] with the current value of pressure
@@ -293,11 +282,11 @@ event update_membrane(t += DELTA_T) {
 
             // Initialises w and w_deriv
             initialise_membrane(w_previous, w, w_deriv, p_previous_arr, p_arr, \
-                p_next_arr, M + 1, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA, GAMMA);
+                p_next_arr, M, DELTA_X, DELTA_T, MEMBRANE_RADIUS, ALPHA, BETA, GAMMA);
         } else {
             /* Solve membrane equation to determine w_next */
             membrane_timestep(w_previous, w, w_next, w_deriv, p_previous_arr, \
-                p_arr, p_next_arr, DELTA_T);
+                p_arr, p_next_arr, M, DELTA_X, DELTA_T);
         }
     }
 
