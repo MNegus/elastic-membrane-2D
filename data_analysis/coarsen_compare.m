@@ -4,17 +4,18 @@
 % close all
 clear;
 
-parent_directory = "/home/negus/scratch/coarsen_varying";
+parent_directory = "~/scratch/coarsen_testing";
 MAX_TIMESTEP = 4000;
-COARSEN_LEVELS = [0, 1, 2];
+COARSEN_LEVELS = [0, 1, 2, 3];
 
 %% Coupled-decoupled compare
 
-legend_entries = ["Coarsen level = 0", "Coarsen level = 1", "Coarsen level = 2"];
-writerobj = VideoWriter("coarsen_varying.avi");
+legend_entries = ["Coarsen level = 0", "Coarsen level = 1", "Coarsen level = 2", "Coarsen level = 3"];
+% legend_entries = ["Coarsen level = 1", "Coarsen level = 0"];
+writerobj = VideoWriter("coarsen_varying_just_1.avi");
 writerobj.FrameRate = 10;
 open(writerobj);
-for k = 1500 : MAX_TIMESTEP
+for k = 1000 : 10 : MAX_TIMESTEP
     t = k * 1e-4;
     
 
@@ -43,7 +44,11 @@ for k = 1500 : MAX_TIMESTEP
         end
 
         subplot(3, 1, 1);
-        plot(xs, ws, 'linewidth', 1.5);
+        if (LEVEL == 0)
+            plot(xs, ws, 'linewidth', 4, 'color', 0.75 * [1 1 1]);
+        else
+            plot(xs, ws, 'linewidth', 1.5);
+        end
         hold on;
         
         % Membrane deriv plot
@@ -62,7 +67,11 @@ for k = 1500 : MAX_TIMESTEP
         end
 
         subplot(3, 1, 2);
-        plot(xs, ws, 'linewidth', 1.5);
+        if (LEVEL == 0)
+            plot(xs, ws, 'linewidth', 4, 'color', 0.75 * [1 1 1]);
+        else
+            plot(xs, ws, 'linewidth', 1.5);
+        end
         hold on;
 
         % Pressure plot
@@ -73,7 +82,11 @@ for k = 1500 : MAX_TIMESTEP
         ps = unsorted_ps(idxs);
 
         subplot(3, 1, 3);
-        plot(xs, ps, 'linewidth', 1.5);
+        if (LEVEL == 0)
+            plot(xs, ps, 'linewidth', 4, 'color', 0.75 * [1 1 1]);
+        else
+            plot(xs, ps, 'linewidth', 1.5);
+        end
         hold on;
     end
     w_min
@@ -100,10 +113,9 @@ for k = 1500 : MAX_TIMESTEP
     ylabel("p(x, t)");
     legend(legend_entries);
     title("t = " + t);
-%     if (t > 0.125) 
-%        ylim([-0.5, 2 / t]); 
-%     end
-    ylim([0, 0.1]);
+    if (t > 0.125) 
+       ylim([-0.5, 2 / t]); 
+    end
     x0=800;
     y0=800;
     width=1000;
