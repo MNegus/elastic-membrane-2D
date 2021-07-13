@@ -448,9 +448,12 @@ Outputs the x positions of the membrane into a text file
     #pragma omp parallel for
     for (int k = 0; k < M; k++) {
         double x = k * DELTA_X;
-        fprintf(w_file, "%.10f, %.10f\n", x, w_arr[k]);
-        fprintf(w_deriv_file, "%.10f, %.10f\n", x, w_deriv_arr[k]);
-        fprintf(p_file, "%.10f, %.10f\n", x, p_arr[k]);
+        // fprintf(w_file, "%.10f, %.10f\n", x, w_arr[k]);
+        // fprintf(w_deriv_file, "%.10f, %.10f\n", x, w_deriv_arr[k]);
+        // fprintf(p_file, "%.10f, %.10f\n", x, p_arr[k]);
+        fprintf(w_file, "%g, %g\n", x, w_arr[k]);
+        fprintf(w_deriv_file, "%g, %g\n", x, w_deriv_arr[k]);
+        fprintf(p_file, "%g, %g\n", x, p_arr[k]);
     }
 
     // Outputs x = L, where w and w_deriv = 0
