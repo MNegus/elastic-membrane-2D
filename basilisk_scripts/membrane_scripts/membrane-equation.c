@@ -53,7 +53,7 @@ relevant parameters and pressure arrays as input.
     if (GAMMA == 0) {
         Cpressure = DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure;
     } else {
-        Cpressure = 4 * pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
+        Cpressure = pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
     }
     
     /* LAPACKE constants */
@@ -103,7 +103,7 @@ relevant parameters and pressure arrays as input.
     // Adds pressure terms onto rhs = w
     for (int k = 0; k < M; k++) {
         w[k] += 0.5 * Cpressure \
-            * (0.25 * p_previous[k] + 0.5 * p[k] + 0.25 * p_next[k]);
+            * (p_previous[k] + 2 * p[k] + p_next[k]);
     }
 
     // Copies over elements to A
@@ -137,7 +137,7 @@ the value of w_next.
 
     // Sets w_next = w_next + pressure term
     for (int k = 0; k < M; k++) {
-        w_next[k] += Cpressure * 0.25 * (p_previous[k] + 2 * p[k] + p_next[k]);
+        w_next[k] += Cpressure * (p_previous[k] + 2 * p[k] + p_next[k]);
     }
 
     /* Solves matrix equation */
@@ -182,23 +182,23 @@ matrices with 2 sub- and super-diagonals to solve the full membrane equation.
         double Dbeta2 = (ALPHA * DELTA_X * DELTA_X) / (BETA * DELTA_T * DELTA_T);
         // Stores upper diagonal in second row
         int colNum = 1;
-        A_static[M + colNum] = -0.5;
-        B_static[M + colNum] = 1;
+        A_static[M + colNum] = -2;
+        B_static[M + colNum] = 4;
         for (colNum = 2; colNum < M; colNum++) {
-            A_static[M + colNum] = -0.25;
-            B_static[M + colNum] = 0.5;
+            A_static[M + colNum] = -1;
+            B_static[M + colNum] = 2;
         }
 
         // Stores main diagonal in third row
         for (colNum = 0; colNum < M; colNum++) {
-            A_static[2 * M + colNum] = Dbeta2 + 0.5;
-            B_static[2 * M + colNum] = 2 * Dbeta2 - 1;
+            A_static[2 * M + colNum] = 4 * Dbeta2 + 2;
+            B_static[2 * M + colNum] = 8 * Dbeta2 - 4;
         }
 
         // Stores lower diagonal in fourth row
         for (colNum = 0; colNum < M - 1; colNum++) {
-            A_static[3 * M + colNum] = -0.25;
-            B_static[3 * M + colNum] = 0.5;
+            A_static[3 * M + colNum] = -1;
+            B_static[3 * M + colNum] = 2;
         }
     } else {
         /* GAMMA > 0 case, with 2 sub- and super-diagonals */
