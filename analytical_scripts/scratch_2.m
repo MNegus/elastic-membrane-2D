@@ -1,3 +1,5 @@
+addpath("pressures");
+
 xs = linspace(0, 1, 1e4);
 epsilon = 0.1;
 

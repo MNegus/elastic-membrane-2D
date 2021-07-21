@@ -1,22 +1,21 @@
 function ps = outer_pressure(xs, m_tt_fun, d, A, epsilon)
     ps = zeros(size(xs));
     
-    xhats = epsilon * xs;
+    xhats = xs / epsilon;
 
     %% Finds idx such that xs(idx) < epsilon * d and xs(idx + 1) >= epsilon * d
     idx = sum(xhats < d);
     
     %% Determines the singular integral for 0 <= x < epsilon * d
     tol = 1e-10;
-    n = 1e3;
     singular_integrals = zeros(size(xs(1 : idx)));
     
     for m = 1 : idx
-        xhat = epsilon * xs(m);
+        xhat = xhats(m);
         
-        %% integral method
-%         integrand = @(s) sqrt(d^2 - s.^2) .* m_tt_fun(s) ./ (s - xhat);
-%         singular_integrals(m) = (1 / pi) * (integral(integrand, -d, xhat - tol) + integral(integrand, xhat + tol, d));
+        %% integral/quadgk method
+        integrand = @(s) sqrt(d^2 - s.^2) .* m_tt_fun(s) ./ (s - xhat);
+        singular_integrals(m) = (1 / pi) * (integral(integrand, -d, xhat - tol) + integral(integrand, xhat + tol, d));
         
         %% trapz method with s = xhats (kind of works)
 %         integrand = @(s) 2 * s .* sqrt(d^2 - s.^2) .* m_tt_fun(s) ./ (s.^2 - xhat^2);
@@ -70,8 +69,7 @@ function ps = outer_pressure(xs, m_tt_fun, d, A, epsilon)
     end
     
     %% Returns p values
-    singular_integrals
-    ps(1 : idx) = (A - singular_integrals) ./ sqrt(epsilon^2 * d^2 - xs(1 : idx).^2);
+    ps(1 : idx) = (1 / epsilon) * (A - singular_integrals) ./ sqrt(d^2 - xhats(1 : idx).^2);
     
 
 end
