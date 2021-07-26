@@ -13,7 +13,9 @@ function ps = inner_pressure(xs, d, d_t, J, epsilon)
     positive_etas = pi * x_tildes(x_d_idx : end) / (2 * J);
     
     % Put etas arrays together
-    etas = [negative_etas, positive_etas];
+    etas = zeros(length(negative_etas) + length(positive_etas), 1);
+    etas(1 : length(negative_etas)) = negative_etas;
+    etas(length(negative_etas) + 1 : end) = positive_etas;
     etas = unique(etas);
     
     % Save xs as a function of etas
