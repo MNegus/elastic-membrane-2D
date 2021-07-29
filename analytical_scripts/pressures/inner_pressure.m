@@ -2,15 +2,14 @@ function ps = inner_pressure(xs, d, d_t, J, epsilon)
 
     %% Use etas_definition and map etas back onto xs
     % Find first value in xs such that x > epsilon * d
-    x_d_idx = find(xs > epsilon * d, 1, 'first');
-    
+    x_d_idx = sum(xs < epsilon * d);
     x_tildes = (xs - epsilon * d) / epsilon^3;
     
     % Negative etas part
-    negative_etas = log(sqrt(-J ./ (pi * x_tildes(1 : x_d_idx - 1))));
+    negative_etas = log(sqrt(-J ./ (pi * x_tildes(1 : x_d_idx))));
 
     % Positive etas part
-    positive_etas = pi * x_tildes(x_d_idx : end) / (2 * J);
+    positive_etas = pi * x_tildes(x_d_idx + 1: end) / (2 * J);
     
     % Put etas arrays together
     etas = zeros(length(negative_etas) + length(positive_etas), 1);
