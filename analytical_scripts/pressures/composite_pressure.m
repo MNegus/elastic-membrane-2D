@@ -1,10 +1,10 @@
-function ps = composite_pressure(xs, t, d, d_t, A, C, J, m_tt, w_tt, epsilon)
+function ps = composite_pressure(xs, t, d, d_t, A, C, J, m_tt_fun, w_tt_fun, epsilon)
 
     if (t == 0)
         ps = zeros(size(xs));
     else
         % Calculate outer pressure
-        outer_ps = outer_pressure(xs, m_tt, w_tt, d, A, epsilon);
+        outer_ps = outer_pressure(xs, m_tt_fun, w_tt_fun, d, A, epsilon);
 
         % Calculate overlap pressure
         overlap_ps = overlap_pressure(xs, d, C, epsilon);
