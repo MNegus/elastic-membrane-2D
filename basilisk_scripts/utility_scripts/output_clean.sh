@@ -8,14 +8,13 @@ PARENTDIR=$1 # Parent directory i.e. containing code/ and raw_data/
 
 cd $PARENTDIR
 
-# rm -r boundary_outputs
 mkdir boundary_outputs # Directory to store boundary output files
 
-# rm -r membrane_outputs
 mkdir membrane_outputs # Directory to store membrane outputs
 
-# rm -r videos
-mkdir videos
+mkdir movies # Directory to store movies
+
+mkdir interfaces # Directory to store interface files
 
 # Works out how many boundary_output_*.txt files there are in raw_data/
 NOFILES=$(ls raw_data/ | grep 'boundary_output_.*\.txt' | wc -l)
@@ -28,12 +27,12 @@ NOFILES=$(ls raw_data/ | grep 'boundary_output_.*\.txt' | wc -l)
 #     echo Sorted boundary_output_$filenum.txt
 # done
 
+# Copies the log file into the upper directory 
+cp raw_data/log .
+
 # Move files
 mv raw_data/boundary_output_*.txt boundary_outputs
 mv raw_data/w_*.txt membrane_outputs
 mv raw_data/p_*.txt membrane_outputs
 mv raw_data/*.mp4 videos
-
-# Copies the log file into the upper directory 
-cp raw_data/log .
-
+mv raw_data/interface_* interfaces
