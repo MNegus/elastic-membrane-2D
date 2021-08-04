@@ -45,6 +45,7 @@ double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
 int gfs_output_no = 0; // Records how many GFS files have been outputted
 int log_output_no = 0; // Records how many plate data files there have been
+int interface_output_no = 0; // Records how many interface files there have been
 int membrane_output_no = 0; // Records how many membrane outputs there have been
 int start_membrane = 0; // Boolean to indicate if membrane motion has started
 
@@ -329,6 +330,20 @@ event output_data (t += LOG_OUTPUT_TIMESTEP) {
     log_output_no++;
 }
 
+
+event output_interface (t += DELTA_T) {
+/* Outputs the interface locations of the droplet */
+    // Creates text file to save output to
+    char interface_filename[80];
+    sprintf(interface_filename, "interface_%d.txt", interface_output_no);
+    FILE *interface_file = fopen(interface_filename, "w");
+
+    // Outputs the interface locations and closes the file
+    output_facets(f, interface_file);
+    fclose(interface_file);
+
+    interface_output_no++;
+}
 
 event gfs_output (t += GFS_OUTPUT_TIMESTEP) {
 /* Saves a gfs file */
