@@ -1,4 +1,4 @@
-function [t_vals, d_vals, a_vals, a_t_vals] = a_ode_solution(alpha, beta, gamma, epsilon, dd, dmax, N, L)
+function [t_vals, d_vals, a_vals, a_t_vals, kvals] = a_ode_solution(alpha, beta, gamma, epsilon, dd, dmax, N, L)
 
 % Discretised dvals
 d_vals = 0 : dd : dmax;
@@ -20,7 +20,7 @@ for k = 1 : length(t_vals)
         + dot(a_vals(k, :), besselj(0, epsilon * d_vals(k) * lambdas)) / sqrt(L);
 end
 
-% Determine bdot vals
+% Determine a_t vals
 a_t_vals = zeros(length(t_vals), N);
 kvals = beta * lambdas.^2 + gamma * lambdas.^4;
 for k = 1 : length(t_vals)
@@ -51,7 +51,7 @@ function dydd = full_odefun(d, y, lambdas, alpha, beta, gamma, epsilon, L, N)
     Q = (sqrt(L) * d + 2 * dot(as, Gammas_d)) / (2 * sqrt(L) - 2 * dot(Fs, Gammas));
     if Q < 0
         Q
-        error("Q is negative");
+        warning("Q is negative");
     end
     
     %% Saves derivatives
