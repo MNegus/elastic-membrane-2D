@@ -37,10 +37,15 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep(xs, t, ...
             m_tt = zeros(size(s_vals));
 
             % VECTORISE THIS FOR SPEEEEED
-            for q = 1 : length(s_vals)
-                m_t(q) = trapz(s_vals(1 : q), w_t(1 : q), 1);
-                m_tt(q) = trapz(s_vals(1 : q), w_tt(1 : q), 1);
-            end
+%             tic;
+%             for q = 1 : length(s_vals)
+%                 m_t(q) = trapz(s_vals(1 : q), w_t(1 : q), 1);
+%                 m_tt(q) = trapz(s_vals(1 : q), w_tt(1 : q), 1);
+%             end
+%             toc;
+            
+            m_t = cumtrapz(s_vals, w_t(1 : d_idx), 1);
+            m_tt = cumtrapz(s_vals, w_tt(1 : d_idx), 1);
 
             m_t_fun = @(s) interp1(s_vals, m_t, s, 'linear', 'extrap');
             m_tt_fun = @(s) interp1(s_vals, m_tt, s, 'linear', 'extrap');
@@ -66,5 +71,4 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep(xs, t, ...
         rhs = B_mat * w - A_mat * w_previous ...
             + Cpressure * (p_previous_previous + 2 * p_previous + p);
         w_next = A_mat \ rhs;
-
 end
