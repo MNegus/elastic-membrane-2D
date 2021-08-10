@@ -7,7 +7,6 @@ d_vals = 0 : dd : dmax;
 lambdas = pi * (2 * (1 : N)' - 1) / (2 * L);
 odefun = @(d, y) full_odefun(d, y, lambdas, alpha, beta, gamma, epsilon, L, N);
 y0 = zeros(2 * N, 1);
-% odefun(1, ones(2 * N, 1));
 opts = odeset('RelTol',1e-4,'AbsTol',1e-4, 'Stats', 'on', 'Maxstep', dd);
 [d_vals, y] = ode45(odefun, d_vals, y0, opts);
 a_vals = y(:, 1 : N);
