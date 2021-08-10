@@ -117,10 +117,10 @@ int main() {
     fclose(logfile);
 
     /* Poisson solver constants */
-    // DT = 1.0e-4; // Minimum timestep
-    // NITERMIN = 1; // Min number of iterations (default 1)
-    // NITERMAX = 300; // Max number of iterations (default 100)
-    // TOLERANCE = 1e-6; // Possion solver tolerance (default 1e-3)
+    DT = 1.0e-4; // Minimum timestep
+    NITERMIN = 1; // Min number of iterations (default 1)
+    NITERMAX = 300; // Max number of iterations (default 100)
+    TOLERANCE = 1e-6; // Possion solver tolerance (default 1e-3)
 
     /* Runs the simulation */
     run(); 
@@ -244,7 +244,7 @@ event update_membrane(t += DELTA_T) {
         * The height in the y direction at the cell is less than y_min_height 
         * The height in the x direction at the cell is less than x_min_height
     */
-    heights(f, h); // Associates h with the heights of f
+    if (CUTOFF) heights(f, h); // Associates h with the heights of f
 
     // Iterates over bottom boundary
     foreach_boundary(bottom) {
