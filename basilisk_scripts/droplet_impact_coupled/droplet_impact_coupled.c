@@ -134,7 +134,8 @@ event init(t = 0) {
     start_wall_time = omp_get_wtime();
 
     /* Refines around the droplet */
-    refine((((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH))) || ((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT))) \
+    refine((sq(x) + sq(y - DROP_CENTRE) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+        && (sq(x) + sq(y - DROP_CENTRE)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
         && (level < MAXLEVEL));
     
     /* Initialises the droplet volume fraction */
@@ -165,9 +166,30 @@ event refinement (i++) {
     adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
         minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
-    // Refines above the membrane
-    refine((x < MEMBRANE_RADIUS) && (y <= MEMBRANE_REFINED_HEIGHT) \
+    /* Attempts to refine above the membrane, doubling the refine height until
+    successful */
+    double refine_height = MEMBRANE_REFINED_HEIGHT;
+    int adequate_refinement = 0;
+
+    while (adequate_refinement == 0) {
+
+        // Attempts to refine
+        refine((x < MEMBRANE_RADIUS) && (y <= refine_height) \
         && level < MAXLEVEL);
+
+        // Loops and check if refinement was successful
+        adequate_refinement = 1;
+        foreach_boundary(bottom) {
+            if ((x < MEMBRANE_RADIUS) && (level < MAXLEVEL)) {
+                adequate_refinement = 0;
+                break;
+            }
+        }
+
+        // If refinement was unsuccessful, then double the refined height
+        if (adequate_refinement == 0) refine_height = 2 * refine_height;
+    }
+    
 }
 
 
@@ -344,6 +366,7 @@ event output_interface (t += DELTA_T) {
 
     interface_output_no++;
 }
+
 
 event gfs_output (t += GFS_OUTPUT_TIMESTEP) {
 /* Saves a gfs file */
