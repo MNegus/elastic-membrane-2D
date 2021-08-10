@@ -52,6 +52,7 @@ int start_membrane = 0; // Boolean to indicate if membrane motion has started
 /* Function definitions */
 double membrane_bc(double x, double *w_deriv_arr);
 void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr);
+void output_arrays_stationary(double *p_arr);
 
 /* Boundary conditions */
 // Symmetry on left boundary
@@ -298,7 +299,7 @@ event update_membrane(t += DELTA_T) {
     }
 
     /* Updates membrane position after the start time */
-    if (t >= MEMBRANE_START_TIME) {
+    if ((t >= MEMBRANE_START_TIME) && (STATIONARY == 0)) {
         if (start_membrane == 0) {
             /* Initialise membrane motion */
             start_membrane = 1; // Indicates membrane motion has started
@@ -311,15 +312,19 @@ event update_membrane(t += DELTA_T) {
             membrane_timestep(w_previous, w, w_next, w_deriv, p_previous_arr, \
                 p_arr, p_next_arr, M, DELTA_X, DELTA_T);
         }
-    }
 
-    /* Updates boundary condition if COUPLED is set*/
-    if (COUPLED) {
-        uf.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
+        /* Updates boundary condition if COUPLED is set*/
+        if (COUPLED) {
+            uf.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
+        }
     }
 
     /* Outputs membrane arrays */
-    output_arrays(w, w_deriv, p_arr);
+    if (STATIONARY) {
+        output_arrays_stationary(p_arr);
+    } else {
+        output_arrays(w, w_deriv, p_arr);
+    }
 
     // Swaps membrane arrays 
     double *temp2 = w_previous;
@@ -503,6 +508,30 @@ Outputs the x positions of the membrane into a text file
     fclose(w_file);
     fclose(p_file);
     fclose(w_deriv_file);
+
+    membrane_output_no++;
+}
+
+void output_arrays_stationary(double *p_arr) {
+/* output_membrane_stationary
+Outputs the x positions of the pressure in a text file
+*/
+    char p_filename[40];
+    sprintf(p_filename, "p_%d.txt", membrane_output_no);
+    FILE *p_file = fopen(p_filename, "w");
+
+    // Outputs from x = 0 to L - dx
+    #pragma omp parallel for
+    for (int k = 0; k < M; k++) {
+        double x = k * DELTA_X;
+        fprintf(p_file, "%g, %g\n", x, p_arr[k]);
+    }
+
+    // Outputs x = L, where w and w_deriv = 0
+    double x = M * DELTA_X;
+    fprintf(p_file, "%.10f, %.10f\n", x, 0.0);
+
+    fclose(p_file);
 
     membrane_output_no++;
 }
