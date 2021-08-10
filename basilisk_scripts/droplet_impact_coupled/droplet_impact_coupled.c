@@ -244,7 +244,7 @@ event update_membrane(t += DELTA_T) {
         * The height in the y direction at the cell is less than y_min_height 
         * The height in the x direction at the cell is less than x_min_height
     */
-    if (CUTOFF) heights(f, h); // Associates h with the heights of f
+    if (CUTOFF && impact) heights(f, h); // Associates h with the heights of f
 
     // Iterates over bottom boundary
     foreach_boundary(bottom) {
