@@ -11,7 +11,7 @@ function [M, S] = mass_matrix(d, alpha, epsilon, L, N)
         ./ (lambdas.^2 - (lambdas.^2)');
     
     % Diagonals for m == n
-    S(1 : N + 1 : end) = (pi * d^2 / (2)) ...
+    S(1 : N + 1 : end) = (pi * d^2 / 2) ...
         * (besselj(0, epsilon * d * lambdas).^2 + besselj(1, epsilon * d * lambdas).^2);
     
     %% Write the overall matrix
