@@ -34,5 +34,5 @@ cp raw_data/log .
 mv raw_data/boundary_output_*.txt boundary_outputs
 mv raw_data/w_*.txt membrane_outputs
 mv raw_data/p_*.txt membrane_outputs
-mv raw_data/*.mp4 videos
+mv raw_data/*.mp4 movies
 mv raw_data/interface_* interfaces
