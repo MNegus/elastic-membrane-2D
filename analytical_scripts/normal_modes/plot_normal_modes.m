@@ -2,11 +2,11 @@
 % Plots the saved solutions using normal modes
 clear;
 
-analytical_parent_dir = "~/Desktop/analytical_tests";
+analytical_parent_dir = "/media/michael/newarre/elastic_membrane/analytical_tests";
 
 %% Parameters
 EPSILON = 1;
-ALPHA = 80 / EPSILON^2; BETA = 0 * EPSILON^2; GAMMA = 1e6 * EPSILON^2; 
+ALPHA = 2 / EPSILON^2; BETA = 1 * EPSILON^2; GAMMA = 1e6 * EPSILON^2; 
 L = 4;
 T_MAX = 0.25;
 % T_MAX = 5e-4;

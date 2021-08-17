@@ -1,16 +1,17 @@
-d = 0.1;
-alpha = 1;
+alpha = 0.1;
+beta = 0;
+gamma = 1e-4;
 epsilon = 1;
-L = 1;
-N = 4;
-lambdas = pi * (2 * (1 : N) - 1) / (2 * L)
-lambda = @(n) pi * (2 * n - 1) / (2 * L);
+L = 4;
+q = 10;
+delta_t = 1e-4;
+tmax = 0.25;
+% N_max = N_stable(alpha, beta, gamma, L, q, delta_d)
 
-[M, S] = mass_matrix(d, alpha, epsilon, L, N)
+N_MEMBRANE = 1024;
+DELTA_X = L / (N_MEMBRANE - 1); 
+xs = (0 : DELTA_X : L - DELTA_X)';
 
-Snn = @(n) (pi * d^2 / 2) * (besselj(0, epsilon * lambdas(n) * d)^2 + besselj(1, epsilon * lambdas(n) * d)^2);
-
-Smn = @(m, n) (pi * d / epsilon) ...
-    * (lambdas(n) * besselj(0, epsilon * lambdas(m) * d) * besselj(1, epsilon * lambdas(n) * d) ...
-        - lambdas(m) * besselj(0, epsilon * lambdas(n) * d) * besselj(1, epsilon * lambdas(m) * d)) ...
-        / (lambdas(n)^2  - lambdas(m)^2);
+%%
+[N, delta_d, as, a_ts, a_tts, q_ts] ...
+    = validated_normal_modes_solution(alpha, beta, gamma, epsilon, N, L, tmax, delta_t, xs)
