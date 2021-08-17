@@ -48,11 +48,16 @@ int log_output_no = 0; // Records how many plate data files there have been
 int interface_output_no = 0; // Records how many interface files there have been
 int membrane_output_no = 0; // Records how many membrane outputs there have been
 int start_membrane = 0; // Boolean to indicate if membrane motion has started
+double drop_thresh = 1e-4; // Remove droplets threshold
+double pinch_off_time = 0.; // Time of pinch-off
+
 
 /* Function definitions */
 double membrane_bc(double x, double *w_deriv_arr);
 void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr);
 void output_arrays_stationary(double *p_arr);
+void remove_droplets_region(struct RemoveDroplets p,\
+        double ignore_region_x_limit, double ignore_region_y_limit);
 
 /* Boundary conditions */
 // Symmetry on left boundary
@@ -201,18 +206,73 @@ event gravity (i++) {
 }
 
 
-event small_droplet_removal (i++) {
-/* Removes any small droplets or bubbles that have formed, that are smaller than
-    a specific size */
-    // Removes droplets of diameter 5 cells or less
-    int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
-    remove_droplets(f, remove_droplet_radius);
+// event small_droplet_removal (i++) {
+// /* Removes any small droplets or bubbles that have formed, that are smaller than
+//     a specific size */
+//     // Removes droplets of diameter 5 cells or less
+//     int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
+//     remove_droplets(f, remove_droplet_radius);
 
-    // Also remove air bubbles
-    remove_droplets(f, remove_droplet_radius, 1e-4, true);
+//     // Also remove air bubbles
+//     remove_droplets(f, remove_droplet_radius, 1e-4, true);
     
-}
+// }
 
+// event small_droplet_removal (t += 1e-3) { 
+// /* Removes any small droplets or bubbles that have formed, that are smaller than
+//  a specific size */
+
+//     // Minimum diameter (in cells) a droplet/bubble has to be, else it will be 
+//     // removed
+//     int drop_min_cell_width = 8;
+
+//     // Region to ignore
+//     double ignore_region_x_limit = 0.02; 
+//     double ignore_region_y_limit = 0.02; 
+    
+//     // Counts the number of bubbles there are
+//     scalar bubbles[];
+//     foreach() {
+//         bubbles[] = 1. - f[] > drop_thresh;
+//     }
+//     int bubble_no = tag(bubbles);
+
+//     // Determines if we are before or after the pinch-off time
+//     if (pinch_off_time == 0.) {
+//         // The first time the bubble number is above 1, we define it to be the 
+//         // pinch off time
+//         if (bubble_no > 1) {
+//             pinch_off_time = t;
+//         }
+//     } else if (t >= pinch_off_time + REMOVAL_DELAY) {
+//         // If we are a certain time after the pinch-off time, remove drops and 
+//         // bubbles below the specified minimum size
+
+//         struct RemoveDroplets remove_struct;
+//         remove_struct.f = f;
+//         remove_struct.minsize = drop_min_cell_width;
+//         remove_struct.threshold = drop_thresh;
+//         remove_struct.bubbles = false;
+
+//         // Remove droplets
+//         remove_droplets_region(remove_struct, ignore_region_x_limit, \
+//             ignore_region_y_limit);
+
+//         // Remove bubbles
+//         remove_struct.bubbles = true;
+//         remove_droplets_region(remove_struct, ignore_region_x_limit, \
+//             ignore_region_y_limit);
+
+//         // Completely removes bubble if specified
+//         if (REMOVE_ENTRAPMENT) {
+//             foreach(){ 
+//                 if (x < 0.01 && y < 2 * 0.05) {
+//                     f[] = 1.;
+//                 }
+//             }
+//         }
+//     }
+// }
 
 event update_membrane(t += DELTA_T) {
 /* Updates the membrane arrays by solving the membrane equation, and outputs*/
@@ -512,6 +572,7 @@ Outputs the x positions of the membrane into a text file
     membrane_output_no++;
 }
 
+
 void output_arrays_stationary(double *p_arr) {
 /* output_membrane_stationary
 Outputs the x positions of the pressure in a text file
@@ -534,5 +595,39 @@ Outputs the x positions of the pressure in a text file
     fclose(p_file);
 
     membrane_output_no++;
+}
+
+/* Alternative remove_droplets definitions */
+void remove_droplets_region(struct RemoveDroplets p,\
+        double ignore_region_x_limit, double ignore_region_y_limit) {
+    scalar d[], f = p.f;
+    double threshold = p.threshold ? p.threshold : 1e-4;
+    foreach()
+    d[] = (p.bubbles ? 1. - f[] : f[]) > threshold;
+    int n = tag (d), size[n], keep_tags[n];
+
+    for (int i = 0; i < n; i++) {
+        size[i] = 0;
+        keep_tags[i] = 1;
+    }
+    foreach_leaf() {
+        if (d[] > 0) {
+            int j = ((int) d[]) - 1;
+            size[j]++;
+            if ((x < ignore_region_x_limit) && (y < ignore_region_y_limit)) {
+                keep_tags[j] = 0;
+            }
+        }
+    }
+    #if _MPI
+    MPI_Allreduce (MPI_IN_PLACE, size, n, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    #endif
+    int minsize = pow (p.minsize ? p.minsize : 3, dimension);
+    foreach() {
+        int j = ((int) d[]) - 1;
+        if (d[] > 0 && size[j] < minsize && keep_tags[j] == 1)
+            f[] = p.bubbles;
+    }
+    boundary ({f});
 }
 
