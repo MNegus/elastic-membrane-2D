@@ -176,7 +176,7 @@ event refinement (i++) {
 /* Adaptive grid refinement */
 
     // Adapts with respect to velocities and volume fraction 
-    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-4},
+    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-6},
         minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
     /* Attempts to refine above the membrane, doubling the refine height until
@@ -225,61 +225,61 @@ event gravity (i++) {
     
 // }
 
-// event small_droplet_removal (t += 1e-3) { 
-// /* Removes any small droplets or bubbles that have formed, that are smaller than
-//  a specific size */
+event small_droplet_removal (t += 1e-3) { 
+/* Removes any small droplets or bubbles that have formed, that are smaller than
+ a specific size */
 
-//     // Minimum diameter (in cells) a droplet/bubble has to be, else it will be 
-//     // removed
-//     int drop_min_cell_width = 8;
+    // Minimum diameter (in cells) a droplet/bubble has to be, else it will be 
+    // removed
+    int drop_min_cell_width = 16;
 
-//     // Region to ignore
-//     double ignore_region_x_limit = 0.02; 
-//     double ignore_region_y_limit = 0.02; 
+    // Region to ignore
+    double ignore_region_x_limit = 0.02; 
+    double ignore_region_y_limit = 0.02; 
     
-//     // Counts the number of bubbles there are
-//     scalar bubbles[];
-//     foreach() {
-//         bubbles[] = 1. - f[] > drop_thresh;
-//     }
-//     int bubble_no = tag(bubbles);
+    // Counts the number of bubbles there are
+    scalar bubbles[];
+    foreach() {
+        bubbles[] = 1. - f[] > drop_thresh;
+    }
+    int bubble_no = tag(bubbles);
 
-//     // Determines if we are before or after the pinch-off time
-//     if (pinch_off_time == 0.) {
-//         // The first time the bubble number is above 1, we define it to be the 
-//         // pinch off time
-//         if (bubble_no > 1) {
-//             pinch_off_time = t;
-//         }
-//     } else if (t >= pinch_off_time + REMOVAL_DELAY) {
-//         // If we are a certain time after the pinch-off time, remove drops and 
-//         // bubbles below the specified minimum size
+    // Determines if we are before or after the pinch-off time
+    if (pinch_off_time == 0.) {
+        // The first time the bubble number is above 1, we define it to be the 
+        // pinch off time
+        if (bubble_no > 1) {
+            pinch_off_time = t;
+        }
+    } else if (t >= pinch_off_time + REMOVAL_DELAY) {
+        // If we are a certain time after the pinch-off time, remove drops and 
+        // bubbles below the specified minimum size
 
-//         struct RemoveDroplets remove_struct;
-//         remove_struct.f = f;
-//         remove_struct.minsize = drop_min_cell_width;
-//         remove_struct.threshold = drop_thresh;
-//         remove_struct.bubbles = false;
+        struct RemoveDroplets remove_struct;
+        remove_struct.f = f;
+        remove_struct.minsize = drop_min_cell_width;
+        remove_struct.threshold = drop_thresh;
+        remove_struct.bubbles = false;
 
-//         // Remove droplets
-//         remove_droplets_region(remove_struct, ignore_region_x_limit, \
-//             ignore_region_y_limit);
+        // Remove droplets
+        remove_droplets_region(remove_struct, ignore_region_x_limit, \
+            ignore_region_y_limit);
 
-//         // Remove bubbles
-//         remove_struct.bubbles = true;
-//         remove_droplets_region(remove_struct, ignore_region_x_limit, \
-//             ignore_region_y_limit);
+        // Remove bubbles
+        remove_struct.bubbles = true;
+        remove_droplets_region(remove_struct, ignore_region_x_limit, \
+            ignore_region_y_limit);
 
-//         // Completely removes bubble if specified
-//         if (REMOVE_ENTRAPMENT) {
-//             foreach(){ 
-//                 if (x < 0.01 && y < 2 * 0.05) {
-//                     f[] = 1.;
-//                 }
-//             }
-//         }
-//     }
-// }
+        // Completely removes bubble if specified
+        if (REMOVE_ENTRAPMENT) {
+            foreach(){ 
+                if (x < 0.01 && y < 2 * 0.05) {
+                    f[] = 1.;
+                }
+            }
+        }
+    }
+}
 
 event update_membrane(t += DELTA_T) {
 /* Updates the membrane arrays by solving the membrane equation, and outputs*/
@@ -464,14 +464,14 @@ event movies (t += 1e-3) {
         /* Movie of the volume fraction of the droplet */
         clear();
         draw_vof("f", lw = 2);
-        squares("f", linear = true, spread = -1, linear = true, map = cool_warm); // RC - minor changes here and beyond
+        squares("f", linear = true, spread = -1, map = cool_warm); // RC - minor changes here and beyond
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
         save ("tracer.mp4");
 
         /* Movie of the horiztonal velocity */
         clear();
         draw_vof("f", lw = 2);
-        squares("u.x", linear = false, spread = -1, linear = true, map = cool_warm);
+        squares("u.x", spread = -1, linear = true, map = cool_warm);
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
         save ("horizontal_vel.mp4");
 
@@ -479,33 +479,25 @@ event movies (t += 1e-3) {
         /* Movie of the vertical velocity */
         clear();
         draw_vof("f", lw = 2);
-        squares("u.y", linear = false, spread = -1, linear = true, map = cool_warm);
+        squares("u.y", min = -1.5, max = 1.5, linear = true, spread = -1, map = cool_warm);
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
         save ("vertical_vel.mp4");
 
         /* Movie of the pressure */
         clear();
         draw_vof("f", lw = 2);
-        squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
+        squares("p", spread = -1, linear = true, map = cool_warm);
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
         save ("pressure.mp4");
 
         /* Zoomed in view of pressure around entrapped bubble */
-        /*
         // Set up bview box
-        view (width = 1024, height = 1024, fov = 5.0, ty = -0.1, \
-            quat = {0, 0, -0.707, 0.707});
-
+        view (width = 1024, height = 1024, fov = 5.0, ty = -0.13, tx = -0.13);
         clear();
         draw_vof("f", lw = 2);
-        squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
-        mirror ({0,1}) {
-            draw_vof("f", lw = 2);
-            squares("p", linear = false, spread = -1, linear = true, map = cool_warm);
-        }
+        squares("u.y", min = -1.5, max = 1.5, linear = true, spread = -1, map = cool_warm);
         draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("zoomed_pressure.mp4");
-        */
+        save ("zoomed_vertical_vel.mp4");
     }
 }
 
