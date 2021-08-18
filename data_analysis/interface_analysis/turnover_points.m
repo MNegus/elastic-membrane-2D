@@ -41,7 +41,7 @@ function ds = turnover_points(output_range, parent_dir, ...
         [~, sorted_idxs] = sort(uniq_points(:, 1));
         sorted_points = uniq_points(sorted_idxs, :);
 
-        % Loops to find point
+        % Loops to find point, rejecting massive changes
         diff = 1e3;
         while diff > change_tol
             [turnover_y, turnover_x, idx, x_interp, ys] = find_turnover(sorted_points);
