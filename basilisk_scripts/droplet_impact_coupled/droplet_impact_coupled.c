@@ -20,6 +20,7 @@
 #include "tension.h" // Surface tension of droplet
 #include "tag.h" // For removing small droplets
 #include "heights.h"
+#include "contact.h" // For imposing contact angle on the surface
 #include "membrane-equation.h" // For solving the membrane equation
 #include <omp.h> // For openMP parallel
 #include <stdlib.h>
@@ -59,6 +60,10 @@ void output_arrays_stationary(double *p_arr);
 void remove_droplets_region(struct RemoveDroplets p,\
         double ignore_region_x_limit, double ignore_region_y_limit);
 
+/* Contact angle variables */ 
+vector h[];  // Height function
+double theta0 = 90;  // Contact angle in degrees
+
 /* Boundary conditions */
 // Symmetry on left boundary
 u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
@@ -66,6 +71,7 @@ u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
 // Conditions on surface
 uf.n[bottom] = dirichlet(0.);
 uf.t[bottom] = dirichlet(0.);
+h.t[bottom] = contact_angle (theta0*pi/180.);
 
 // Conditions for entry from above
 u.n[top] = neumann(0.); // Allows outflow through boundary
@@ -77,7 +83,7 @@ p[right] = dirichlet(0.); // 0 pressure far from surface
 
 
 /* Field definitions */
-vector h[]; // Height function field
+vector h_test[]; // Height function field
 
 int main() {
 /* Main function for running the simulation */
@@ -91,6 +97,7 @@ int main() {
     rho2 = RHO_R; // Density of air phase
     mu1 = 1. / REYNOLDS; // Viscosity of water phase
     mu2 = mu1 * MU_R; // Viscosity of air phase
+    f.height = h; // For contact angle calculation
     f.sigma = 1. / WEBER; // Surface tension at interface
 
     /* Derived constants */
@@ -305,7 +312,7 @@ event update_membrane(t += DELTA_T) {
         * The height in the y direction at the cell is less than y_min_height 
         * The height in the x direction at the cell is less than x_min_height
     */
-    if (CUTOFF && impact) heights(f, h); // Associates h with the heights of f
+    if (CUTOFF && impact) heights(f, h_test); // Associates h_test with the heights of f
 
     // Iterates over bottom boundary
     foreach_boundary(bottom) {
@@ -335,8 +342,8 @@ event update_membrane(t += DELTA_T) {
             /* Else, f[] == 0 or 1, and we check the heights */
 
             // Check the vertical height, if defined
-            if (h.y[] != nodata) {
-                if (height(h.y[]) - 0.5 < y_min_height) {
+            if (h_test.y[] != nodata) {
+                if (height(h_test.y[]) - 0.5 < y_min_height) {
                     // If the interface position is less than min_height
                     // p_scale = 0;
                     p_next_arr[k] = 0.0;
