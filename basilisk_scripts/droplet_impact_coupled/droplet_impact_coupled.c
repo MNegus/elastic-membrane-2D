@@ -492,7 +492,7 @@ event movies (t += 1e-3) {
 
         /* Zoomed in view of pressure around entrapped bubble */
         // Set up bview box
-        view (width = 1024, height = 1024, fov = 5.0, ty = -0.13, tx = -0.13);
+        view (width = 1024, height = 1024, fov = 2.0, ty = -0.05, tx = -0.05);
         clear();
         draw_vof("f", lw = 2);
         squares("u.y", min = -1.5, max = 1.5, linear = true, spread = -1, map = cool_warm);
