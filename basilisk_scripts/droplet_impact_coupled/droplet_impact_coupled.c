@@ -176,7 +176,7 @@ event refinement (i++) {
 /* Adaptive grid refinement */
 
     // Adapts with respect to velocities and volume fraction 
-    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-6},
+    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-3, 1e-3, 1e-6},
         minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
     /* Attempts to refine above the membrane, doubling the refine height until
@@ -189,6 +189,9 @@ event refinement (i++) {
         // Attempts to refine
         refine((x < MEMBRANE_RADIUS) && (y <= refine_height) \
         && level < MAXLEVEL);
+
+        // Refines a box near origin
+        refine((x <= 0.2) && (y <= 0.1) && level < MAXLEVEL);
 
         // Loops and check if refinement was successful
         adequate_refinement = 1;
@@ -217,7 +220,7 @@ event small_droplet_removal (t += 1e-4) {
 /* Removes any small droplets or bubbles that have formed, that are smaller than
     a specific size */
     // Removes droplets of diameter 5 cells or less
-    int remove_droplet_radius = min(20, (int)(0.2 / MIN_CELL_SIZE));
+    int remove_droplet_radius = min(16, (int)(0.2 / MIN_CELL_SIZE));
     remove_droplets(f, remove_droplet_radius);
 
     // Also remove air bubbles
