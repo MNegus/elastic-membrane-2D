@@ -8,13 +8,14 @@
     
     %% Determines the singular integral for 0 <= x < epsilon * d
     xhat_dependents = zeros(size(xs(1 : idx)));
+    s_vals = xhats(1 : idx);
     
     for m = 1 : idx
         xhat = xhats(m);
         
-        %% trapz method
+        %% trapz method (USE CUMTRAPZ)
         integrand = @(s) trapz_integrand(s, xhat, m, d, m_tt_fun, w_tt_fun, epsilon);
-        s_vals = xhats(1 : idx);
+        
         integral_value = trapz(s_vals, integrand(s_vals), 1);
         xhat_dependents(m) = xhat * m_tt_fun(xhat) - integral_value;
 
