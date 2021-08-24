@@ -11,7 +11,7 @@ function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
         diff = 1e4;
         d_guess = d_previous + delta_t * d_t_previous;
         tol = max(1e-14, max(abs(delta_t * d_t_previous)) / 100);
-        maxiter = 10;
+        maxiter = 50;
         iternum = 1;
         d_curr = d_guess;
         while ((diff > tol) && (iternum <= maxiter))
@@ -32,7 +32,12 @@ function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
         d = d_update;
     
         if (iternum > maxiter) 
-            warning("Max iter reached"); 
+            warning("Max iter reached, using fsolve");
+            
+            % Use fsolve
+            options = optimoptions('fsolve', 'OptimalityTolerance', 1e-8);
+            d_zero_fun = @(d) full_d_zero_fun(d, t, w_fun, epsilon);
+            d = fsolve(d_zero_fun, d_guess, options);
         end
 
         %% Determine d'(t)
@@ -44,6 +49,12 @@ function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
         d_t = (d / 2 + (2 / (pi * d)) * trapz(s_vals, integrand_1)) ...
             / (1 - (2 / pi) * trapz(s_vals, integrand_2));
         
+    end
+    
+    %% Function definition for using fsolve if needed
+    function res = full_d_zero_fun(d, t, w_fun, epsilon)
+        integrand_fun = @(s) w_fun(epsilon * s) ./ sqrt(d^2 - s.^2);
+        res = t - d^2 / 4 - (2 / pi) * integral(integrand_fun, 0, d);
     end
     
 end

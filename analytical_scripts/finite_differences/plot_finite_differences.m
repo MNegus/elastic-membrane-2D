@@ -11,14 +11,14 @@ normal_modes = 0;
 finite_differences = 1;
 dns = 0;
 
-analytical_parent_dir = "/media/michael/newarre/elastic_membrane/second_order_tests";
+analytical_parent_dir = "/scratch/negus/second_order_tests";
 dns_dir = "/home/michael/scratch/alpha_2_beta_1_gamma_0";
 
 %% Parameters
 EPSILON = 1;
 ALPHA = 2 / EPSILON^2; BETA = 1 * EPSILON^2; GAMMA = 0 * EPSILON^2; 
 L = 4;
-T_MAX = 0.25;
+T_MAX = 0.05;
 DELTA_T = 1e-4;
 
 

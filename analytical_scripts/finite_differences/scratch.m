@@ -5,19 +5,18 @@ addpath("../finite_differences");
 addpath("../pressures");
 addpath("../");
 
-parent_dir = "/media/michael/newarre/elastic_membrane/second_order_tests";
+parent_dir = "/scratch/negus/second_order_tests";
 
 
 %% Parameters
 EPSILON = 1;
 ALPHA = 2 / EPSILON^2; BETA = 1 * EPSILON^2; GAMMA = 2 * EPSILON^2; 
 L = 4;
-T_MAX = 0.25;
+T_MAX = 0.05;
 DELTA_T = 1e-4;
 
-
 % FD parameters
-N_MEMBRANE = 16000;
+N_MEMBRANE = 1024;
 
 %% Finite differences
 fd_data_dir = sprintf("%s/finite_differences", parent_dir);

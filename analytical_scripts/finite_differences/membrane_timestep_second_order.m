@@ -20,11 +20,10 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep_second_order(xs, t, ...
     diff = 1e4;
 %     tol = 1e-6;
     tol = max(1e-14, max(abs(DELTA_T * w_t_previous)) / 100);
-    maxiter = 10;
+    maxiter = 100;
     iternum = 1;
     w_next_curr = w_next_guess;
     while ((diff > tol) && (iternum <= maxiter))
-        iternum
         %% Determine w_t_vals and w_tt_vals
         w_t_vals = (w_next_curr - w_previous) / (2 * DELTA_T);
         w_tt_vals = (w_previous - 2 * w + w_next_curr) / (DELTA_T^2);
@@ -48,7 +47,7 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep_second_order(xs, t, ...
     w_next = w_next_update;
     
     if (iternum > maxiter) 
-        warning("Max iter reached"); 
+        warning("Max iter reached in membrane timestep"); 
     end
     
     %% 
