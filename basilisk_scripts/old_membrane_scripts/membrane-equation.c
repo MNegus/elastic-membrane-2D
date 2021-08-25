@@ -51,9 +51,9 @@ relevant parameters and pressure arrays as input.
 
     /* Derived parameters */
     if (GAMMA == 0) {
-        Cpressure = 4 * DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure;
+        Cpressure = DELTA_X * DELTA_X / BETA; // Scaled term in front of pressure;
     } else {
-        Cpressure = 4 * pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
+        Cpressure = pow(DELTA_X, 4) / GAMMA; // Scaled term in front of pressure
     }
     
     /* LAPACKE constants */
@@ -100,9 +100,10 @@ relevant parameters and pressure arrays as input.
     // Sets rhs = w to be equal to 0.5 * B * w_previous
     multiply_matrix(M, w, B_static, w_previous, 0.5, 0);
 
-    // Adds pressure term onto rhs = w
+    // Adds pressure terms onto rhs = w
     for (int k = 0; k < M; k++) {
-        w[k] += 0.5 * Cpressure * p_next[k];
+        w[k] += 0.5 * Cpressure \
+            * (p_previous[k] + 2 * p[k] + p_next[k]);
     }
 
     // Copies over elements to A
@@ -136,7 +137,7 @@ the value of w_next.
 
     // Sets w_next = w_next + pressure term
     for (int k = 0; k < M; k++) {
-        w_next[k] += Cpressure * p_next[k];
+        w_next[k] += Cpressure * (p_previous[k] + 2 * p[k] + p_next[k]);
     }
 
     /* Solves matrix equation */
