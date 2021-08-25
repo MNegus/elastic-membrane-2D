@@ -7,7 +7,7 @@ function [N, delta_d, ds, as, a_ts, a_tts, q_ts] ...
 
     %% Parameters to be passed in
     q = 10;
-    tol = 1e-4;
+    tol = 5e-5;
     N_MEMBRANE = 1024;
     DELTA_X = L / (N_MEMBRANE - 1); 
     xs = (0 : DELTA_X : L - DELTA_X)';
@@ -79,18 +79,14 @@ function [N, delta_d, ds, as, a_ts, a_tts, q_ts] ...
             a_ts = new_a_ts;
             a_tts = new_a_tts;
             q_ts = new_q_ts;
-            
-            if (diff < tol)
-                disp("HELLO???");
-            end
         end
-       
+       diff
         %% Checks for value of N
-        if 2 * N >= N_max
+        if (diff < tol)
+            converged = 1;
+        else
            N = N0;
            delta_d = delta_d / 2;
-        else
-            converged = 1;
         end
     
         

@@ -9,21 +9,22 @@ addpath("pressures");
 % Options (set to 0 if don't want to plot the solution)
 normal_modes = 1;
 finite_differences_comp = 1;
-finite_differences_outer = 1;
+finite_differences_outer = 0;
 dns = 0;
 
-analytical_parent_dir = "/media/michael/newarre/elastic_membrane/analytical_tests";
-dns_dir = "/home/michael/scratch/alpha_2_beta_1_gamma_0";
+% analytical_parent_dir = "/media/michael/newarre/elastic_membrane/analytical_tests";
+analytical_parent_dir = "/media/negus/newarre/elastic_membrane/analytical_tests";
+dns_dir = "/media/negus/newarre/elastic_membrane/second_order_test";
 
 %% Parameters
 EPSILON = 1;
 ALPHA = 2 / EPSILON^2; BETA = 1 * EPSILON^2; GAMMA = 2 * EPSILON^2; 
-L = 4;
-T_MAX = 0.25;
+L = 32;
+T_MAX = 0.05;
 DELTA_T = 1e-4;
 
 % FD parameters
-N_MEMBRANE = 1024;
+N_MEMBRANE = 16384;
 DELTA_X = L / (N_MEMBRANE - 1); 
 xs = (0 : DELTA_X : L - DELTA_X)';
 
@@ -50,13 +51,13 @@ end
 
 %% Turnover point compare
 
-if (dns)
-    % DNS turnover points
-    ds_dir = "/home/michael/scratch/coupled_benchmark";
-    dns_mat = dlmread(sprintf("%s/turnover_points.txt", ds_dir));
-    ds_dns = dns_mat(:, 2);
-    ts_dns = (dns_mat(:, 1) - IMPACT_TIMESTEP) * DELTA_T;
-end
+% if (dns)
+%     % DNS turnover points
+%     ds_dir = "/home/michael/scratch/coupled_benchmark";
+%     dns_mat = dlmread(sprintf("%s/turnover_points.txt", ds_dir));
+%     ds_dns = dns_mat(:, 2);
+%     ts_dns = (dns_mat(:, 1) - IMPACT_TIMESTEP) * DELTA_T;
+% end
 
 if (normal_modes)
     % Normal modes turnover points
@@ -75,16 +76,16 @@ if (finite_differences_outer)
     ds_outer = fd_outer_mat.ds;
 end
 
-% close(figure(1));
-% figure(1);
-% hold on;
+close(figure(1));
+figure(1);
+hold on;
 % plot(ts_dns, ds_dns, 'linewidth', 2);
-% plot(ts_analytical, ds_nm, 'linewidth', 2);
+plot(ts_analytical, ds_nm, 'linewidth', 2);
 % plot(ts_analytical, ds_outer, 'linewidth', 2);
-% plot(ts_analytical, ds_comp, 'linewidth', 2);
-% legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
-% xlabel("t");
-% ylabel("d(t)");
+plot(ts_analytical, ds_comp, 'linewidth', 2);
+legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
+xlabel("t");
+ylabel("d(t)");
 
 %% Loops and plots
 % writerobj = VideoWriter("four_model_compare.avi");
@@ -173,7 +174,7 @@ d_line_3 = animatedline('LineWidth', 2, 'linestyle', '--', ...
         'Displayname', 'Turnover point');
 
 
-for k = IMPACT_TIMESTEP : 10 : length(T_VALS)
+for k = IMPACT_TIMESTEP - 200 : 10 : length(T_VALS)
     %% Updates time
     t = T_VALS(k);
     t

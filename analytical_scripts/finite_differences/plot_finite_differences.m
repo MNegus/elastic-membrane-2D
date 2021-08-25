@@ -6,12 +6,14 @@ addpath("finite_differences");
 addpath("normal_modes");
 addpath("pressures");
 
+pressure_type = "composite";
+
 % Options (set to 0 if don't want to plot the solution)
 normal_modes = 0;
 finite_differences = 1;
 dns = 0;
 
-analytical_parent_dir = "/media/michael/newarre/elastic_membrane/analytical_tests";
+analytical_parent_dir = "/media/negus/newarre/elastic_membrane/analytical_tests";
 dns_dir = "/home/michael/scratch/alpha_2_beta_1_gamma_0";
 
 %% Parameters

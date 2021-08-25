@@ -1,5 +1,5 @@
 function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
-    w, w_t_fun, w_x_fun, epsilon, delta_t) 
+    w_fun, w_t_fun, w_x_fun, epsilon, delta_t) 
 
     xhats = xs / epsilon;
 
@@ -19,7 +19,7 @@ function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
             % Updates d
             idx = sum(xhats < d_curr);
             s_vals = xhats(1 : idx);
-            integrand =  w(1 : idx) ./ sqrt(d_curr^2 - s_vals.^2);
+            integrand =  w_fun(epsilon * s_vals) ./ sqrt(d_curr^2 - s_vals.^2);
             d_update = 2 * sqrt(t - (2 / pi) * trapz(s_vals, integrand));
             
             % Determines difference
@@ -36,7 +36,7 @@ function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
             
             % Use fsolve
             options = optimoptions('fsolve', 'OptimalityTolerance', 1e-8);
-            d_zero_fun = @(d) full_d_zero_fun(d, t, xhats, w);
+            d_zero_fun = @(d) full_d_zero_fun(d, t, w_fun, epsilon);
             d = fsolve(d_zero_fun, d_guess, options);
         end
 
@@ -52,11 +52,8 @@ function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
     end
     
     %% Function definition for using fsolve if needed
-    function res = full_d_zero_fun(d, t, xhats, w)
-        idx = sum(xhats < d);
-        s_vals = xhats(1 : idx);
-        integrand_vals =  w(1 : idx) ./ sqrt(d^2 - s_vals.^2);
-        res = t - d^2 / 4 - (2 / pi) * trapz(s_vals, integrand_vals);
+    function res = full_d_zero_fun(d, t, w_fun, epsilon)
+        integrand = @(s) w_fun(epsilon * s) ./ sqrt(d^2 - s.^2);
+        res = t - d^2 / 4 - (2 / pi) * integral(integrand, 0, d);
     end
-    
 end

@@ -12,9 +12,9 @@ function save_finite_differences_solution_second_order(parent_dir, ...
     T_VALS = 0 : delta_t : tmax;
     
     if (gamma == 0)
-        Cpressure = DELTA_X * DELTA_X / beta;
+        Cpressure = 4 * DELTA_X * DELTA_X / beta;
     else
-        Cpressure = DELTA_X^4 / gamma;
+        Cpressure = 4 * DELTA_X^4 / gamma;
     end
     
 
