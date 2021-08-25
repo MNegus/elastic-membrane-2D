@@ -11,19 +11,19 @@ normal_modes = 0;
 finite_differences = 1;
 dns = 0;
 
-analytical_parent_dir = "/scratch/negus/second_order_tests";
+analytical_parent_dir = "/media/michael/newarre/elastic_membrane/analytical_tests";
 dns_dir = "/home/michael/scratch/alpha_2_beta_1_gamma_0";
 
 %% Parameters
 EPSILON = 1;
 ALPHA = 2 / EPSILON^2; BETA = 1 * EPSILON^2; GAMMA = 0 * EPSILON^2; 
-L = 4;
+L = 16;
 T_MAX = 0.05;
 DELTA_T = 1e-4;
 
 
 % FD parameters
-N_MEMBRANE = 1024;
+N_MEMBRANE = 8192;
 DELTA_X = L / (N_MEMBRANE - 1); 
 xs = (0 : DELTA_X : L - DELTA_X)';
 
@@ -69,16 +69,18 @@ if (finite_differences)
     ds = fd_mat.ds;
 end
 
-% close(figure(1));
-% figure(1);
-% hold on;
+close(figure(1));
+figure(1);
+hold on;
+plot(ts_analytical, 2 * sqrt(ts_analytical), 'linewidth', 2);
 % plot(ts_dns, ds_dns, 'linewidth', 2);
 % plot(ts_analytical, ds_nm, 'linewidth', 2);
 % plot(ts_analytical, ds_outer, 'linewidth', 2);
-% plot(ts_analytical, ds_comp, 'linewidth', 2);
+plot(ts_analytical, ds, 'linewidth', 2);
 % legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
-% xlabel("t");
-% ylabel("d(t)");
+legend(["Stationary", "FD"], 'location', 'northwest');
+xlabel("t");
+ylabel("d(t)");
 
 %% Loops and plots
 % writerobj = VideoWriter("four_model_compare.avi");
@@ -290,6 +292,7 @@ for k = IMPACT_TIMESTEP : 10 : length(T_VALS)
         if (finite_differences)
             clearpoints(p_line);
             addpoints(p_line, xs, ps);
+            ylim([0, 2 * ps(1)]);
         end
     end
 % 
@@ -301,7 +304,7 @@ for k = IMPACT_TIMESTEP : 10 : length(T_VALS)
 % %         xline(ds_comp(k - IMPACT_TIMESTEP), 'linestyle', '--', 'linewidth', 2);
 %         ylim([0, 5 * ps_comp(1)]);
 %     end
-
+    
     legend( "interpreter", "latex");
     xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
     ylabel("$p(x, t)$", "interpreter", "latex", "Fontsize", 18);

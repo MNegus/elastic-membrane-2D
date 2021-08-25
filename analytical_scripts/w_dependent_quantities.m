@@ -1,12 +1,13 @@
 function [p, d, d_t, J] = w_dependent_quantities(xs, t, w_t, w_tt, ...
-    w_fun, w_x_fun, d_previous, d_t_previous, pressure_type, EPSILON, DELTA_T)
+    w, w_x_fun, d_previous, d_t_previous, pressure_type, EPSILON, DELTA_T)
     
     %% Determine continous functions for w_t_vals and w_tt_vals
     w_t_fun = @(x) interp1(xs, w_t, x, 'linear', 'extrap');
     w_tt_fun = @(x) interp1(xs, w_tt, x, 'linear', 'extrap');
 
     %% Determine d and d_t
-    [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, w_fun, w_t_fun, w_x_fun, EPSILON, DELTA_T);
+%     [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, w_fun, w_t_fun, w_x_fun, EPSILON, DELTA_T);
+    [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, w, w_t_fun, w_x_fun, EPSILON, DELTA_T);
 
     % Finds d_idx such that x(d_idx) < epsilon * d but x(d_idx) >= epsilon * d
     d_idx = sum(xs < EPSILON * d);

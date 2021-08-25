@@ -1,6 +1,9 @@
-function save_finite_differences_solution_second_order(data_dir, ...
+function save_finite_differences_solution_second_order(parent_dir, ...
     alpha, beta, gamma, epsilon, N_membrane, L, tmax, delta_t, ...
     pressure_type)
+
+    %% 
+    fd_data_dir = sprintf("%s/%s", parent_dir, pressure_type);
 
     %% Derived parameters
     DELTA_X = L / (N_membrane - 1); 
@@ -32,9 +35,9 @@ function save_finite_differences_solution_second_order(data_dir, ...
     
     %% Save arrays
     % Composite
-    save(sprintf("%s/w_%d.mat", data_dir, 0), 'w_previous');
-    save(sprintf("%s/w_t_%d.mat", data_dir, 0), 'w_t');
-    save(sprintf("%s/p_%d.mat", data_dir, 0), 'p');
+    save(sprintf("%s/w_%d.mat", fd_data_dir, 0), 'w_previous');
+    save(sprintf("%s/w_t_%d.mat", fd_data_dir, 0), 'w_t');
+    save(sprintf("%s/p_%d.mat", fd_data_dir, 0), 'p');
     
     %% Loops over time
     for k = 2 : length(T_VALS)
@@ -54,9 +57,9 @@ function save_finite_differences_solution_second_order(data_dir, ...
         d_ts(k) = d_t;
 
         % Saves arrays
-        save(sprintf("%s/w_%d.mat", data_dir, k - 1), 'w_next');
-        save(sprintf("%s/w_t_%d.mat", data_dir, k - 1), 'w_t');
-        save(sprintf("%s/p_%d.mat", data_dir, k - 1), 'p');
+        save(sprintf("%s/w_%d.mat", fd_data_dir, k - 1), 'w_next');
+        save(sprintf("%s/w_t_%d.mat", fd_data_dir, k - 1), 'w_t');
+        save(sprintf("%s/p_%d.mat", fd_data_dir, k - 1), 'p');
         
         % Swaps ws
         temp = w_previous;
@@ -68,7 +71,7 @@ function save_finite_differences_solution_second_order(data_dir, ...
     end
     
     %% Saves ds solutions
-    save(sprintf("%s/ds.mat", data_dir), 'ds');
-    save(sprintf("%s/d_ts.mat", data_dir), 'd_ts');
+    save(sprintf("%s/ds.mat", fd_data_dir), 'ds');
+    save(sprintf("%s/d_ts.mat", fd_data_dir), 'd_ts');
     
 end

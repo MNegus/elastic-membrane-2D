@@ -7,24 +7,23 @@ addpath("normal_modes");
 addpath("pressures");
 
 % Options (set to 0 if don't want to plot the solution)
-normal_modes = 0;
-finite_differences = 0;
-dns = 1;
+normal_modes = 1;
+finite_differences_comp = 1;
+finite_differences_outer = 1;
+dns = 0;
 
 analytical_parent_dir = "/media/michael/newarre/elastic_membrane/analytical_tests";
 dns_dir = "/home/michael/scratch/alpha_2_beta_1_gamma_0";
 
 %% Parameters
 EPSILON = 1;
-ALPHA = 2 / EPSILON^2; BETA = 1 * EPSILON^2; GAMMA = 0 * EPSILON^2; 
+ALPHA = 2 / EPSILON^2; BETA = 1 * EPSILON^2; GAMMA = 2 * EPSILON^2; 
 L = 4;
 T_MAX = 0.25;
 DELTA_T = 1e-4;
 
-
-
 % FD parameters
-N_MEMBRANE = 2056;
+N_MEMBRANE = 1024;
 DELTA_X = L / (N_MEMBRANE - 1); 
 xs = (0 : DELTA_X : L - DELTA_X)';
 
@@ -36,7 +35,8 @@ ts_analytical = 0 : DELTA_T : T_MAX;
 
 %% Loads in normal modes solutions
 if (normal_modes)
-    N = 128
+    N_mat = matfile(sprintf("%s/normal_modes/N.mat", analytical_parent_dir));
+    N = N_mat.N
     
     as_mat = matfile(sprintf("%s/normal_modes/as.mat", analytical_parent_dir));
     as = as_mat.as;
@@ -64,13 +64,15 @@ if (normal_modes)
     ds_nm = nm_mat.ds;
 end
 
-if (finite_differences)
+if (finite_differences_comp)
     % FD turnover points
     fd_comp_mat = matfile(sprintf("%s/finite_differences/composite/ds.mat", analytical_parent_dir));
-    ds_comp = fd_comp_mat.ds_composite;
+    ds_comp = fd_comp_mat.ds;
+end
 
+if (finite_differences_outer)
     fd_outer_mat = matfile(sprintf("%s/finite_differences/outer/ds.mat", analytical_parent_dir));
-    ds_outer = fd_outer_mat.ds_outer;
+    ds_outer = fd_outer_mat.ds;
 end
 
 % close(figure(1));
@@ -116,24 +118,33 @@ if (dns)
         'Displayname', 'DNS');
 end
 
-if (finite_differences)
+if (finite_differences_comp)
     subplot(3, 1, 1);
     comp_w_line = animatedline('Color', colors(2, :),'LineWidth', 2, ...
         'Displayname', 'FD: Composite');
-    outer_w_line = animatedline('Color', colors(4, :),'LineWidth', 2, ...
-        'Displayname', 'FD: Outer');
     
     subplot(3, 1, 2);
     comp_w_t_line = animatedline('Color', colors(2, :),'LineWidth', 2, ...
         'Displayname', 'FD: Composite');
-    outer_w_t_line = animatedline('Color', colors(4, :),'LineWidth', 2, ...
-        'Displayname', 'FD: Outer');
     
     subplot(3, 1, 3);
     comp_p_line = animatedline('Color', colors(2, :),'LineWidth', 2, ...
         'Displayname', 'FD: Composite');
+end
+
+if (finite_differences_outer)
+    subplot(3, 1, 1);
+    outer_w_line = animatedline('Color', colors(4, :),'LineWidth', 2, ...
+        'Displayname', 'FD: Outer');
+    
+    subplot(3, 1, 2);
+    outer_w_t_line = animatedline('Color', colors(4, :),'LineWidth', 2, ...
+        'Displayname', 'FD: Outer');
+    
+    subplot(3, 1, 3);
     outer_p_line = animatedline('Color', colors(4, :),'LineWidth', 2, ...
         'Displayname', 'FD: Outer');
+    
 end
 
 if (normal_modes)
@@ -177,26 +188,28 @@ for k = IMPACT_TIMESTEP : 10 : length(T_VALS)
                 a_ts(k - IMPACT_TIMESTEP, :), q_ts(k - IMPACT_TIMESTEP, :), L, N); 
         end
         
-        if (finite_differences)
+        if (finite_differences_comp)
             % Composites
             ws_comp_mat = matfile(sprintf("%s/finite_differences/composite/w_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
-            ws_comp = ws_comp_mat.w_next_composite;
+            ws_comp = ws_comp_mat.w_next;
 
             w_ts_comp_mat = matfile(sprintf("%s/finite_differences/composite/w_t_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
-            w_ts_comp = w_ts_comp_mat.w_t_composite;
+            w_ts_comp = w_ts_comp_mat.w_t;
 
             ps_comp_mat = matfile(sprintf("%s/finite_differences/composite/p_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
-            ps_comp = ps_comp_mat.p_composite;
-
+            ps_comp = ps_comp_mat.p;
+        end
+        
+        if (finite_differences_outer)
             % Outers
             ws_outer_mat = matfile(sprintf("%s/finite_differences/outer/w_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
-            ws_outer = ws_outer_mat.w_next_outer;
+            ws_outer = ws_outer_mat.w_next;
 
             w_ts_outer_mat = matfile(sprintf("%s/finite_differences/outer/w_t_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
-            w_ts_outer = w_ts_outer_mat.w_t_outer;
+            w_ts_outer = w_ts_outer_mat.w_t;
 
             ps_outer_mat = matfile(sprintf("%s/finite_differences/outer/p_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
-            ps_outer = ps_outer_mat.p_outer;
+            ps_outer = ps_outer_mat.p;
         end
     end
         
@@ -222,10 +235,12 @@ for k = IMPACT_TIMESTEP : 10 : length(T_VALS)
             addpoints(nm_w_line, xs, ws_nm);
         end
         
-        if (finite_differences)
+        if (finite_differences_comp)
             clearpoints(comp_w_line);
             addpoints(comp_w_line, xs, ws_comp);
-
+        end
+        
+        if (finite_differences_outer)
             clearpoints(outer_w_line);
             addpoints(outer_w_line, xs, ws_outer);
         end
@@ -269,10 +284,12 @@ for k = IMPACT_TIMESTEP : 10 : length(T_VALS)
             addpoints(nm_w_t_line, xs, w_ts_nm);
         end
         
-        if (finite_differences)
+        if (finite_differences_comp)
             clearpoints(comp_w_t_line);
             addpoints(comp_w_t_line, xs, w_ts_comp);
-
+        end
+        
+        if (finite_differences_outer)
             clearpoints(outer_w_t_line);
             addpoints(outer_w_t_line, xs, w_ts_outer);
         end
@@ -313,10 +330,14 @@ for k = IMPACT_TIMESTEP : 10 : length(T_VALS)
             addpoints(nm_p_line, xs, ps_nm);
         end
         
-        if (finite_differences)
+        if (finite_differences_comp)
             clearpoints(comp_p_line);
             addpoints(comp_p_line, xs, ps_comp);
 
+           
+        end
+        
+        if (finite_differences_outer)
             clearpoints(outer_p_line);
             addpoints(outer_p_line, xs, ps_outer);
         end
