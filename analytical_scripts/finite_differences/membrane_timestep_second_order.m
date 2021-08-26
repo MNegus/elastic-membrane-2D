@@ -48,19 +48,14 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep_second_order(xs, t, ...
     
     if (iternum > maxiter) 
         warning("Max iter reached in membrane timestep"); 
+        zero_fun = @(w_next_vals) full_zero_fun(w_next_vals, xs, t, w, w_previous, ...
+        w_fun, w_x_fun, A_mat, B_mat, d_previous, d_t_previous, ...
+        DELTA_T, Cpressure, pressure_type, EPSILON);
+    
+        options = optimoptions('fsolve', 'Display', 'iter');
+        w_next = fsolve(zero_fun, w_next_guess, options);
     end
-    
-    %% 
-        
-        
-    
-%     zero_fun = @(w_next_vals) full_zero_fun(w_next_vals, xs, t, w, w_previous, ...
-%             w_fun, w_x_fun, A_mat, B_mat, ...
-%             DELTA_T, Cpressure, pressure_type, EPSILON);
-%     
-%     options = optimoptions('fsolve', 'Display', 'iter');
-%     w_next = fsolve(zero_fun, w_next_guess, options);
-    
+
     %% Solves for remaining quantities
     % Membrane derivatives
     w_t = (w_next - w_previous) / (2 * DELTA_T);
@@ -72,21 +67,21 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep_second_order(xs, t, ...
         EPSILON, DELTA_T);
     
 %     %% Zero function used in fsolve to find w_next
-%     function res = full_zero_fun(w_next_vals, xs, t, w, w_previous, ...
-%             w_fun, w_x_fun, A_mat, B_mat, ...
-%             DELTA_T, Cpressure, pressure_type, EPSILON)
-%         
-%         %% Determine w_t_vals and w_tt_vals
-%         w_t_vals = (w_next_vals - w_previous) / (2 * DELTA_T);
-%         w_tt_vals = (w_previous - 2 * w + w_next_vals) / (DELTA_T^2);
-%         
-%         %% Solves for pressure
-%         [p_vals, ~, ~, ~] = w_dependent_quantities(xs, t, ...
-%             w_t_vals, w_tt_vals, w_fun, w_x_fun, pressure_type, EPSILON);
-%         
-%         %% Determines res, the solution to the PDE
-%         res = A_mat * w_next_vals -B_mat * w + A_mat * w_previous ...
-%             - Cpressure * p_vals;
-%         
-%     end
+    function res = full_zero_fun(w_next_vals, xs, t, w, w_previous, ...
+            w_fun, w_x_fun, A_mat, B_mat, d_previous, d_t_previous,...
+            DELTA_T, Cpressure, pressure_type, EPSILON)
+        
+        %% Determine w_t_vals and w_tt_vals
+        w_t_vals = (w_next_vals - w_previous) / (2 * DELTA_T);
+        w_tt_vals = (w_previous - 2 * w + w_next_vals) / (DELTA_T^2);
+        
+        %% Solves for pressure
+        [p_vals, ~, ~, ~] = w_dependent_quantities(xs, t, ...
+            w_t_vals, w_tt_vals, w_fun, w_x_fun, d_previous, d_t_previous, pressure_type, EPSILON, DELTA_T);
+        
+        %% Determines res, the solution to the PDE
+        res = A_mat * w_next_vals -B_mat * w + A_mat * w_previous ...
+            - Cpressure * p_vals;
+        max(res)
+    end
 end
