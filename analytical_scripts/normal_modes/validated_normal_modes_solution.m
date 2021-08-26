@@ -86,7 +86,7 @@ function [N, delta_d, ds, as, a_ts, a_tts, q_ts] ...
             converged = 1;
         else
            N = N0;
-           delta_d = delta_d / 2;
+           delta_d = delta_d / 10;
         end
     
         
