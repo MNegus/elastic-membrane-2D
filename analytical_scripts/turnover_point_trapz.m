@@ -32,10 +32,10 @@ function [d, d_t] = turnover_point_trapz(xs, t, d_previous, d_t_previous, ...
         d = d_update;
     
         if (iternum > maxiter) 
-            warning("Max iter reached, using fsolve");
+            warning("Max iter in turnover_point reached, using fsolve");
             
             % Use fsolve
-            options = optimoptions('fsolve', 'OptimalityTolerance', 1e-8);
+            options = optimoptions('fsolve', 'OptimalityTolerance', 1e-8, 'display', 'off');
             d_zero_fun = @(d) full_d_zero_fun(d, t, w_fun, epsilon);
             d = fsolve(d_zero_fun, d_guess, options);
         end
