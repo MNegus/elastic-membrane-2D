@@ -4,14 +4,24 @@ code_dir=$1
 dest_dir=$2
 
 
-for COARSEN in 0 1 2 3
-do
+for GAMMA in 0.1 0.2 0.4 0.8 1.6 3.2 6.4 12.8
+do 
     # Changes the parameters file
-    sed -i "/FD_COARSEN_LEVEL/c\const int FD_COARSEN_LEVEL = $COARSEN;" parameters.h
+    sed -i "/GAMMA/c\const double GAMMA = $GAMMA; // Bending term" parameters.h
 
     # Copies over the code 
-    ./code_copy.sh $code_dir $dest_dir coarsen_$COARSEN
+    ./code_copy.sh $code_dir $dest_dir gamma_$GAMMA
+
 done
+
+# for COARSEN in 0 1 2 3
+# do
+#     # Changes the parameters file
+#     sed -i "/FD_COARSEN_LEVEL/c\const int FD_COARSEN_LEVEL = $COARSEN;" parameters.h
+
+#     # Copies over the code 
+#     ./code_copy.sh $code_dir $dest_dir coarsen_$COARSEN
+# done
 
 # for MAXLEVEL in 8 9 10 11 12 13
 # do
