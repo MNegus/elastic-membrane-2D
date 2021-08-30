@@ -1,7 +1,7 @@
 #!/bin/bash
 
-code_dir=$1
-dest_dir=$2
+parent_dir=$1
+code_name=$2
 
 ALPHA=1;
 
