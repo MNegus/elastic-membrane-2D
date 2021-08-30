@@ -1,5 +1,10 @@
 #!/bin/bash
 
+code_dir=$1
+dest_dir=$2
+
+ALPHA=1;
+
 for GAMMA in 0.8 1.6 3.2 6.4 12.8
 do
     for BETA in 0
