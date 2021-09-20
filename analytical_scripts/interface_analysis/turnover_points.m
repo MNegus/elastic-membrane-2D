@@ -14,12 +14,15 @@ function ds = turnover_points(output_range, parent_dir, ...
     previous_y = 0;
     previous_x = 0;
     change_tol = 1e-2;
+    impact = 0;
 
+    
+    figure(1);
     for k = 1 : length(output_range)
         % Name of interface file
         filename ...
             = sprintf('%s/interfaces/interface_%d.txt', ...
-                parent_dir, output_range(k))
+                parent_dir, output_range(k));
 
         % Reads in the start and end points of the line segments, with x along
         % the horizontal axis and y along the vertical
@@ -43,17 +46,22 @@ function ds = turnover_points(output_range, parent_dir, ...
 
         % Loops to find point, rejecting massive changes
         diff = 1e3;
-        while diff > change_tol
+        
+        if (impact == 0)
             [turnover_y, turnover_x, idx, x_interp, ys] = find_turnover(sorted_points);
+        else
+            while ((diff > change_tol))
+                [turnover_y, turnover_x, idx, x_interp, ys] = find_turnover(sorted_points);
             
-            if (k == 1)
-                diff = 0;
-            else
-                diff = abs(turnover_x - previous_x);
-                
-                if (diff > change_tol)
-                   % Remove all points up to the index
-                   sorted_points = sorted_points(idx + 1 : end, :);
+                if (k == 1)
+                    diff = 0;
+                else
+                    diff = abs(turnover_x - previous_x);
+
+                    if (diff > change_tol)
+                       % Remove all points up to the index
+                       sorted_points = sorted_points(idx + 1 : end, :);
+                    end
                 end
             end
         end
@@ -64,14 +72,24 @@ function ds = turnover_points(output_range, parent_dir, ...
         % Saves r and z coordinate of the turnover point
         ds(k, 1) = turnover_x;
         ds(k, 2) = turnover_y;
+        
+        if (impact == 0)
+           if turnover_x > 0
+               impact = 1;
+           end
+        end
 
         % Plots the turnover point on a graph
-        figure(1);
+%         figure(1);
         plot(ys, x_interp(ys));
         hold on;
         scatter(ds(k, 2), ds(k, 1));
         hold off;
         title(num2str(k));
+        drawnow;
+        
+        k
+        turnover_x
 
     end
     
