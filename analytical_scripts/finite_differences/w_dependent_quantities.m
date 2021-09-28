@@ -26,7 +26,7 @@ function [p, d, d_t, J] = w_dependent_quantities(xs, t, w_t, w_tt, ...
         m_tt_fun = @(s) interp1(s_vals, m_tt, s, 'linear', 'extrap');
     end
     %% Determine time-dependent quantities
-    [A, C, J] = time_dependent_quantities(d, d_t, w_t_fun, w_tt_fun, m_t_fun, EPSILON);
+    [A, B, C, J] = time_dependent_quantities(d, d_t, w_t_fun, w_tt_fun, m_t_fun, EPSILON);
     
     %% Determine pressure at current timestep
 %     tic;

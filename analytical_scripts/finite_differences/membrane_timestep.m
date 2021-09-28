@@ -53,7 +53,7 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep(xs, t, ...
 
 
         %% Determine time-dependent quantities
-        [A, C, J] = time_dependent_quantities(d, d_t, w_t_fun, w_tt_fun, m_t_fun, EPSILON);
+        [A, B, C, J] = time_dependent_quantities(d, d_t, w_t_fun, w_tt_fun, m_t_fun, EPSILON);
         
         %% Determine pressure at current timestep
         if pressure_type == "outer"
