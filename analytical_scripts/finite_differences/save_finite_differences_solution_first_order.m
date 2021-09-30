@@ -32,6 +32,7 @@ function save_finite_differences_solution_first_order(parent_dir, ...
     p_previous = zeros(size(xs));
     ds = zeros(size(T_VALS));
     d_ts = zeros(size(T_VALS));
+    Js = zeros(size(T_VALS));
     
     %% Save initial arrays
     save(sprintf("%s/w_%d.mat", fd_data_dir, 0), 'w_previous');
@@ -52,6 +53,7 @@ function save_finite_differences_solution_first_order(parent_dir, ...
         
         ds(k) = d;
         d_ts(k) = d_t;
+        Js(k) = J;
 
         % Saves arrays
         save(sprintf("%s/w_%d.mat", fd_data_dir, k + 1), 'w_next');
@@ -72,5 +74,6 @@ function save_finite_differences_solution_first_order(parent_dir, ...
     %% Saves ds solutions
     save(sprintf("%s/ds.mat", fd_data_dir), 'ds');
     save(sprintf("%s/d_ts.mat", fd_data_dir), 'd_ts');
+    save(sprintf("%s/Js.mat", fd_data_dir), 'Js');
     
 end

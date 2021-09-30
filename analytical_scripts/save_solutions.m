@@ -5,7 +5,7 @@ addpath("finite_differences");
 addpath("normal_modes");
 addpath("pressures");
 
-parent_dir = "/media/michael/newarre/elastic_membrane/beta_vary_test/analytical_data";
+parent_dir = "/home/negus/Desktop/jet_energy_test";
 
 
 %% Parameters
@@ -16,7 +16,7 @@ parent_dir = "/media/michael/newarre/elastic_membrane/beta_vary_test/analytical_
 for ALPHA = ALPHAS
     for BETA = BETAS
         for GAMMA = GAMMAS
-            data_dir = sprintf("%s/alpha_%g_beta_%g_gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
+            data_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 %             data_dir = parent_dir;
             mkdir(data_dir);
 
@@ -41,22 +41,22 @@ for ALPHA = ALPHAS
 end
 
 %% Normal modes
-for ALPHA = ALPHAS
-    for BETA = BETAS
-        for GAMMA = GAMMAS
-            data_dir = sprintf("%s/alpha_%g_beta_%g_gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
-%             data_dir = parent_dir;
-            mkdir(data_dir);
-
-            %% Normal modes
-            nm_data_dir = sprintf("%s/normal_modes", data_dir);
-            mkdir(nm_data_dir);
-            % save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX, DELTA_T);
-            save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX, DELTA_T);
-        
-
-        end
-    end
-end
+% for ALPHA = ALPHAS
+%     for BETA = BETAS
+%         for GAMMA = GAMMAS
+%             data_dir = sprintf("%s/alpha_%g_beta_%g_gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
+% %             data_dir = parent_dir;
+%             mkdir(data_dir);
+% 
+%             %% Normal modes
+%             nm_data_dir = sprintf("%s/normal_modes", data_dir);
+%             mkdir(nm_data_dir);
+%             % save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX, DELTA_T);
+%             save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX, DELTA_T);
+%         
+% 
+%         end
+%     end
+% end
 
             

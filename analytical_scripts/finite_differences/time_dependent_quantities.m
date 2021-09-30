@@ -1,7 +1,7 @@
 function [A, B, C, J] = time_dependent_quantities(d, d_t, w_t_fun, w_tt_fun, m_t_fun, epsilon)
     
     if (d == 0)
-        A = 0; C = 0; J = 0;
+        A = 0; B= 0; C = 0; J = 0;
     else
         %% Determine A(t)
         A_integrand_1 = @(s) w_t_fun(epsilon * s) ./ sqrt(d^2 - s.^2);
