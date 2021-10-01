@@ -1,6 +1,6 @@
-function [w_next, p, w_t, d, d_t, J] = membrane_timestep(...
-    xs, t, w, w_previous, p_previous, pressure_type, EPSILON, DELTA_T, ...
-    DELTA_X, M, Cpressure, A_mat, B_mat)
+function [w_next, p, w_t, d, d_t, J] = prescribed_membrane_timestep(...
+    xs, t, w, w_previous, p_previous, EPSILON, DELTA_T, ...
+    DELTA_X, M, Cpressure, A_mat, B_mat, ALPHA, L, Ne)
     
     %% Solves for w_next via matrix inversion
     rhs = B_mat * w - A_mat * w_previous + Cpressure * p_previous;
@@ -22,7 +22,9 @@ function [w_next, p, w_t, d, d_t, J] = membrane_timestep(...
     w_tt_fun = @(x) interp1(xs, w_tt, x, 'linear', 'extrap');
     
     % Pressure, turnover points and jet thickness
-    [p, d, d_t, J] = w_dependents(xs, t, w_fun, ...
-        w_t_fun, w_tt_fun, w_x_fun, pressure_type, EPSILON);
+    p = prescribed_pressure(xs, ALPHA, L, Ne);
+    d = 2 * sqrt(t);
+    d_t = 1 / sqrt(t);
+    J = pi * d / (8 * d_t^2);
     
 end

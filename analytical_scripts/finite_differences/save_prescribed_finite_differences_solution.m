@@ -1,5 +1,5 @@
 function save_prescribed_finite_differences_solution(parent_dir, ...
-    ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T)
+    ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T, Ne)
 
     %% Saves data in sub-directory depending on pressure type
     fd_data_dir = sprintf("%s/%s", parent_dir);
@@ -44,9 +44,9 @@ function save_prescribed_finite_differences_solution(parent_dir, ...
         t
 
         %% Composite timestep
-        [w_next, p, w_t, d, d_t, J] = membrane_timestep(...
-            xs, t, w, w_previous, p_previous, pressure_type, ...
-            EPSILON, DELTA_T, DELTA_X, M, Cpressure, A_mat, B_mat);
+        [w_next, p, w_t, d, d_t, J] = prescribed_membrane_timestep(...
+            xs, t, w, w_previous, p_previous, ...
+            EPSILON, DELTA_T, DELTA_X, M, Cpressure, A_mat, B_mat, ALPHA, L, Ne);
         
         ds(k) = d;
         d_ts(k) = d_t;
