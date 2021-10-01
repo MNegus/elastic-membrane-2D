@@ -9,13 +9,17 @@ N = 128;
 tmax = 0.25;
 delta_t = 1e-4;
 tvals = 0 : delta_t : tmax;
-xs = linspace(0, L, 1024);
+
+N_MEMBRANE = 1024;
+DELTA_X = L / (N_MEMBRANE - 1); 
+xs = (0 : DELTA_X : L - DELTA_X)';
+
 lambda = @(n) pi * (2 * n - 1) / (2 * L);
-lambdas = pi * (2 * (1 : N)' - 1) / (2 * L);
+lambdas = pi * (2 * (1 : N) - 1) / (2 * L);
 ks = beta * lambdas.^2 + gamma * lambdas.^4;
 
 %% Data directory
-data_dir = "/home/michael/Desktop/normal_modes_validation_test";
+data_dir = "/home/negus/Desktop/normal_modes_validation_test";
 
 
 
@@ -40,7 +44,6 @@ size(as)
 close(figure(1));
 figure(1);
 
-exact_as = zeros(1, N);
 % for q = 1 : length(tvals)
 for q = 1 : 10 : length(tvals)   
     t = tvals(q)
@@ -48,7 +51,6 @@ for q = 1 : 10 : length(tvals)
    
    %% Finds exact solution
    exact_as = alpha * (1 - cos(sqrt(ks) * t / sqrt(alpha))) ./ (ks .* sqrt(L * lambdas));
-   
 
    %% Plots exact and numerical
    exact_solution = w_solution(xs, exact_as, L, N);
@@ -59,24 +61,18 @@ for q = 1 : 10 : length(tvals)
    hold off;
    legend(["Exact", "Numerical"]);
    drawnow;
-   max(abs(exact_solution - numerical_solution))
+%    max(abs(exact_solution - numerical_solution))
    pause(0.1);
    
     
 end
 
 
-
 %% Function definitions
 function ws = w_solution(xs, as, L, N)
-    ws = zeros(size(xs));
     
-    lambda = @(n) pi * (2 * n - 1) / (2 * L);
+    lambdas = pi * (2 * (1 : N) - 1) / (2 * L);
     
-    
-    %% FIND AN ALTERNATIVE USING MATRIX MULTIPLICATION
-    for n = 1 : N
-        ws = ws + as(n) * cos(lambda(n) * xs) / sqrt(L);
-    end
-
+    % Find ws
+    ws = sum(as .* cos(xs * lambdas), 2) / sqrt(L);
 end
