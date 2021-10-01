@@ -1,9 +1,8 @@
-function save_finite_differences_solution(parent_dir, ...
-    ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T, ...
-    pressure_type)
+function save_prescribed_finite_differences_solution(parent_dir, ...
+    ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T)
 
     %% Saves data in sub-directory depending on pressure type
-    fd_data_dir = sprintf("%s/%s", parent_dir, pressure_type);
+    fd_data_dir = sprintf("%s/%s", parent_dir);
 
     %% Derived parameters
     DELTA_X = L / (N_MEMBRANE - 1); 
