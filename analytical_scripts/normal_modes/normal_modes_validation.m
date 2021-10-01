@@ -53,9 +53,9 @@ for q = 1 : 10 : length(tvals)
    %% Plots exact and numerical
    exact_solution = w_solution(xs, exact_as, L, N);
    numerical_solution = w_solution(xs, as(q, :), L, N);
-   plot(xs, exact_solution);
+   plot(xs, exact_solution, 'linewidth', 5, 'color', 0.5 * [1 1 1]);
    hold on;
-   plot(xs, numerical_solution);
+   plot(xs, numerical_solution, 'linewidth', 2);
    hold off;
    legend(["Exact", "Numerical"]);
    drawnow;

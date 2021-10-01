@@ -1,9 +1,10 @@
-alpha = 2;
-beta = 1;
-gamma = 2;
+alpha = 10;
+beta = 10;
+gamma = 10;
 epsilon = 1;
 L = 16;
 N = 128;
+r = alpha;
 
 lambda = @(n) pi * (2 * n - 1) / (2 * L);
 as = zeros(N, 1);
@@ -21,7 +22,7 @@ for q = 1 : length(tvals)
    
    for n = 1 : N
         k = beta * lambda(n)^2 + gamma * lambda(n)^4;
-        as(n) = 10 * (-2 * alpha + k * t^2 + 2 * alpha * cos(sqrt(k / alpha) * t)) / (k^2 * sqrt(n));
+        as(n) = alpha * (1 - cos(k * t/ sqrt(alpha)))/(k^2 * sqrt(L * lambda(n)));
    end
    
    plot(xs, w_solution(xs, as, L, N));
