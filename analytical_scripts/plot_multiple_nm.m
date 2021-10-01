@@ -19,7 +19,7 @@ pressure_type = "composite";
 
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/confirmation_data/gamma_varying/analytical_data";
+parent_dir = "/home/negus/Desktop/jet_energy_test";
 
 
 %% Turnover point comparison
