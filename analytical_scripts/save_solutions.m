@@ -5,7 +5,7 @@ addpath("finite_differences");
 addpath("normal_modes");
 addpath("pressures");
 
-parent_dir = "/home/negus/Desktop/jet_energy_test";
+parent_dir = "/home/michael/Desktop/jet_energy_test";
 
 
 %% Parameters
@@ -26,7 +26,7 @@ for ALPHA = ALPHAS
 
             composite_dir = sprintf("%s/composite", fd_data_dir);
             mkdir(composite_dir);
-            save_finite_differences_solution_first_order(fd_data_dir, ...
+            save_finite_differences_solution(fd_data_dir, ...
                 ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T, ...
                 "composite")
 
@@ -44,7 +44,7 @@ end
 % for ALPHA = ALPHAS
 %     for BETA = BETAS
 %         for GAMMA = GAMMAS
-%             data_dir = sprintf("%s/alpha_%g_beta_%g_gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
+%             data_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 % %             data_dir = parent_dir;
 %             mkdir(data_dir);
 % 
