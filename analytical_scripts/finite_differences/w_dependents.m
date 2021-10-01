@@ -1,4 +1,4 @@
-function [p, d, d_t, J] = w_dependent_first_order(xs, t, w_fun, ...
+function [p, d, d_t, J] = w_dependents(xs, t, w_fun, ...
     w_t_fun, w_tt_fun, w_x_fun, pressure_type, EPSILON)
     
     %% Determine d and d_t
@@ -21,7 +21,7 @@ function [p, d, d_t, J] = w_dependent_first_order(xs, t, w_fun, ...
         m_tt_fun = @(s) interp1(s_vals, m_tt, s, 'linear', 'extrap');
     end
     %% Determine time-dependent quantities
-    [A, B, C, J] = time_dependent_quantities(d, d_t, w_t_fun, w_tt_fun, m_t_fun, EPSILON);
+    [A, B, C, J] = time_dependents(d, d_t, w_t_fun, w_tt_fun, m_t_fun, EPSILON);
     
     %% Determine pressure at current timestep
     if pressure_type == "outer"
