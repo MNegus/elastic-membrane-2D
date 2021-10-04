@@ -129,6 +129,10 @@ int main() {
     FILE *logfile = fopen("log", "w");
     fclose(logfile);
 
+    /* Creates turnover point file */
+    FILE *turnover_point_file = fopen("turnover_points_basilisk.txt", "w");
+    fclose(turnover_point_file);
+
     /* Poisson solver constants */
     DT = 1.0e-4; // Minimum timestep
     NITERMIN = 1; // Min number of iterations (default 1)
@@ -385,6 +389,66 @@ event output_interface (t += DELTA_T) {
     fclose(interface_file);
 
     interface_output_no++;
+}
+
+
+event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
+/* Outputs the coordinates of the turnover point and its velocity */
+
+    // Opens the turnover points file
+    FILE *turnover_point_file = fopen("turnover_points_basilisk.txt", "a");
+    
+
+    
+    if (impact == 0) {
+        /* If we are pre-impact, output the turnover point to be at (0, 0) */
+        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f\n", t, 0., 0., 0., 0.);
+    } else {
+        /* Else we find the turnover point to be the point along the bottom half
+        of the droplet with the lowest value of x */
+        // NOTE: WILL NOT WORK IF ENTRAPPED BUBBLE IS PRESENT
+
+        // Maximum value of y to look is the half way point of the droplet
+        // double max_y = INITIAL_DROP_HEIGHT + 0.5 * DROP_RADIUS - t;
+
+        // Maximum value of y is taken to be 0.25, which the turnover point 
+        // should not reach in the current timescale
+        double max_y = 0.25;
+
+        // Initialises minimum value of x to be large
+        double turnover_x = 1e6;
+
+        // Variables for the y coordinate and velocities of the turnover point,
+        // initialised to 0 in case a  turnover point is not found
+        double turnover_y = 0;
+        double turnover_x_vel = 0;
+        double turnover_y_vel = 0;
+
+        // REDUCTION OPERATORS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        // Iterates over the interface to find the turnover point
+        foreach(reduction(min:turnover_x)) {
+            // If current point is not on the interface, then continue
+            if ((f[] == 0) || (f[] == 1)) continue;
+
+            // Continues if current point is not the new minumum for x
+            if ((x > turnover_x) || (y > max_y)) continue;
+
+            // If here, then set the current point to be the turnover point
+            turnover_x = x;
+
+            // THIS IS WRONG, NEEDS TO BE A CRITICAL (?) REGION
+            turnover_y = y;
+            turnover_x_vel = uf.x[];
+            turnover_y_vel = uf.y[];
+        }
+
+        // Outputs the turnover point data
+        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f\n", \
+            t, turnover_x, turnover_y, turnover_x_vel, turnover_y_vel);
+    }
+
+    fclose(turnover_point_file);
 }
 
 
