@@ -13,7 +13,8 @@ function ds = turnover_points(output_range, parent_dir, ...
     % Saves previous point for error checking
     previous_y = 0;
     previous_x = 0;
-    change_tol = 1e-2;
+    change_tol = 1e-3;
+    loop_search = 0;
     impact = 0;
 
     
@@ -47,7 +48,7 @@ function ds = turnover_points(output_range, parent_dir, ...
         % Loops to find point, rejecting massive changes
         diff = 1e3;
         
-        if (impact == 0)
+        if ((impact == 0) || (loop_search == 0))
             [turnover_y, turnover_x, idx, x_interp, ys] = find_turnover(sorted_points);
         else
             while ((diff > change_tol))
