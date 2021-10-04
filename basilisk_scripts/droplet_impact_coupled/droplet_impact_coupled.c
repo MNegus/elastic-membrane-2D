@@ -228,61 +228,6 @@ event small_droplet_removal (t += 1e-4) {
     
 }
 
-// event small_droplet_removal (t += 1e-3) { 
-// /* Removes any small droplets or bubbles that have formed, that are smaller than
-//  a specific size */
-
-//     // Minimum diameter (in cells) a droplet/bubble has to be, else it will be 
-//     // removed
-//     int drop_min_cell_width = 16;
-
-//     // Region to ignore
-//     double ignore_region_x_limit = 0.02; 
-//     double ignore_region_y_limit = 0.02; 
-    
-//     // Counts the number of bubbles there are
-//     scalar bubbles[];
-//     foreach() {
-//         bubbles[] = 1. - f[] > drop_thresh;
-//     }
-//     int bubble_no = tag(bubbles);
-
-//     // Determines if we are before or after the pinch-off time
-//     if (pinch_off_time == 0.) {
-//         // The first time the bubble number is above 1, we define it to be the 
-//         // pinch off time
-//         if (bubble_no > 1) {
-//             pinch_off_time = t;
-//         }
-//     } else if (t >= pinch_off_time + REMOVAL_DELAY) {
-//         // If we are a certain time after the pinch-off time, remove drops and 
-//         // bubbles below the specified minimum size
-
-//         struct RemoveDroplets remove_struct;
-//         remove_struct.f = f;
-//         remove_struct.minsize = drop_min_cell_width;
-//         remove_struct.threshold = drop_thresh;
-//         remove_struct.bubbles = false;
-
-//         // Remove droplets
-//         remove_droplets_region(remove_struct, ignore_region_x_limit, \
-//             ignore_region_y_limit);
-
-//         // Remove bubbles
-//         remove_struct.bubbles = true;
-//         remove_droplets_region(remove_struct, ignore_region_x_limit, \
-//             ignore_region_y_limit);
-
-//         // Completely removes bubble if specified
-//         if (REMOVE_ENTRAPMENT) {
-//             foreach(){ 
-//                 if (x < 0.01 && y < 2 * 0.05) {
-//                     f[] = 1.;
-//                 }
-//             }
-//         }
-//     }
-// }
 
 event update_membrane(t += DELTA_T) {
 /* Updates the membrane arrays by solving the membrane equation, and outputs*/
