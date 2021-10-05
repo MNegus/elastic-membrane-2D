@@ -42,7 +42,7 @@ double *w_previous, *w, *w_next, *w_deriv; // Membrane position arrays
 double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
 
 /* Turnover point search arrays */
-// double *turnover_x, *turnover_y, *turnover_x_vel, *turnover_y_vel;
+double *turnover_x, *turnover_y, *turnover_x_vel, *turnover_y_vel;
 
 /* Global variables */
 int impact = 0; // Sets to 1 once impact has happened
@@ -113,11 +113,11 @@ int main() {
 
     /* Allocates memory for turnover point search arrays */
     num_threads = atoi(getenv("OMP_NUM_THREADS"));
-    // if (num_threads == 0) return(1);
-    // turnover_x = malloc(num_threads * sizeof(double));
-    // turnover_y = malloc(num_threads * sizeof(double));
-    // turnover_x_vel = malloc(num_threads * sizeof(double));
-    // turnover_y_vel = malloc(num_threads * sizeof(double));
+    if (num_threads == 0) return(1);
+    turnover_x = malloc(num_threads * sizeof(double));
+    turnover_y = malloc(num_threads * sizeof(double));
+    turnover_x_vel = malloc(num_threads * sizeof(double));
+    turnover_y_vel = malloc(num_threads * sizeof(double));
 
     /* Membrane constants */
     // Number of grid points, depending on MAXLEVEL and FD_COARSEN_LEVEL
@@ -424,14 +424,14 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
         // should not reach in the current timescale
         double max_y = 0.25;
 
-        // // Initialises arrays
-        // #pragma omp parallel for
-        // for (int k = 0; k < num_threads; k++) {
-        //     turnover_x[k] = 1e6;
-        //     turnover_y[k] = 0;
-        //     turnover_x_vel[k] = 0;
-        //     turnover_y_vel[k] = 0; 
-        // }
+        // Initialises arrays
+        #pragma omp parallel for
+        for (int k = 0; k < num_threads; k++) {
+            turnover_x[k] = 1e6;
+            turnover_y[k] = 0;
+            turnover_x_vel[k] = 0;
+            turnover_y_vel[k] = 0; 
+        }
 
         double turnover_x = 1e6;
 
