@@ -33,12 +33,16 @@ double MEMBRANE_REFINE_NO; // Number of grid cells above the membrane to refine
 double MEMBRANE_REFINED_HEIGHT; // Width of the refined area above the membrane 
 double DROP_CENTRE; // Initial centre position of the droplet
 double IMPACT_TIME; // Theoretical time of impact
+int num_threads; // Number of OpenMP threads
 
 /* Membrane parameters and arrays */
 double DELTA_X; // Spatial grid size
 int M; // Number of grid nodes for membrane solution
 double *w_previous, *w, *w_next, *w_deriv; // Membrane position arrays
 double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
+
+/* Turnover point search arrays */
+// double *turnover_x, *turnover_y, *turnover_x_vel, *turnover_y_vel;
 
 /* Global variables */
 int impact = 0; // Sets to 1 once impact has happened
@@ -81,7 +85,6 @@ p[top] = dirichlet(0.); // 0 pressure far from surface
 u.n[right] = neumann(0.); // Allows outflow through boundary
 p[right] = dirichlet(0.); // 0 pressure far from surface
 
-
 /* Field definitions */
 vector h_test[]; // Height function field
 
@@ -107,6 +110,14 @@ int main() {
     IMPACT_TIME = INITIAL_DROP_HEIGHT / (-DROP_VEL); // Theoretical impact time
     MEMBRANE_REFINE_NO = 8; // Number of cells above membrane to refine by
     MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
+
+    /* Allocates memory for turnover point search arrays */
+    num_threads = atoi(getenv("OMP_NUM_THREADS"));
+    // if (num_threads == 0) return(1);
+    // turnover_x = malloc(num_threads * sizeof(double));
+    // turnover_y = malloc(num_threads * sizeof(double));
+    // turnover_x_vel = malloc(num_threads * sizeof(double));
+    // turnover_y_vel = malloc(num_threads * sizeof(double));
 
     /* Membrane constants */
     // Number of grid points, depending on MAXLEVEL and FD_COARSEN_LEVEL
@@ -398,8 +409,6 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
     // Opens the turnover points file
     FILE *turnover_point_file = fopen("turnover_points_basilisk.txt", "a");
     
-
-    
     if (impact == 0) {
         /* If we are pre-impact, output the turnover point to be at (0, 0) */
         fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f\n", t, 0., 0., 0., 0.);
@@ -415,7 +424,15 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
         // should not reach in the current timescale
         double max_y = 0.25;
 
-        // Initialises minimum value of x to be large
+        // // Initialises arrays
+        // #pragma omp parallel for
+        // for (int k = 0; k < num_threads; k++) {
+        //     turnover_x[k] = 1e6;
+        //     turnover_y[k] = 0;
+        //     turnover_x_vel[k] = 0;
+        //     turnover_y_vel[k] = 0; 
+        // }
+
         double turnover_x = 1e6;
 
         // Variables for the y coordinate and velocities of the turnover point,
@@ -424,23 +441,40 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
         double turnover_x_vel = 0;
         double turnover_y_vel = 0;
 
-        // REDUCTION OPERATORS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         // Iterates over the interface to find the turnover point
         foreach(reduction(min:turnover_x)) {
-            // If current point is not on the interface, then continue
-            if ((f[] == 0) || (f[] == 1)) continue;
+            // Checks if current point is on the interface
+            if ((f[] > 1e-6 && f[] < 1. - 1e-6)) {
 
-            // Continues if current point is not the new minumum for x
-            if ((x > turnover_x) || (y > max_y)) continue;
+                // Finds the segment of the interface
+                // coord n = facet_normal (point, c, s);
+                coord n = interface_normal(point, f);
+                double alpha = plane_alpha (f[], n);
+                coord segment[2];
+                facets (n, alpha, segment);
 
-            // If here, then set the current point to be the turnover point
-            turnover_x = x;
+                // Finds the end of the segment with the lowest value of x
+                double current_x, current_y;
+                if (segment[0].x < segment[1].x) {
+                    current_x = x + segment[0].x * Delta;
+                    current_y = y + segment[0].y * Delta;
+                } else {
+                    current_x = x + segment[1].x * Delta;
+                    current_y = y + segment[1].y * Delta;
+                }
 
-            // THIS IS WRONG, NEEDS TO BE A CRITICAL (?) REGION
-            turnover_y = y;
-            turnover_x_vel = uf.x[];
-            turnover_y_vel = uf.y[];
+                // If current_x and current_y are in the appropriate bounds, and
+                // current_x < turnover_x, then save
+                if ((current_x < turnover_x) \
+                    && (current_x >= 0) && (current_y >= 0) \
+                    && (current_y <= max_y)) {
+                    turnover_x = current_x;
+                    turnover_y = current_y;
+                    turnover_x_vel = uf.x[];
+                    turnover_y_vel = uf.y[];
+                }
+
+            } 
         }
 
         // Outputs the turnover point data
