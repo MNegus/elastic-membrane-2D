@@ -42,6 +42,7 @@ double *w_previous, *w, *w_next, *w_deriv; // Membrane position arrays
 double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
 
 /* Turnover point search arrays */
+double jet_energy = 0; // Energy in jet
 double *turnover_x_arr, *turnover_y_arr;
 
 /* Global variables */
@@ -401,7 +402,7 @@ event output_interface (t += DELTA_T) {
 }
 
 
-event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
+event output_turnover_point (t += DELTA_T) {
 /* Outputs the coordinates of the turnover point and its velocity */
 
     // Opens the turnover points file
@@ -409,7 +410,7 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
     
     if (impact == 0) {
         /* If we are pre-impact, output the turnover point to be at (0, 0) */
-        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f\n", t, 0., 0., 0., 0.);
+        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %4.f\n", t, 0., 0., 0., 0., 0., 0.);
     } else {
         /* Else we find the turnover point to be the point along the bottom half
         of the droplet with the lowest value of x */
@@ -442,6 +443,7 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
                 coord segment[2];
                 facets (n, alpha, segment);
 
+                /* ENDPOINT METHOD */
                 // Finds the end of the segment with the lowest value of x
                 double current_x, current_y;
                 if (segment[0].x < segment[1].x) {
@@ -451,7 +453,6 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
                     current_x = x + segment[1].x * Delta;
                     current_y = y + segment[1].y * Delta;
                 }
-                // fprintf(stderr, "tid = %d, current_x = %g, turnover_x = %g\n", omp_get_thread_num(), current_x, turnover_x);
                 
                 // If current_x and current_y are in the appropriate bounds, and
                 // current_x < turnover_x, then save
@@ -470,10 +471,6 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
             }
         }
 
-        // for (int k = 0; k < num_threads; k++) {
-        //     fprintf(stderr, "turnover_x_arr[%d] = %g, turnover_y_arr[%d] = %g\n", k, turnover_x_arr[k], k, turnover_y_arr[k] );
-        // }
-
         // Finds the index of the turnover point in the arrays
         int turnover_index;
         for (turnover_index = 0; turnover_index < num_threads; turnover_index++) {
@@ -487,9 +484,29 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
         double turnover_x_vel = interpolate(u.x, turnover_x, turnover_y);
         double turnover_y_vel = interpolate(u.y, turnover_x, turnover_y);
 
+        /* Energy flux determination */
+        double energy_flux = 0;
+        int num_y_points = (int) (turnover_y / MIN_CELL_SIZE);
+        for (int k = 0; k <= num_y_points; k++) {
+
+            // y value to interpolate from
+            double y_val = k * MIN_CELL_SIZE;
+
+            // Interpolated volume fraction
+            double f_val = interpolate(f, turnover_x, y_val);
+
+            // Interpolated x velocity
+            double u_x_val = interpolate(u.x, turnover_x, y_val);
+
+            // Interpolated y velocity, shifted into the moving frame
+            double u_y_val = interpolate(u.y, turnover_x, y_val) + 1;
+            energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val, 2)) * (u_x_val - turnover_x_vel) * MIN_CELL_SIZE;
+        }
+        jet_energy += energy_flux * DELTA_T;
+
         // Outputs the turnover point data
-        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f\n", \
-            t, turnover_x, turnover_y, turnover_x_vel, turnover_y_vel);
+        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", \
+            t, turnover_x, turnover_y, turnover_x_vel, turnover_y_vel, energy_flux, jet_energy);
     }
 
     fclose(turnover_point_file);
