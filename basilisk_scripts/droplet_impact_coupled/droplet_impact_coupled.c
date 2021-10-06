@@ -42,7 +42,7 @@ double *w_previous, *w, *w_next, *w_deriv; // Membrane position arrays
 double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
 
 /* Turnover point search arrays */
-double *turnover_x, *turnover_y, *turnover_x_vel, *turnover_y_vel;
+double *turnover_x_arr, *turnover_y_arr;
 
 /* Global variables */
 int impact = 0; // Sets to 1 once impact has happened
@@ -114,10 +114,8 @@ int main() {
     /* Allocates memory for turnover point search arrays */
     num_threads = atoi(getenv("OMP_NUM_THREADS"));
     if (num_threads == 0) return(1);
-    turnover_x = malloc(num_threads * sizeof(double));
-    turnover_y = malloc(num_threads * sizeof(double));
-    turnover_x_vel = malloc(num_threads * sizeof(double));
-    turnover_y_vel = malloc(num_threads * sizeof(double));
+    turnover_x_arr = malloc(num_threads * sizeof(double));
+    turnover_y_arr = malloc(num_threads * sizeof(double));
 
     /* Membrane constants */
     // Number of grid points, depending on MAXLEVEL and FD_COARSEN_LEVEL
@@ -415,39 +413,30 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
     } else {
         /* Else we find the turnover point to be the point along the bottom half
         of the droplet with the lowest value of x */
-        // NOTE: WILL NOT WORK IF ENTRAPPED BUBBLE IS PRESENT
+        // ******* NOTE: WILL NOT WORK IF ENTRAPPED BUBBLE IS PRESENT ********
+
+        double turnover_x = 1e6; // Initialise x coordinate of turnover point
 
         // Maximum value of y to look is the half way point of the droplet
         // double max_y = INITIAL_DROP_HEIGHT + 0.5 * DROP_RADIUS - t;
 
         // Maximum value of y is taken to be 0.25, which the turnover point 
         // should not reach in the current timescale
-        double max_y = 0.25;
+        double max_y = 0.5;
 
-        // Initialises arrays
-        #pragma omp parallel for
+        // Initialises arrays to dummy variables
         for (int k = 0; k < num_threads; k++) {
-            turnover_x[k] = 1e6;
-            turnover_y[k] = 0;
-            turnover_x_vel[k] = 0;
-            turnover_y_vel[k] = 0; 
+            turnover_x_arr[k] = -1;
+            turnover_y_arr[k] = -1;
         }
-
-        double turnover_x = 1e6;
-
-        // Variables for the y coordinate and velocities of the turnover point,
-        // initialised to 0 in case a  turnover point is not found
-        double turnover_y = 0;
-        double turnover_x_vel = 0;
-        double turnover_y_vel = 0;
 
         // Iterates over the interface to find the turnover point
         foreach(reduction(min:turnover_x)) {
+            
             // Checks if current point is on the interface
             if ((f[] > 1e-6 && f[] < 1. - 1e-6)) {
 
                 // Finds the segment of the interface
-                // coord n = facet_normal (point, c, s);
                 coord n = interface_normal(point, f);
                 double alpha = plane_alpha (f[], n);
                 coord segment[2];
@@ -462,20 +451,41 @@ event output_turnover_point (t += LOG_OUTPUT_TIMESTEP) {
                     current_x = x + segment[1].x * Delta;
                     current_y = y + segment[1].y * Delta;
                 }
-
+                // fprintf(stderr, "tid = %d, current_x = %g, turnover_x = %g\n", omp_get_thread_num(), current_x, turnover_x);
+                
                 // If current_x and current_y are in the appropriate bounds, and
                 // current_x < turnover_x, then save
                 if ((current_x < turnover_x) \
-                    && (current_x >= 0) && (current_y >= 0) \
-                    && (current_y <= max_y)) {
-                    turnover_x = current_x;
-                    turnover_y = current_y;
-                    turnover_x_vel = uf.x[];
-                    turnover_y_vel = uf.y[];
-                }
+                        && (current_x >= 0) && (current_y >= 0) \
+                        && (current_y <= max_y)) {
 
-            } 
+                    // Update turnover_x
+                    turnover_x = current_x;
+
+                    // Update arrays (critical region)
+                    #pragma omp critical 
+                        turnover_x_arr[omp_get_thread_num()] = current_x;
+                        turnover_y_arr[omp_get_thread_num()] = current_y;
+                }
+            }
         }
+
+        // for (int k = 0; k < num_threads; k++) {
+        //     fprintf(stderr, "turnover_x_arr[%d] = %g, turnover_y_arr[%d] = %g\n", k, turnover_x_arr[k], k, turnover_y_arr[k] );
+        // }
+
+        // Finds the index of the turnover point in the arrays
+        int turnover_index;
+        for (turnover_index = 0; turnover_index < num_threads; turnover_index++) {
+            if (turnover_x_arr[turnover_index] == turnover_x) break;
+        }
+
+        // Saves value of turnover_y
+        double turnover_y = turnover_y_arr[turnover_index];
+
+        // Determines the velocities via interpolation
+        double turnover_x_vel = interpolate(u.x, turnover_x, turnover_y);
+        double turnover_y_vel = interpolate(u.y, turnover_x, turnover_y);
 
         // Outputs the turnover point data
         fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f\n", \
