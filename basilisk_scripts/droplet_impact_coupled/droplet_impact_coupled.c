@@ -44,6 +44,8 @@ double *p_previous_arr, *p_arr, *p_next_arr; // Pressure arrays
 /* Turnover point search arrays */
 double jet_energy = 0; // Energy in jet
 double *turnover_x_arr, *turnover_y_arr;
+scalar positions_x[];
+scalar positions_y[];
 
 /* Global variables */
 int impact = 0; // Sets to 1 once impact has happened
@@ -407,6 +409,10 @@ event output_turnover_point (t += DELTA_T) {
 
     // Opens the turnover points file
     FILE *turnover_point_file = fopen("turnover_points_basilisk.txt", "a");
+
+    // Fills position fields
+    position (f, positions_x, {1,0});
+    position(f, positions_y, {0,1});
     
     if (impact == 0) {
         /* If we are pre-impact, output the turnover point to be at (0, 0) */
