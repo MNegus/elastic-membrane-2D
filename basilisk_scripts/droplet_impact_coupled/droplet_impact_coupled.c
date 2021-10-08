@@ -411,10 +411,10 @@ event output_turnover_point (t += DELTA_T) {
     FILE *turnover_point_file = fopen("turnover_points_basilisk.txt", "a");
 
     // Fills position fields
-    position (f, positions_x, {1,0});
+    position(f, positions_x, {1,0});
     position(f, positions_y, {0,1});
     
-    if (impact == 0) {
+    if (impact == -1) {
         /* If we are pre-impact, output the turnover point to be at (0, 0) */
         fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %4.f\n", t, 0., 0., 0., 0., 0., 0.);
     } else {
@@ -439,42 +439,55 @@ event output_turnover_point (t += DELTA_T) {
 
         // Iterates over the interface to find the turnover point
         foreach(reduction(min:turnover_x)) {
-            
-            // Checks if current point is on the interface
-            if ((f[] > 1e-6 && f[] < 1. - 1e-6)) {
+            // Continues if current point is not on the interface
+            if ((positions_x[] == nodata) || (positions_y[] == nodata)) continue;
 
-                // Finds the segment of the interface
-                coord n = interface_normal(point, f);
-                double alpha = plane_alpha (f[], n);
-                coord segment[2];
-                facets (n, alpha, segment);
+            // Checks if current point is the new minimum
+            if ((positions_x[] < turnover_x) && (positions_y[] <= max_y)) {
+                // Update turnover_x
+                turnover_x = positions_x[];
 
-                /* ENDPOINT METHOD */
-                // Finds the end of the segment with the lowest value of x
-                double current_x, current_y;
-                if (segment[0].x < segment[1].x) {
-                    current_x = x + segment[0].x * Delta;
-                    current_y = y + segment[0].y * Delta;
-                } else {
-                    current_x = x + segment[1].x * Delta;
-                    current_y = y + segment[1].y * Delta;
-                }
-                
-                // If current_x and current_y are in the appropriate bounds, and
-                // current_x < turnover_x, then save
-                if ((current_x < turnover_x) \
-                        && (current_x >= 0) && (current_y >= 0) \
-                        && (current_y <= max_y)) {
-
-                    // Update turnover_x
-                    turnover_x = current_x;
-
-                    // Update arrays (critical region)
-                    #pragma omp critical 
-                        turnover_x_arr[omp_get_thread_num()] = current_x;
-                        turnover_y_arr[omp_get_thread_num()] = current_y;
-                }
+                // Updates arrays in a critical region
+                #pragma omp critical
+                    turnover_x_arr[omp_get_thread_num()] = positions_x[];
+                    turnover_y_arr[omp_get_thread_num()] = positions_y[];
             }
+
+            // // Checks if current point is on the interface
+            // if ((f[] > 1e-6 && f[] < 1. - 1e-6)) {
+
+            //     // Finds the segment of the interface
+            //     coord n = interface_normal(point, f);
+            //     double alpha = plane_alpha (f[], n);
+            //     coord segment[2];
+            //     facets (n, alpha, segment);
+
+            //     /* ENDPOINT METHOD */
+            //     // Finds the end of the segment with the lowest value of x
+            //     double current_x, current_y;
+            //     if (segment[0].x < segment[1].x) {
+            //         current_x = x + segment[0].x * Delta;
+            //         current_y = y + segment[0].y * Delta;
+            //     } else {
+            //         current_x = x + segment[1].x * Delta;
+            //         current_y = y + segment[1].y * Delta;
+            //     }
+                
+            //     // If current_x and current_y are in the appropriate bounds, and
+            //     // current_x < turnover_x, then save
+            //     if ((current_x < turnover_x) \
+            //             && (current_x >= 0) && (current_y >= 0) \
+            //             && (current_y <= max_y)) {
+
+            //         // Update turnover_x
+            //         turnover_x = current_x;
+
+            //         // Update arrays (critical region)
+            //         #pragma omp critical 
+            //             turnover_x_arr[omp_get_thread_num()] = current_x;
+            //             turnover_y_arr[omp_get_thread_num()] = current_y;
+            //     }
+            // }
         }
 
         // Finds the index of the turnover point in the arrays
@@ -511,7 +524,7 @@ event output_turnover_point (t += DELTA_T) {
         jet_energy += energy_flux * DELTA_T;
 
         // Outputs the turnover point data
-        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", \
+        fprintf(turnover_point_file, "%.4f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f\n", \
             t, turnover_x, turnover_y, turnover_x_vel, turnover_y_vel, energy_flux, jet_energy);
     }
 
