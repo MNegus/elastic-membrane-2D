@@ -439,6 +439,7 @@ event output_turnover_point (t += DELTA_T) {
 
         // Iterates over the interface to find the turnover point
         foreach(reduction(min:turnover_x)) {
+            /* POSITIONS METHOD */
             // Continues if current point is not on the interface
             if ((positions_x[] == nodata) || (positions_y[] == nodata)) continue;
 
@@ -453,40 +454,48 @@ event output_turnover_point (t += DELTA_T) {
                     turnover_y_arr[omp_get_thread_num()] = positions_y[];
             }
 
-            // // Checks if current point is on the interface
+            /* MANUAL METHODS */
+            // Checks if current point is on the interface
             // if ((f[] > 1e-6 && f[] < 1. - 1e-6)) {
+                /* plane_area_center METHOD */
+                // coord m = mycs(point, f), fc;
+                // double alpha = plane_alpha(f[], m);
+                // plane_area_center (m, alpha, &fc);
+                // double current_x = x + fc.x * Delta;
+                // double current_y = y + fc.y * Delta;
 
-            //     // Finds the segment of the interface
-            //     coord n = interface_normal(point, f);
-            //     double alpha = plane_alpha (f[], n);
-            //     coord segment[2];
-            //     facets (n, alpha, segment);
+                /* ENDPOINT METHOD */
+                // // Finds the segment of the interface
+                // coord n = interface_normal(point, f);
+                // double alpha = plane_alpha (f[], n);
+                // coord segment[2];
+                // facets (n, alpha, segment);
 
-            //     /* ENDPOINT METHOD */
-            //     // Finds the end of the segment with the lowest value of x
-            //     double current_x, current_y;
-            //     if (segment[0].x < segment[1].x) {
-            //         current_x = x + segment[0].x * Delta;
-            //         current_y = y + segment[0].y * Delta;
-            //     } else {
-            //         current_x = x + segment[1].x * Delta;
-            //         current_y = y + segment[1].y * Delta;
-            //     }
+                // // Finds the end of the segment with the lowest value of x
+                // double current_x, current_y;
+                // if (segment[0].x < segment[1].x) {
+                //     current_x = x + segment[0].x * Delta;
+                //     current_y = y + segment[0].y * Delta;
+                // } else {
+                //     current_x = x + segment[1].x * Delta;
+                //     current_y = y + segment[1].y * Delta;
+                // }
                 
-            //     // If current_x and current_y are in the appropriate bounds, and
-            //     // current_x < turnover_x, then save
-            //     if ((current_x < turnover_x) \
-            //             && (current_x >= 0) && (current_y >= 0) \
-            //             && (current_y <= max_y)) {
+                /* SAVES IF APPROPRIATE */
+                // If current_x and current_y are in the appropriate bounds, and
+                // current_x < turnover_x, then save
+                // if ((current_x < turnover_x) \
+                //         && (current_x >= 0) && (current_y >= 0) \
+                //         && (current_y <= max_y)) {
 
-            //         // Update turnover_x
-            //         turnover_x = current_x;
+                //     // Update turnover_x
+                //     turnover_x = current_x;
 
-            //         // Update arrays (critical region)
-            //         #pragma omp critical 
-            //             turnover_x_arr[omp_get_thread_num()] = current_x;
-            //             turnover_y_arr[omp_get_thread_num()] = current_y;
-            //     }
+                //     // Update arrays (critical region)
+                //     #pragma omp critical 
+                //         turnover_x_arr[omp_get_thread_num()] = current_x;
+                //         turnover_y_arr[omp_get_thread_num()] = current_y;
+                // }
             // }
         }
 
