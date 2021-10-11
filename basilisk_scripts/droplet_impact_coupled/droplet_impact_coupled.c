@@ -515,6 +515,7 @@ event output_turnover_point (t += DELTA_T) {
         /* Energy flux determination */
         double energy_flux = 0;
         int num_y_points = (int) (turnover_y / MIN_CELL_SIZE);
+        #pragma omp parallel for reduction(+ : energy_flux)
         for (int k = 0; k <= num_y_points; k++) {
 
             // y value to interpolate from
@@ -524,10 +525,12 @@ event output_turnover_point (t += DELTA_T) {
             double f_val = interpolate(f, turnover_x, y_val);
 
             // Interpolated x velocity
-            double u_x_val = interpolate(u.x, turnover_x, y_val);
+            // double u_x_val = interpolate(u.x, turnover_x, y_val);
+            double u_x_val = interpolate(uf.x, turnover_x, y_val);
 
             // Interpolated y velocity, shifted into the moving frame
             double u_y_val = interpolate(u.y, turnover_x, y_val) + 1;
+            
             energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val, 2)) * (u_x_val - turnover_x_vel) * MIN_CELL_SIZE;
         }
         jet_energy += energy_flux * DELTA_T;
