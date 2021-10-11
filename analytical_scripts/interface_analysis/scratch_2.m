@@ -6,12 +6,10 @@ IMPACT_TIME = 0.125;
 
 % Selects level
 level = 11;
-data = readmatrix(sprintf("turnover_points_basilisk_level_%d.txt", level));
-ts = data(:, 1) - IMPACT_TIME;
+data = readmatrix("turnover_points.txt");
+ts = DELTA_T * data(:, 1) - IMPACT_TIME;
 ds = data(:, 2);
 Js = data(:, 3);
-fluxes = data(:, 6);
-energies = data(:, 7);
 
 % Analytical solutions
 analytical_ts = 0 : DELTA_T : max(ts);
@@ -38,31 +36,9 @@ figure(2);
 hold on;
 plot(analytical_ts, analytical_Js, 'linewidth', 5, 'color', 0.5 * [1 1 1]);
 plot(ts, Js, 'linewidth', 2);
+ylim([0, 0.075]);
 legend(["Analytical (J(t))", "Basilisk"]);
 xlabel("t");
 ylabel("J(t)");
 title("Height of turnover point");
-
-%% Plot energy flux
-close(figure(3));
-figure(3);
-hold on;
-plot(analytical_ts, analytical_fluxes, 'linewidth', 5, 'color', 0.5 * [1 1 1]);
-plot(ts, fluxes, 'linewidth', 2);
-legend(["Analytical (pi)", "Basilisk"]);
-xlabel("t");
-ylabel("Flux");
-title("Flux into jet");
-
-%% Plot energy into jet
-close(figure(4));
-figure(4);
-hold on;
-plot(analytical_ts, analytical_energy, 'linewidth', 5, 'color', 0.5 * [1 1 1]);
-plot(ts, energies, 'linewidth', 2);
-legend(["Analytical", "Basilisk"]);
-xlabel("t");
-ylabel("Energy");
-title("Energy into jet");
-
 
