@@ -17,7 +17,7 @@ function [d, d_t] = turnover_point(t, w_fun, w_t_fun, w_x_fun, epsilon)
         d = 0; d_t = 0;
     else
         %% Optimising settings
-        options = optimoptions('fsolve', 'OptimalityTolerance', 1e-8, ...
+        options = optimoptions('fsolve', 'OptimalityTolerance', 1e-10, ...
             'display', 'off');
 
         %% Determine d(t)
