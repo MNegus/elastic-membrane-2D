@@ -8,7 +8,7 @@ ALPHA = 1;
 BETA = 0;
 GAMMA = 12.8;
 EPSILON = 1;
-L = 16;
+L = 1;
 T_MAX = 0.25;
 
 % DELTA_TS = [1e-2, 1e-3, 1e-4, 1e-5];
@@ -93,6 +93,15 @@ for m = 1 : length(N_MEMBRANES)
 %         drawnow;
 %         
 %         pause(0.001);
+
+        %% Plots difference
+        plot(xs, ps_exact - ps_numerical);
+        hold on;
+        xline(EPSILON * d(t));
+        hold off;
+        xlim([0, 1]);
+        drawnow;
+        pause(0.01);
     end
     
     ds_diffs(m) = max(abs(ds_exact - ds_numerical));
