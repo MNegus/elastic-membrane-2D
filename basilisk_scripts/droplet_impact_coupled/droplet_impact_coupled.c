@@ -26,6 +26,13 @@
 #include <stdlib.h>
 
 
+/* Physical constants */
+double REYNOLDS; // Reynolds number of liquid
+double WEBER; // Weber number of liquid
+double FROUDE; // Froude number of liquid
+double RHO_R; // Density ratio
+double MU_R; // Viscosity ratio
+
 /* Computational constants derived from parameters */
 double MIN_CELL_SIZE; // Size of the smallest cell
 double DROP_REFINED_WIDTH; // Width of the refined area around the droplet
@@ -98,13 +105,22 @@ int main() {
     init_grid(1 << MINLEVEL); // Create grid according to the minimum level
     size(BOX_WIDTH); // Size of the domain
 
-    /* Set physical constants */
+    /* Determine physical constants */
+    REYNOLDS = RHO_L * V * R / MU_L; // Reynolds number of liquid
+    WEBER = RHO_L * V * V * R / SIGMA; // Weber number of liquid
+    FROUDE = V / sqrt(9.81 * R); // Froude number of liquid
+    RHO_R = RHO_G / RHO_L; // Density ratio
+    MU_R = MU_G / MU_L; // Viscosity ratio
+
+    /* Set dimensionless constants */
     rho1 = 1.; // Density of water phase
     rho2 = RHO_R; // Density of air phase
     mu1 = 1. / REYNOLDS; // Viscosity of water phase
     mu2 = mu1 * MU_R; // Viscosity of air phase
-    f.height = h; // For contact angle calculation
     f.sigma = 1. / WEBER; // Surface tension at interface
+    
+    /* Contact angle determination */
+    f.height = h; // Associates height field with the tracer
 
     /* Derived constants */
     MIN_CELL_SIZE = BOX_WIDTH / pow(2, MAXLEVEL); // Size of the smallest cell
@@ -228,7 +244,7 @@ event refinement (i++) {
 event gravity (i++) {
 /* Adds acceleration due to gravity in the vertical direction */
     face vector av = a; // Acceleration at each face
-    foreach_face(x) av.y[] -= 1./sq(FR); // Adds acceleration due to gravity
+    foreach_face(x) av.y[] -= 1. / sq(FROUDE); // Adds acceleration due to gravity
 }
 
 
