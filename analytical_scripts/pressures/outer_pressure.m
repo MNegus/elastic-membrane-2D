@@ -1,6 +1,10 @@
  function ps = outer_pressure(xs, m_tt_fun, w_tt_fun, d, A, epsilon)
     ps = zeros(size(xs));
     
+    if (d == 0)
+        return;
+    end
+    
     xhats = xs / epsilon;
 
     %% Finds idx such that xhat = d
