@@ -501,7 +501,7 @@ event output_turnover_point (t += DELTA_T) {
                 // If current_x and current_y are in the appropriate bounds, and
                 // current_x < turnover_x, then save
                 // if ((current_x < turnover_x) \
-                //         && (current_x >= 0) && (current_y >= 0) \
+                /if (t % GFS_OUTPUT_TIMESTEP == 0)/         && (current_x >= 0) && (current_y >= 0) \
                 //         && (current_y <= max_y)) {
 
                 //     // Update turnover_x
@@ -531,7 +531,16 @@ event output_turnover_point (t += DELTA_T) {
         /* Energy flux determination */
         double energy_flux = 0;
         int num_y_points = (int) (turnover_y / MIN_CELL_SIZE);
-        #pragma omp parallel for reduction(+ : energy_flux)
+
+        FILE *energy_file;
+        if (membrane_output_no % 100 == 0) {
+            char energy_filename[80];
+            sprintf(energy_filename, "energy_%d.txt", membrane_output_no);
+            energy_file = fopen(energy_filename, "w");
+        }
+        
+
+        // #pragma omp parallel for reduction(+ : energy_flux)
         for (int k = 0; k <= num_y_points; k++) {
 
             // y value to interpolate from
@@ -548,12 +557,32 @@ event output_turnover_point (t += DELTA_T) {
             double u_y_val = interpolate(u.y, turnover_x, y_val) + 1;
             
             energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val, 2)) * (u_x_val - turnover_x_vel) * MIN_CELL_SIZE;
+
+            if (membrane_output_no % 100 == 0) {
+                fprintf(energy_file, "%g, %g, %g, %g, %g\n", y_val, f_val, u_x_val, u_y_val, MIN_CELL_SIZE);
+            }
         }
+
+        if (membrane_output_no % 100 == 0) {
+            fclose(energy_file);
+        }
+
         jet_energy += energy_flux * DELTA_T;
 
         // Outputs the turnover point data
         fprintf(turnover_point_file, "%.4f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f\n", \
             t, turnover_x, turnover_y, turnover_x_vel, turnover_y_vel, energy_flux, jet_energy);
+
+        // Outputs the dimensional data
+        // double t_dim = (R / V) * t;
+        // double turnover_x_dim = R * turnover_x;
+        // double turnover_y_dim = R * turnover_y;
+        // double turnover_x_vel_dim = V * turnover_x_vel;
+        // double turnover_y_vel_dim = V * turnover_y_vel;
+        // double energy_flux_dim = RHO_L * pow(V, 3) * R * energy_flux; 
+        // double jet_energy_dim = RHO_L * pow(V, 3) * R * (R / V) * jet_energy;
+        // fprintf(turnover_point_file, "%g, %g, %g, %g, %g, %g, %g\n", \
+        //     t_dim, turnover_x_dim, turnover_y_dim, turnover_x_vel_dim, turnover_y_vel_dim, energy_flux_dim, jet_energy_dim);
     }
 
     fclose(turnover_point_file);
