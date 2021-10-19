@@ -82,36 +82,43 @@ for m = 1 : length(N_MEMBRANES)
         w_x_fun = @(xs) full_w_x_fun(xs, t);
 
         %% Finds numerical solution
-        [ps_numerical, ds_numerical(k), d_ts_numerical(k), Js_numerical(k)] = w_dependents(xs, t, w_fun, ...
+        [ps_numerical, xs_adapt, ds_numerical(k), d_ts_numerical(k), Js_numerical(k)] = w_dependents(xs, t, w_fun, ...
             w_t_fun, w_tt_fun, w_x_fun, pressure_type, EPSILON);
 
         %% Finds exact solution
-        ps_exact = imposed_pressure_quadratic(xs, t, d(t), d_t(t), J(t), w_t(t), w_tt(t), b(t), c(t), EPSILON, pressure_type);
+        ps_exact = imposed_pressure_quadratic(xs_adapt, t, d(t), d_t(t), J(t), w_t(t), w_tt(t), b(t), c(t), EPSILON, pressure_type);
 
         %% Determines difference in pressure
-        idx = sum(xs < EPSILON * ds_numerical(k));
+        idx = sum(xs_adapt < EPSILON * ds_numerical(k));
         diffs = abs(ps_exact(1 : idx - 1) - ps_numerical(1 : idx - 1));
+        
         if (~isempty(diffs))
+            [max_diff, diff_idx] = max(diffs)
             ps_diffs(m) = max(ps_diffs(m), max(diffs))
         end
         
+        
         %% Plots exact and numerical
         if (pressure_type == "outer")
-            ps_stationary = outer_pressure_stationary(xs, t, EPSILON);
+            ps_stationary = outer_pressure_stationary(xs_adapt, t, EPSILON);
         else
-            ps_stationary = composite_pressure_stationary(xs, t, EPSILON);
+            ps_stationary = composite_pressure_stationary(xs_adapt, t, EPSILON);
         end
-        plot(xs, ps_stationary, 'linewidth', 2);
+        plot(xs_adapt, ps_stationary, 'linewidth', 2);
         hold on;
-        plot(xs, ps_exact, 'linewidth', 5, 'color', 0.5 * [1 1 1]);
+        plot(xs_adapt, ps_exact, 'linewidth', 5, 'color', 0.5 * [1 1 1]);
+        plot(xs_adapt, ps_numerical, 'linewidth', 2);
         
-        plot(xs, ps_numerical, 'linewidth', 2);
+        if (~isempty(diffs))
+            scatter([xs_adapt(diff_idx), xs_adapt(diff_idx)], [ps_numerical(diff_idx), ps_exact(diff_idx)]);
+        end
+        
         hold off;
         legend(["Stationary", "Exact (moving)", "Numerical (moving)"]);
         xlim([0, 1]);
-        ylim([0 15]);
+%         ylim([0 15]);
         drawnow;
-        pause(0.001);
+        pause(1);
         
         %% Plots difference
 %         plot(xs, ps_exact - ps_numerical);

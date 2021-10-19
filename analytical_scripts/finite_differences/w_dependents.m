@@ -1,4 +1,4 @@
-function [p, d, d_t, J] = w_dependents(xs, t, w_fun, ...
+function [p, xs_adapt, d, d_t, J] = w_dependents(xs, t, w_fun, ...
     w_t_fun, w_tt_fun, w_x_fun, pressure_type, EPSILON)
     
     %% Determine d and d_t
@@ -24,10 +24,17 @@ function [p, d, d_t, J] = w_dependents(xs, t, w_fun, ...
     [A, B, C, J] = time_dependents(d, d_t, w_t_fun, w_tt_fun, m_t_fun, EPSILON);
     
     %% Determine pressure at current timestep
+    if (d == 0)
+        xs_adapt = xs;
+    else
+        tol = 1e-6;
+        xs_adapt = adaptive_x_values(d, A, tol, EPSILON);
+    end
+    
     if pressure_type == "outer"
-        p = outer_pressure(xs, m_tt_fun, w_tt_fun, d, A, EPSILON);
+        p = outer_pressure(xs_adapt, m_tt_fun, w_tt_fun, d, A, EPSILON);
     elseif pressure_type == "composite"
-        p = composite_pressure(xs, t, d, d_t, A, C, J, m_tt_fun, w_tt_fun, EPSILON);
+        p = composite_pressure(xs_adapt, t, d, d_t, A, C, J, m_tt_fun, w_tt_fun, EPSILON);
     else
         error("Invalid pressure_type");
     end
