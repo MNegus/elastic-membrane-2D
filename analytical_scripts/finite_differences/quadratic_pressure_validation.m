@@ -13,7 +13,7 @@ T_VALS = 0 : 10 * DELTA_T : T_MAX;
 
 N_MEMBRANES = [512, 1024, 2048, 4094];
 
-pressure_type = "outer"; % Which type of pressure solution to test
+pressure_type = "composite"; % Which type of pressure solution to test
 
 %% Data directory
 data_dir = "/home/negus/Desktop/pressure_validation";
