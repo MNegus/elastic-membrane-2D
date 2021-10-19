@@ -10,33 +10,30 @@ addpath("pressures");
 normal_modes = 1;
 finite_differences_comp = 1;
 finite_differences_outer = 0;
-dns = 1;
+dns = 0;
 
 
 
 %% Parameters
-EPSILON = 1;
-ALPHA = 1 / EPSILON^2; 
-BETA = 0.4 * EPSILON^2; 
-GAMMA = 0.4 * EPSILON^2; 
-L = 16;
-T_MAX = 0.05;
-DELTA_T = 1e-4;
+[EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
+    = parameters()
+ALPHA = ALPHAS(1);
+BETA = BETAS(1);
+GAMMA = GAMMAS(1);
 
 % FD parameters
-N_MEMBRANE = 10924;
 DELTA_X = L / (N_MEMBRANE - 1); 
 xs = (0 : DELTA_X : L - DELTA_X)';
 
 % Basilisk parameters
 IMPACT_TIME = 0.125;
 IMPACT_TIMESTEP = 0.125 / DELTA_T;
-T_VALS = -IMPACT_TIME : DELTA_T : T_MAX;
-ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
+T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
+ts_analytical = 0 : DELTA_T : T_MAX;
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/beta_vary_test/analytical_data";
-analytical_parent_dir = sprintf("%s/alpha_%g_beta_%g_gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
+parent_dir = "/home/negus/Desktop/alpha_vary_test";
+analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
 
 %% Loads in normal modes solutions
@@ -81,16 +78,16 @@ if (finite_differences_outer)
     ds_outer = fd_outer_mat.ds;
 end
 
-% close(figure(1));
-% figure(1);
-% hold on;
-% % plot(ts_dns, ds_dns, 'linewidth', 2);
-% plot(ts_analytical, ds_nm, 'linewidth', 2);
-% % plot(ts_analytical, ds_outer, 'linewidth', 2);
-% plot(ts_analytical, ds_comp, 'linewidth', 2);
-% legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
-% xlabel("t");
-% ylabel("d(t)");
+close(figure(1));
+figure(1);
+hold on;
+% plot(ts_dns, ds_dns, 'linewidth', 2);
+plot(ts_analytical, ds_nm, 'linewidth', 2);
+% plot(ts_analytical, ds_outer, 'linewidth', 2);
+plot(ts_analytical, ds_comp, 'linewidth', 2);
+legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
+xlabel("t");
+ylabel("d(t)");
 
 %% Loops and plots
 % writerobj = VideoWriter("four_model_compare.avi");

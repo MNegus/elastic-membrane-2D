@@ -11,9 +11,9 @@ DELTA_X = L / (N_MEMBRANE - 1);
 xs = (0 : DELTA_X : L - DELTA_X)';
 
 % Basilisk parameters
-IMPACT_TIME = 0.125;
-IMPACT_TIMESTEP = 0.125 / DELTA_T;
-T_VALS = -IMPACT_TIME : DELTA_T : T_MAX;
+IMPACT_TIME = 0.00;
+IMPACT_TIMESTEP = 0;
+T_VALS = 0 : DELTA_T : T_MAX;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 % Pressure type (composite or outer)
@@ -21,7 +21,7 @@ pressure_type = "composite";
 
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/confirmation_data/gamma_varying/analytical_data";
+parent_dir = "/home/negus/Desktop/alpha_vary_test";
 
 
 %% Turnover point comparison
@@ -41,7 +41,7 @@ for ALPHA = ALPHAS
             ds_comp = fd_comp_mat.ds;
             
             % Plot line
-            plot(ts_analytical, ds_comp, 'linewidth', 2, 'Displayname', displayname);
+            plot(ts_analytical(1 : end - 1), ds_comp(1 : end - 1), 'linewidth', 2, 'Displayname', displayname);
         end
     end
 end
@@ -49,12 +49,12 @@ legend("location", "northeast");
 
 %% Loops over time
 % close all;
-for k = IMPACT_TIMESTEP : 100 : length(T_VALS)
+for k = 1 : 100 : length(T_VALS)
     %% Updates time
     t = T_VALS(k);
     t
     
-    if (t <= 0) 
+    if (t <= 0) 0.125 / DELTA_T
         continue 
     end
         
@@ -111,7 +111,7 @@ for k = IMPACT_TIMESTEP : 100 : length(T_VALS)
                 
 %                 xlim([0, 2]);
                 xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
+                ylabel("$w_t(x, t)$", "interpreter", "latex", "Fontsize", 18);
                 set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
 %                 legend("interpreter", "latex");
                 title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
@@ -123,7 +123,7 @@ for k = IMPACT_TIMESTEP : 100 : length(T_VALS)
                 
 %                 xlim([0, 2]);
                 xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
+                ylabel("$p(x, t)$", "interpreter", "latex", "Fontsize", 18);
                 set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
 %                 legend("interpreter", "latex");
                 title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 

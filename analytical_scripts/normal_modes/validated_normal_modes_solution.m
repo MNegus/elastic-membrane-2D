@@ -7,7 +7,7 @@ function [N, delta_d, ds, as, a_ts, a_tts, q_ts] ...
 
     %% Parameters to be passed in
     q = 10;
-    tol = 1e-5;
+    tol = 1e-4;
     N_MEMBRANE = 1024;
     DELTA_X = L / (N_MEMBRANE - 1); 
     xs = (0 : DELTA_X : L - DELTA_X)';

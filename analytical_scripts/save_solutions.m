@@ -5,14 +5,15 @@ addpath("finite_differences");
 addpath("normal_modes");
 addpath("pressures");
 
-parent_dir = "/home/negus/Desktop/jet_energy_test";
+parent_dir = "/home/negus/Desktop/alpha_vary_test";
 
 
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
     = parameters();
 
-%%
+
+%% Finite differences
 % for ALPHA = ALPHAS
 %     for BETA = BETAS
 %         for GAMMA = GAMMAS
@@ -51,8 +52,8 @@ for ALPHA = ALPHAS
             %% Normal modes
             nm_data_dir = sprintf("%s/normal_modes", data_dir);
             mkdir(nm_data_dir);
-            save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX, DELTA_T);
-%             save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX, DELTA_T);
+%             save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX, DELTA_T);
+            save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX, DELTA_T);
         
 
         end
