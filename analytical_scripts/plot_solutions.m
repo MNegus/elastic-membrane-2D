@@ -8,7 +8,7 @@ addpath("pressures");
 
 % Options (set to 0 if don't want to plot the solution)
 normal_modes = 1;
-finite_differences_comp = 1;
+finite_differences_comp = 0;
 finite_differences_outer = 0;
 dns = 0;
 
@@ -32,7 +32,7 @@ T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 ts_analytical = 0 : DELTA_T : T_MAX;
 
 %% Data dirs
-parent_dir = "/home/negus/Desktop/alpha_vary_test";
+parent_dir = "/home/michael/Desktop/alpha_vary_test";
 analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
 
@@ -84,7 +84,7 @@ hold on;
 % plot(ts_dns, ds_dns, 'linewidth', 2);
 plot(ts_analytical, ds_nm, 'linewidth', 2);
 % plot(ts_analytical, ds_outer, 'linewidth', 2);
-plot(ts_analytical, ds_comp, 'linewidth', 2);
+% plot(ts_analytical, ds_comp, 'linewidth', 2);
 legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
 xlabel("t");
 ylabel("d(t)");

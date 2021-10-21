@@ -5,7 +5,7 @@ addpath("finite_differences");
 addpath("normal_modes");
 addpath("pressures");
 
-parent_dir = "/home/negus/Desktop/alpha_vary_test";
+parent_dir = "/home/michael/Desktop/alpha_vary_test";
 
 
 %% Parameters
@@ -52,8 +52,9 @@ for ALPHA = ALPHAS
             %% Normal modes
             nm_data_dir = sprintf("%s/normal_modes", data_dir);
             mkdir(nm_data_dir);
-%             save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX, DELTA_T);
-            save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX, DELTA_T);
+            N = 128;
+            save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX, DELTA_T);
+%             save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX, DELTA_T);
         
 
         end

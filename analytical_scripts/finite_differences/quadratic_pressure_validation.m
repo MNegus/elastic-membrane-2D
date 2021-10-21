@@ -11,7 +11,8 @@ T_MAX = 0.1;
 DELTA_T = 1e-4;
 T_VALS = 0 : 10 * DELTA_T : T_MAX;
 
-N_MEMBRANES = [512, 1024, 2048, 4094];
+% N_MEMBRANES = [512, 1024, 2048, 4094];
+N_MEMBRANES = 1024;
 
 pressure_type = "composite"; % Which type of pressure solution to test
 

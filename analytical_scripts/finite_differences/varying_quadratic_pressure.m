@@ -13,7 +13,7 @@ DELTA_X = L / (N_MEMBRANE - 1);
 xs = (0 : DELTA_X : L - DELTA_X)';
 
 pressure_type = "composite"; % Which type of pressure solution to test
-plotting = false;
+plotting = true;
 
 %% Data directory
 data_dir = "/home/negus/Desktop/pressure_validation";
@@ -114,7 +114,10 @@ for mag_idx = 1 : length(mags)
     plot(T_VALS, d_numerical_vals(:, mag_idx), 'Displayname', sprintf("mag = %g (Numerical)", mag));
 end
 legend();
-
+xlabel("t");
+ylabel("d(t)");
+title("Turnover point");
+legend('location', 'southeast');
 
 %% Plots d_t values
 close(figure(3));
@@ -128,6 +131,9 @@ for mag_idx = 1 : length(mags)
     plot(T_VALS, d_t_numerical_vals(:, mag_idx), 'Displayname', sprintf("mag = %g (Numerical)", mag));
 end
 legend();
+xlabel("t");
+ylabel("d'(t)");
+title("Turnover point velocity");
 
 %% Plots J values
 close(figure(4));
@@ -140,4 +146,7 @@ for mag_idx = 1 : length(mags)
     plot(T_VALS, J_exact_vals(:, mag_idx), 'Displayname', sprintf("mag = %g (Exact)", mag), 'linestyle', '--', 'linewidth', 2);
     plot(T_VALS, J_numerical_vals(:, mag_idx), 'Displayname', sprintf("mag = %g (Numerical)", mag));
 end
-legend();
+legend('location', 'northwest');
+xlabel("t");
+ylabel("J(t)");
+title("Jet thickness");

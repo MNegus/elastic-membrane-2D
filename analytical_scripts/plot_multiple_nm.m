@@ -16,7 +16,7 @@ ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 
 %% Data dirs
-parent_dir = "/home/negus/Desktop/alpha_vary_test";
+parent_dir = "/home/michael/Desktop/alpha_vary_test";
 
 
 %% Turnover point comparison
@@ -29,7 +29,8 @@ for ALPHA = ALPHAS
             % Loads in parameters
             parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/normal_modes", ...
               parent_dir, ALPHA, BETA, GAMMA);
-            displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
+%             displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
+            displayname = ['$\alpha = $', num2str(ALPHA)];
           
             % Normal modes turnover points
             nm_mat = matfile(sprintf("%s/ds.mat", parameter_dir));
@@ -41,8 +42,15 @@ for ALPHA = ALPHAS
         end
     end
 end
-legend("location", "northeast");
+plot(ts_analytical, 2 * sqrt(ts_analytical), 'linewidth', 2, ...
+    'linestyle', '--', 'color', 'black', 'Displayname', 'Stationary');
+xlabel("t");
+ylabel("d(t)");
+title("Membrane mass varying");
+grid on;
+legend("location", "northwest", "interpreter", "latex");
 
+pause(1);
 %% Loops over time
 % close all;
 for k = 1 : 100 : length(T_VALS)
