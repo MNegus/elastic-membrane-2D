@@ -532,8 +532,9 @@ event output_turnover_point (t += DELTA_T) {
         double energy_flux = 0;
         int num_y_points = (int) (turnover_y / MIN_CELL_SIZE);
 
+        int energy_output_freq = 10;
         FILE *energy_file;
-        if (membrane_output_no % 100 == 0) {
+        if (membrane_output_no % energy_output_freq == 0) {
             char energy_filename[80];
             sprintf(energy_filename, "energy_%d.txt", membrane_output_no);
             energy_file = fopen(energy_filename, "w");
@@ -558,12 +559,12 @@ event output_turnover_point (t += DELTA_T) {
             
             energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val, 2)) * (u_x_val - turnover_x_vel) * MIN_CELL_SIZE;
 
-            if (membrane_output_no % 100 == 0) {
+            if (membrane_output_no % energy_output_freq == 0) {
                 fprintf(energy_file, "%g, %g, %g, %g, %g\n", y_val, f_val, u_x_val, u_y_val, MIN_CELL_SIZE);
             }
         }
 
-        if (membrane_output_no % 100 == 0) {
+        if (membrane_output_no % energy_output_freq == 0) {
             fclose(energy_file);
         }
 
