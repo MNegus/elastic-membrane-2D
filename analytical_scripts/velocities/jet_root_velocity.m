@@ -16,7 +16,7 @@ DELTA_T = 1e-4;
 tvals = DELTA_T * timesteps - impact_time;
 
 %% Basilisk data 
-data_dir = "/home/michael/Desktop/turnover_points_test/raw_data";
+data_dir = "/scratch/negus/no_surface_condition/raw_data";
 turnover_point_mat = readmatrix(sprintf("%s/turnover_points_basilisk.txt", data_dir));
 basilisk_d_ts = turnover_point_mat(:, 4);
 
@@ -41,6 +41,7 @@ close(figure(3));
 figure(3);
 analytical_flux_line = animatedline('color', 'b');
 basilisk_flux_line = animatedline('color', 'r');
+jet_flux_line = animatedline('color', 'g');
 yline(pi / 2);
 legend("Analytical", "Basilisk");
 
@@ -62,7 +63,7 @@ for idx = 1 : length(timesteps)
         % Find velocities (in vertical moving frame
         w = (1 + 1i * sqrt(eta)) / (1 - 1i * sqrt(eta));
         x_vels(m) = d_t(t) * real(w) + d_t(t);
-        y_vels(m) = -d_t(t) * imag(w) + 1;
+        y_vels(m) = -d_t(t) * imag(w);
         
     end
     
@@ -73,11 +74,19 @@ for idx = 1 : length(timesteps)
     basilisk_y_vels = energy_mat(:, 4);
     
     %% Determines energy fluxes
-%     analytical_integrand = ((x_vels + d_t(t)).^2 + y_vels.^2) .* (x_vels);
+%     analytical_integrand = ((x_vels).^2 + y_vels.^2) .* (x_vels - d_t(t));
     analytical_integrand = ((x_vels).^2) .* (x_vels - d_t(t));
     
     analytical_flux = trapz(zs, analytical_integrand)
     addpoints(analytical_flux_line, t, analytical_flux);
+    
+    % Jet flux
+    eta_jet = 0;
+    w_jet = (1 + 1i * sqrt(eta_jet)) / (1 - 1i * sqrt(eta_jet));
+    x_vel_jet = d_t(t) * real(w_jet) + d_t(t);
+    z_jet = z_fun(eta_jet, J(t));
+    jet_flux = z_jet * (x_vel_jet^2) * (x_vel_jet - d_t(t));
+    addpoints(jet_flux_line, t, jet_flux);
     
     basilisk_d_t = basilisk_d_ts(k);
     basilisk_integrand = (basilisk_x_vels.^2 + basilisk_y_vels.^2) .* (basilisk_x_vels - basilisk_d_t);
