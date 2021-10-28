@@ -18,7 +18,17 @@ tvals = DELTA_T * timesteps - impact_time;
 %% Basilisk data 
 data_dir = "/home/michael/scratch/no_surface_condition/raw_data";
 turnover_point_mat = readmatrix(sprintf("%s/turnover_points_basilisk.txt", data_dir));
-basilisk_d_ts = turnover_point_mat(:, 4);
+no_d_ts = turnover_point_mat(:, 4);
+
+data_dir = "/home/michael/scratch/neumann_condition/raw_data";
+turnover_point_mat = readmatrix(sprintf("%s/turnover_points_basilisk.txt", data_dir));
+neumann_d_ts = turnover_point_mat(:, 4);
+
+data_dir = "/home/michael/Desktop/turnover_points_test/raw_data";
+turnover_point_mat = readmatrix(sprintf("%s/turnover_points_basilisk.txt", data_dir));
+normal_d_ts = turnover_point_mat(:, 4);
+
+
 
 %% Arrays for fluxes
 fluxes_times = [];
@@ -146,20 +156,3 @@ function eta = eta_0(options)
     eta_guess = -0.01 + 1e-10;
     eta = fsolve(@(eta) (eta + 4 * 1i * sqrt(eta) - log(eta) + 1i * pi - 1), eta_guess, options);
 end
-
-% function integrand = analytical_integrand(z, t, d_t, J, options)
-% 
-%     eta_fun = @(eta) z - z_fun(eta, J(t));
-%    
-%     eta0 = 1 + 1i * 1e-6;
-%     eta = fsolve(eta_fun, eta0, options);
-%     
-%     %% Find velocities
-%     w = (1 + 1i * sqrt(eta)) / (1 - 1i * sqrt(eta));
-%     x_vel = d_t(t) * real(w);
-% %     y_vel = -d_t(t) * imag(w) + 1;
-%     
-%     %% Find integrand
-%     integrand = (x_vel + d_t(t))^2 * x_vel
-%     
-% end
