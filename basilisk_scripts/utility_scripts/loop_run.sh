@@ -4,19 +4,19 @@ parent_dir=$1
 code_name=$2
 move_dest=$3
 
-ALPHA=1;
+# ALPHA=1;
 
-for GAMMA in 0.4 0.01
-do
-    for BETA in 0.1 0.2 0.4 0.8 1.6 3.2 6.4 12.8
-    do 
-        echo BETA = $BETA, GAMMA = $GAMMA
+# for GAMMA in 0.4 0.01
+# do
+#     for BETA in 0.1 0.2 0.4 0.8 1.6 3.2 6.4 12.8
+#     do 
+#         echo BETA = $BETA, GAMMA = $GAMMA
         
-        cd $parent_dir/alpha_$ALPHA-beta_$BETA-gamma_$GAMMA/code
+#         cd $parent_dir/alpha_$ALPHA-beta_$BETA-gamma_$GAMMA/code
 
-        ./run_simulation.sh $code_name 8
-    done
-done
+#         ./run_simulation.sh $code_name 8
+#     done
+# done
 
 # for GAMMA in 0.1 0.2 0.4 0.8 1.6 3.2 6.4 12.8
 # do
@@ -40,13 +40,13 @@ done
 #     ./run_simulation.sh $code_name 8
 # done
 
-# for MAXLEVEL in 8 9 10 11 12 13
-# do
-#     echo Max level = $MAXLEVEL
-#     cd $parent_dir/max_level_$MAXLEVEL/code
+for MAXLEVEL in 10 11 12 13
+do
+    echo Max level = $MAXLEVEL
+    cd $parent_dir/max_level_$MAXLEVEL/code
 
-#     ./run_simulation.sh $code_name 8
-# done
+    ./run_simulation.sh $code_name 8
+done
 
 # for XMIN in 0 1 2 3 4
 # do

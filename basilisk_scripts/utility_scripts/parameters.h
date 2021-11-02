@@ -26,7 +26,7 @@ const int STATIONARY = 1; // Set to 1 if enforcing membrane to be stationary
 
 /* Computational constants */
 const int MINLEVEL = 5; // Minimum refinement level 
-const int MAXLEVEL = 10; // Maximum refinement level
+const int MAXLEVEL = 13; // Maximum refinement level
 const double BOX_WIDTH = 6.0; // Width of the computational box
 const double MEMBRANE_RADIUS = 4.0; // Width of the membrane
 const double GFS_OUTPUT_TIMESTEP = 1e-2; // Time between gfs outputs
