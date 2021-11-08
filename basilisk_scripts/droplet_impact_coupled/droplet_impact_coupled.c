@@ -84,7 +84,8 @@ u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
 
 // Conditions on surface
 uf.n[bottom] = dirichlet(0.);
-uf.t[bottom] = dirichlet(0.);
+// uf.t[bottom] = dirichlet(0.);
+// uf.t[bottom] = neumann(0.);
 h.t[bottom] = contact_angle (theta0*pi/180.);
 
 // Conditions for entry from above
@@ -430,9 +431,10 @@ event output_turnover_point (t += DELTA_T) {
     position(f, positions_x, {1,0});
     position(f, positions_y, {0,1});
     
-    if (impact == -1) {
+    if (impact == 0) {
         /* If we are pre-impact, output the turnover point to be at (0, 0) */
-        fprintf(turnover_point_file, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %4.f\n", t, 0., 0., 0., 0., 0., 0.);
+        fprintf(turnover_point_file, "%.6f, %.6f, %.6f, %.6f, %.6f\n", t, 0., 0., 0., 0.);
+        fclose(turnover_point_file);
     } else {
         /* Else we find the turnover point to be the point along the bottom half
         of the droplet with the lowest value of x */
@@ -440,11 +442,7 @@ event output_turnover_point (t += DELTA_T) {
 
         double turnover_x = 1e6; // Initialise x coordinate of turnover point
 
-        // Maximum value of y to look is the half way point of the droplet
-        // double max_y = INITIAL_DROP_HEIGHT + 0.5 * DROP_RADIUS - t;
-
-        // Maximum value of y is taken to be 0.25, which the turnover point 
-        // should not reach in the current timescale
+        // Maximum valueturnover_points_basilisk.txtach in the current timescale
         double max_y = 0.5;
 
         // Initialises arrays to dummy variables
@@ -469,50 +467,6 @@ event output_turnover_point (t += DELTA_T) {
                     turnover_x_arr[omp_get_thread_num()] = positions_x[];
                     turnover_y_arr[omp_get_thread_num()] = positions_y[];
             }
-
-            /* MANUAL METHODS */
-            // Checks if current point is on the interface
-            // if ((f[] > 1e-6 && f[] < 1. - 1e-6)) {
-                /* plane_area_center METHOD */
-                // coord m = mycs(point, f), fc;
-                // double alpha = plane_alpha(f[], m);
-                // plane_area_center (m, alpha, &fc);
-                // double current_x = x + fc.x * Delta;
-                // double current_y = y + fc.y * Delta;
-
-                /* ENDPOINT METHOD */
-                // // Finds the segment of the interface
-                // coord n = interface_normal(point, f);
-                // double alpha = plane_alpha (f[], n);
-                // coord segment[2];
-                // facets (n, alpha, segment);
-
-                // // Finds the end of the segment with the lowest value of x
-                // double current_x, current_y;
-                // if (segment[0].x < segment[1].x) {
-                //     current_x = x + segment[0].x * Delta;
-                //     current_y = y + segment[0].y * Delta;
-                // } else {
-                //     current_x = x + segment[1].x * Delta;
-                //     current_y = y + segment[1].y * Delta;
-                // }
-                
-                /* SAVES IF APPROPRIATE */
-                // If current_x and current_y are in the appropriate bounds, and
-                // current_x < turnover_x, then save
-                // if ((current_x < turnover_x) \
-                /if (t % GFS_OUTPUT_TIMESTEP == 0)/         && (current_x >= 0) && (current_y >= 0) \
-                //         && (current_y <= max_y)) {
-
-                //     // Update turnover_x
-                //     turnover_x = current_x;
-
-                //     // Update arrays (critical region)
-                //     #pragma omp critical 
-                //         turnover_x_arr[omp_get_thread_num()] = current_x;
-                //         turnover_y_arr[omp_get_thread_num()] = current_y;
-                // }
-            // }
         }
 
         // Finds the index of the turnover point in the arrays
@@ -524,69 +478,90 @@ event output_turnover_point (t += DELTA_T) {
         // Saves value of turnover_y
         double turnover_y = turnover_y_arr[turnover_index];
 
-        // Determines the velocities via interpolation
+        // Saves turnover velocities
         double turnover_x_vel = interpolate(u.x, turnover_x, turnover_y);
         double turnover_y_vel = interpolate(u.y, turnover_x, turnover_y);
 
-        /* Energy flux determination */
-        double energy_flux = 0;
-        int num_y_points = (int) (turnover_y / MIN_CELL_SIZE);
-
-        int energy_output_freq = 10;
-        FILE *energy_file;
-        if (membrane_output_no % energy_output_freq == 0) {
-            char energy_filename[80];
-            sprintf(energy_filename, "energy_%d.txt", membrane_output_no);
-            energy_file = fopen(energy_filename, "w");
-        }
-        
-
-        // #pragma omp parallel for reduction(+ : energy_flux)
-        for (int k = 0; k <= num_y_points; k++) {
-
-            // y value to interpolate from
-            double y_val = k * MIN_CELL_SIZE;
-
-            // Interpolated volume fraction
-            double f_val = interpolate(f, turnover_x, y_val);
-
-            // Interpolated x velocity
-            // double u_x_val = interpolate(u.x, turnover_x, y_val);
-            double u_x_val = interpolate(uf.x, turnover_x, y_val);
-
-            // Interpolated y velocity, shifted into the moving frame
-            double u_y_val = interpolate(u.y, turnover_x, y_val) + 1;
-            
-            energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val, 2)) * (u_x_val - turnover_x_vel) * MIN_CELL_SIZE;
-
-            if (membrane_output_no % energy_output_freq == 0) {
-                fprintf(energy_file, "%g, %g, %g, %g, %g\n", y_val, f_val, u_x_val, u_y_val, MIN_CELL_SIZE);
-            }
-        }
-
-        if (membrane_output_no % energy_output_freq == 0) {
-            fclose(energy_file);
-        }
-
-        jet_energy += energy_flux * DELTA_T;
-
         // Outputs the turnover point data
-        fprintf(turnover_point_file, "%.4f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f\n", \
-            t, turnover_x, turnover_y, turnover_x_vel, turnover_y_vel, energy_flux, jet_energy);
+        fprintf(turnover_point_file, "%.4f, %.6f, %.6f, %.6f, %.6f\n", \
+            t, turnover_x, turnover_y, turnover_x_vel, turnover_y_vel);
+        fclose(turnover_point_file);
 
-        // Outputs the dimensional data
-        // double t_dim = (R / V) * t;
-        // double turnover_x_dim = R * turnover_x;
-        // double turnover_y_dim = R * turnover_y;
-        // double turnover_x_vel_dim = V * turnover_x_vel;
-        // double turnover_y_vel_dim = V * turnover_y_vel;
-        // double energy_flux_dim = RHO_L * pow(V, 3) * R * energy_flux; 
-        // double jet_energy_dim = RHO_L * pow(V, 3) * R * (R / V) * jet_energy;
-        // fprintf(turnover_point_file, "%g, %g, %g, %g, %g, %g, %g\n", \
-        //     t_dim, turnover_x_dim, turnover_y_dim, turnover_x_vel_dim, turnover_y_vel_dim, energy_flux_dim, jet_energy_dim);
+        /* Outputs fluxes and velocities if appropriate */
+        int energy_output_freq = 10;
+        if (membrane_output_no % energy_output_freq == 0) {
+            // Outputs different slices of x until we reach the end of the jet
+            int in_jet = 1;
+            double x_slice = turnover_x;
+            double y_slice = turnover_y;
+            
+            int x_cell = 0;
+
+            // Energy fluxes file
+            FILE *fluxes_file;
+            char fluxes_filename[80];
+            sprintf(fluxes_filename, "fluxes_%d.txt", membrane_output_no);
+            fluxes_file = fopen(fluxes_filename, "w");
+
+            while (in_jet) {
+                // Determines the velocities via interpolation
+                double interface_x_vel = interpolate(u.x, x_slice, y_slice);
+
+                /* Energy flux determination */
+                double energy_flux = 0;
+                int num_y_points = (int) (y_slice / MIN_CELL_SIZE);
+
+                FILE *velocity_file;
+                char velocity_filename[80];
+                sprintf(velocity_filename, "velocities_%d-x_cell_%d.txt", membrane_output_no, x_cell);
+                velocity_file = fopen(velocity_filename, "w");
+                
+                // #pragma omp parallel for reduction(+ : energy_flux)
+                for (int k = 0; k <= num_y_points; k++) {
+
+                    // y value to interpolate from
+                    double y_val = k * MIN_CELL_SIZE;
+
+                    // Interpolated volume fraction
+                    double f_val = interpolate(f, x_slice, y_val);
+
+                    // Interpolated x velocity
+                    double u_x_val = interpolate(uf.x, x_slice, y_val);
+
+                    // Interpolated y velocity
+                    double u_y_val = interpolate(u.y, x_slice, y_val);
+                    
+                    energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val + 1, 2)) * (u_x_val - interface_x_vel) * MIN_CELL_SIZE;
+
+                    fprintf(velocity_file, "%g, %g, %g, %g, %g\n", y_val, f_val, u_x_val, u_y_val, MIN_CELL_SIZE);
+                }
+
+                fclose(velocity_file);
+
+                // Adds flux value to the file
+                fprintf(fluxes_file, "%g, %g\n", x_slice, energy_flux);
+
+                // Increments x to the next position
+                x_cell += 2;
+                x_slice = turnover_x + x_cell * MIN_CELL_SIZE;
+
+                // Finds the new y by looping upwards until the interface is 
+                // found
+                y_slice = 0;
+                double f_val = interpolate(f, x_slice, y_slice);
+                while (f_val == 1) {
+                    y_slice += MIN_CELL_SIZE;
+                    f_val = interpolate(f, x_slice, y_slice);
+                }
+
+                // If y_slice == 0, then the jet is too thin and we stop
+                if (y_slice == 0) {
+                    in_jet = 0;
+                } 
+            }
+            fclose(fluxes_file);
+        }
     }
-
-    fclose(turnover_point_file);
 }
 
 
