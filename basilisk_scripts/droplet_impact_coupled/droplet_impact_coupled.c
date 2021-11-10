@@ -530,10 +530,17 @@ event output_turnover_point (t += DELTA_T) {
 
                     // Interpolated y velocity
                     double u_y_val = interpolate(u.y, x_slice, y_val);
-                    
-                    energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val + 1, 2)) * (u_x_val - interface_x_vel) * MIN_CELL_SIZE;
 
-                    fprintf(velocity_file, "%g, %g, %g, %g, %g\n", y_val, f_val, u_x_val, u_y_val, MIN_CELL_SIZE);
+                    // Interpolated pressure
+                    double p_val = interpolate(p, x_slice, y_val);
+                    
+                    // Energy flux (WITHOUT CHANGE OF FRAME IN VERTICAL)
+                    double energy_val = 0.5 * (pow(u_x_val, 2) + pow(u_y_val, 2)) + p_val;
+                    energy_flux += f_val * (u_x_val - turnover_x_vel) * energy_val * MIN_CELL_SIZE;
+
+                    // energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val + 1, 2)) * (u_x_val - interface_x_vel) * MIN_CELL_SIZE;
+
+                    fprintf(velocity_file, "%g, %g, %g, %g, %g, %g\n", y_val, f_val, u_x_val, u_y_val, p_val, MIN_CELL_SIZE);
                 }
 
                 fclose(velocity_file);
