@@ -52,10 +52,10 @@ function etas = jet_root_etas(x, no_points)
  
     end
 %     plot(x_heights, z_heights);
-%         hold on
-%         scatter(xs, zs);
-%         hold off;
-%         drawnow;
+%     hold on
+%     scatter(xs, zs);
+%     hold off;
+%     drawnow;
 
     %% Find query points in z
     zq = linspace(0, height, no_points);
