@@ -22,13 +22,13 @@ omega_mat = load("omega.mat");
 omega = omega_mat.omega;
 
 %% Data dirs
-analytical_parent_dir = "/media/michael/newarre/elastic_membrane/confirmation_data/gamma_varying_with_jet/analytical_data";
+analytical_parent_dir = "/media/michael/newarre/elastic_membrane/confirmation_data/alpha_varying/analytical_data";
 
 %% Stationary values
 ds_stationary = 2 * sqrt(ts_analytical);
 d_ts_stationary = 1 ./ sqrt(ts_analytical);
 Js_stationary = pi * ds_stationary ./ (8 * d_ts_stationary.^2);
-fluxes_stationary = 2 * Js_stationary .* d_ts_stationary.^3;
+fluxes_stationary = (1 + omega) * Js_stationary .* d_ts_stationary.^3;
 fluxes_stationary(1) = 0;
 energy_stationary = cumtrapz(ts_analytical, fluxes_stationary);
 
