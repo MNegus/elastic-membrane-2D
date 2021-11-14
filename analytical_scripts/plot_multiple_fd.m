@@ -1,6 +1,6 @@
 %% plot_multiple_fd.m
 
-
+close all;
 
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
@@ -11,7 +11,7 @@ DELTA_X = L / (N_MEMBRANE - 1);
 xs = (0 : DELTA_X : L - DELTA_X)';
 
 % Basilisk parameters
-IMPACT_TIME = 0.00;
+IMPACT_TIME = 0.125;
 IMPACT_TIMESTEP = 0;
 T_VALS = 0 : DELTA_T : T_MAX;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
@@ -21,16 +21,19 @@ pressure_type = "composite";
 
 
 %% Data dirs
-parent_dir = "/home/negus/Desktop/alpha_vary_test";
+parent_dir = "/scratch/negus/gamma_varying";
 
 
 %% Turnover point comparison
 close(figure(1));
 figure(1);
 hold on;
-for ALPHA = ALPHAS
+% for ALPHA = ALPHAS
+for ALPHA_idx = 1 : length(ALPHAS)
+    ALPHA = ALPHAS(ALPHA_idx);
     for BETA = BETAS
         for GAMMA = GAMMAS
+%         GAMMA = GAMMAS(ALPHA_idx);
             % Loads in parameters
             parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...
               parent_dir, ALPHA, BETA, GAMMA, pressure_type)
@@ -49,7 +52,7 @@ legend("location", "northeast");
 
 %% Loops over time
 % close all;
-for k = 1 : 100 : length(T_VALS)
+for k = 1 : 10 : length(T_VALS)
     %% Updates time
     t = T_VALS(k);
     t
@@ -72,10 +75,12 @@ for k = 1 : 100 : length(T_VALS)
     
 %     figure(1);
 %     hold off;
-    
-    for ALPHA = ALPHAS
+
+    for ALPHA_idx = 1 : length(ALPHAS)
+        ALPHA = ALPHAS(ALPHA_idx);
         for BETA = BETAS
             for GAMMA = GAMMAS
+%             GAMMA = GAMMAS(ALPHA_idx);
                 
                 % Loads in parameters
                 parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...

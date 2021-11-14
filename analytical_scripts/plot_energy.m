@@ -22,7 +22,7 @@ omega_mat = load("omega.mat");
 omega = omega_mat.omega;
 
 %% Data dirs
-analytical_parent_dir = "/media/michael/newarre/elastic_membrane/confirmation_data/alpha_varying/analytical_data";
+analytical_parent_dir = "/scratch/negus/gamma_varying";
 
 %% Stationary values
 ds_stationary = 2 * sqrt(ts_analytical);
@@ -37,9 +37,11 @@ close(figure(1));
 figure(1);
 hold on;
 
-for ALPHA = ALPHAS
+for ALPHA_idx = 1 : length(ALPHAS)
+    ALPHA = ALPHAS(ALPHA_idx);
     for BETA = BETAS
         for GAMMA = GAMMAS
+%         GAMMA = GAMMAS(ALPHA_idx);
             % Loads in parameters
             parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...
               analytical_parent_dir, ALPHA, BETA, GAMMA, pressure_type)
@@ -76,9 +78,11 @@ close(figure(2));
 figure(2);
 hold on;
 
-for ALPHA = ALPHAS
+for ALPHA_idx = 1 : length(ALPHAS)
+    ALPHA = ALPHAS(ALPHA_idx);
     for BETA = BETAS
-        for GAMMA = GAMMAS
+%         for GAMMA = GAMMAS
+        GAMMA = GAMMAS(ALPHA_idx);
             % Loads in parameters
             parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...
               analytical_parent_dir, ALPHA, BETA, GAMMA, pressure_type)
@@ -91,7 +95,7 @@ for ALPHA = ALPHAS
             
             % Plot line
             plot(ts_analytical(1 : end - 1), Js(1 : end - 1) * (1 + 4 / pi), 'linewidth', 2, 'Displayname', displayname);
-        end
+%         end
     end
 end
 plot(ts_analytical, Js_stationary * (1 + 4 / pi), 'linewidth', 2, 'Displayname', "Stationary", 'color', 0.5 * [1 1 1], 'linestyle', '--');
