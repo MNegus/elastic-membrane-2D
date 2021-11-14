@@ -84,8 +84,7 @@ u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
 
 // Conditions on surface
 uf.n[bottom] = dirichlet(0.);
-// uf.t[bottom] = dirichlet(0.);
-// uf.t[bottom] = neumann(0.);
+uf.t[bottom] = dirichlet(0.);
 h.t[bottom] = contact_angle (theta0*pi/180.);
 
 // Conditions for entry from above
@@ -565,6 +564,9 @@ event output_turnover_point (t += DELTA_T) {
                 if (y_slice == 0) {
                     in_jet = 0;
                 } 
+
+                /* OVERRIDE: SET in_jet = 0 IN ORDER TO ONLY OUTPUT ONE SLICE */
+                in_jet = 0;
             }
             fclose(fluxes_file);
         }
