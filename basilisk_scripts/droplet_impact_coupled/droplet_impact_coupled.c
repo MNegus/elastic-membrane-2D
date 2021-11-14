@@ -534,8 +534,8 @@ event output_turnover_point (t += DELTA_T) {
                     // Interpolated pressure
                     double p_val = interpolate(p, x_slice, y_val);
                     
-                    // Energy flux (WITHOUT CHANGE OF FRAME IN VERTICAL)
-                    double energy_val = 0.5 * (pow(u_x_val, 2) + pow(u_y_val, 2)) + p_val;
+                    // Energy flux (IN MOVING VERTICAL FRAME)
+                    double energy_val = 0.5 * (pow(u_x_val, 2) + pow(u_y_val + 1, 2)) + p_val;
                     energy_flux += f_val * (u_x_val - turnover_x_vel) * energy_val * MIN_CELL_SIZE;
 
                     // energy_flux += f_val * (pow(u_x_val, 2) + pow(u_y_val + 1, 2)) * (u_x_val - interface_x_vel) * MIN_CELL_SIZE;
@@ -549,7 +549,7 @@ event output_turnover_point (t += DELTA_T) {
                 fprintf(fluxes_file, "%g, %g\n", x_slice, energy_flux);
 
                 // Increments x to the next position
-                x_cell += 2;
+                x_cell += 10;
                 x_slice = turnover_x + x_cell * MIN_CELL_SIZE;
 
                 // Finds the new y by looping upwards until the interface is 
