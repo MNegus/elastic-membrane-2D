@@ -17,7 +17,7 @@ const double DROP_RADIUS = 1.0; // Radius of droplet
 const double INITIAL_DROP_HEIGHT = 0.125; // Initial gap between drop and plate
 
 /* Membrane parameters */
-const double ALPHA = 1;
+const double ALPHA = 1; // Mass ratio
 const double BETA = 0; // Tension term
 const double GAMMA = 12.8; // Bending term
 const double DELTA_T = 1e-4; // Timestep for membrane solution
