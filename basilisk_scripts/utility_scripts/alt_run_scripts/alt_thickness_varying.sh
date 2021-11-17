@@ -18,5 +18,5 @@ do
     cd $parent_dir/alpha_$ALPHA-beta_$BETA-gamma_$GAMMA/code
 
     # Runs the script
-    nohup ./run_simulation.sh $code_name 8 &> nohup_alt_thickness.out
+    nohup ./run_simulation.sh $code_name 8 &> nohup_ALPHA_$ALPHA.out &
 done

@@ -124,8 +124,6 @@ set(gcf,'position',[x0,y0,width,height])
 %% Video writers set up
 interface_obj = VideoWriter('interfaces.avi');
 open(interface_obj);
-membrane_obj = VideoWriter('membrane.avi');
-open(membrane_obj);
 
 %% Loop over time
 for k = 1100 : 10 : length(T_VALS)
