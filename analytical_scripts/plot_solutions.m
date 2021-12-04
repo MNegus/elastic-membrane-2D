@@ -8,11 +8,9 @@ addpath("pressures");
 
 % Options (set to 0 if don't want to plot the solution)
 normal_modes = 1;
-finite_differences_comp = 0;
-finite_differences_outer = 0;
-dns = 0;
-
-
+finite_differences_comp = 1;
+finite_differences_outer = 1;
+dns = 1;
 
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
@@ -29,12 +27,13 @@ xs = (0 : DELTA_X : L - DELTA_X)';
 IMPACT_TIME = 0.125;
 IMPACT_TIMESTEP = 0.125 / DELTA_T;
 T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
-ts_analytical = 0 : DELTA_T : T_MAX;
+ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 %% Data dirs
-parent_dir = "/home/michael/Desktop/alpha_vary_test";
+parent_dir = "/media/negus/newarre/elastic_membrane/model_comparison_data";
 analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
-dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
+% dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
+dns_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/dns", parent_dir, ALPHA, BETA, GAMMA);
 
 %% Loads in normal modes solutions
 if (normal_modes)
@@ -53,38 +52,43 @@ end
 
 %% Turnover point compare
 
-% if (dns)
-%     % DNS turnover points
-%     ds_dir = "/home/michael/scratch/coupled_benchmark";
-%     dns_mat = dlmread(sprintf("%s/turnover_points.txt", ds_dir));
-%     ds_dns = dns_mat(:, 2);
-%     ts_dns = (dns_mat(:, 1) - IMPACT_TIMESTEP) * DELTA_T;
-% end
+close(figure(1));
+figure(1);
+hold on;
+
+if (dns)
+    % DNS turnover points
+    dns_mat = dlmread(sprintf("%s/raw_data/turnover_points_basilisk.txt", dns_dir));
+    ds_dns = dns_mat(:, 2);
+    ts_dns = (dns_mat(:, 1) - IMPACT_TIMESTEP) * DELTA_T;
+    
+    plot(ts_dns, ds_dns, 'linewidth', 2);
+end
 
 if (normal_modes)
     % Normal modes turnover points
     nm_mat = matfile(sprintf("%s/normal_modes/ds.mat", analytical_parent_dir));
     ds_nm = nm_mat.ds;
+    
+    plot(ts_analytical, ds_nm, 'linewidth', 2);
 end
 
 if (finite_differences_comp)
     % FD turnover points
     fd_comp_mat = matfile(sprintf("%s/finite_differences/composite/ds.mat", analytical_parent_dir));
     ds_comp = fd_comp_mat.ds;
+    
+    plot(ts_analytical, ds_comp, 'linewidth', 2);
 end
 
 if (finite_differences_outer)
     fd_outer_mat = matfile(sprintf("%s/finite_differences/outer/ds.mat", analytical_parent_dir));
     ds_outer = fd_outer_mat.ds;
+    
+    plot(ts_analytical, ds_outer, 'linewidth', 2);
 end
 
-close(figure(1));
-figure(1);
-hold on;
-% plot(ts_dns, ds_dns, 'linewidth', 2);
-plot(ts_analytical, ds_nm, 'linewidth', 2);
-% plot(ts_analytical, ds_outer, 'linewidth', 2);
-% plot(ts_analytical, ds_comp, 'linewidth', 2);
+
 legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
 xlabel("t");
 ylabel("d(t)");
@@ -105,20 +109,6 @@ colors = [[0, 0.4470, 0.7410]; ...
 
 % Animated lines
 close all;
-
-if (normal_modes)
-    subplot(3, 1, 1);
-    nm_w_line = animatedline('Color', colors(3, :),'LineWidth', 2, ...
-        'Displayname', 'Normal modes');
-    
-    subplot(3, 1, 2);
-    nm_w_t_line = animatedline('Color', colors(3, :),'LineWidth', 2, ...
-        'Displayname', 'Normal modes');
-    
-    subplot(3, 1, 3);
-    nm_p_line = animatedline('Color', colors(3, :),'LineWidth', 2, ...
-        'Displayname', 'Normal modes');
-end
 
 if (finite_differences_comp)
     subplot(3, 1, 1);
@@ -162,6 +152,20 @@ if (dns)
     subplot(3, 1, 3)
     dns_p_line = animatedline('Color', colors(1, :),'LineWidth', 2, ...
         'Displayname', 'DNS');
+end
+
+if (normal_modes)
+    subplot(3, 1, 1);
+    nm_w_line = animatedline('Color', colors(3, :),'LineWidth', 2, ...
+        'Displayname', 'Normal modes');
+    
+    subplot(3, 1, 2);
+    nm_w_t_line = animatedline('Color', colors(3, :),'LineWidth', 2, ...
+        'Displayname', 'Normal modes');
+    
+    subplot(3, 1, 3);
+    nm_p_line = animatedline('Color', colors(3, :),'LineWidth', 2, ...
+        'Displayname', 'Normal modes');
 end
 
 

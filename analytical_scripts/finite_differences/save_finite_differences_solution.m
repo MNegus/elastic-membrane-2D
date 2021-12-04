@@ -49,7 +49,7 @@ function save_finite_differences_solution(parent_dir, ...
             xs, t, w, w_previous, p_previous, pressure_type, ...
             EPSILON, DELTA_T, DELTA_X, M, Cpressure, A_mat, B_mat);
         
-        plot(xs, w_next);
+        plot(xs, w_t);
         drawnow;
         
         ds(k) = d;
