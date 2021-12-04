@@ -19,7 +19,7 @@ const double INITIAL_DROP_HEIGHT = 0.125; // Initial gap between drop and plate
 /* Membrane parameters */
 const double ALPHA = 1; // Mass ratio
 const double BETA = 0; // Tension term
-const double GAMMA = 12.8; // Bending term
+const double GAMMA = 128; // Bending term
 const double DELTA_T = 1e-4; // Timestep for membrane solution
 const int COUPLED = 1; // Set to 1 if membrane motion is coupled to the fluid
 const int STATIONARY = 0; // Set to 1 if enforcing membrane to be stationary

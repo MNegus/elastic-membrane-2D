@@ -10,28 +10,33 @@ function [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_
 %     R = 1e-3; % Droplet radius
 %     V = 1; % Droplet speed
     
+    EPSILON = 1;
+    ALPHAS = 2;
+    BETAS = 1;
+    GAMMAS = 2;
+
 
     %% Define parameters
-    EPSILON = 1;
+%     EPSILON = 1;
 %     ALPHAS = rho_m * nu / (EPSILON^2 * rho_l * R)
 %     BETAS =  EPSILON^2 * T / (rho_l * R * V)
 %     GAMMAS = EPSILON^2 * E * nu^3 / (3 * rho_l * R^3 * V^2)
 
     % alpha_varying
-    ALPHAS = [1, 2, 4, 8] / EPSILON^2;
-    BETAS = zeros(size(ALPHAS)) * EPSILON^2;
-    GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
-
-    % beta_varying
-    BETAS = [0, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
-    ALPHAS = ones(size(BETAS)) / EPSILON^2;
-    GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
-    
-    % gamma_varying
-    GAMMAS = [2, 4, 8, 16, 32, 64, 128] * EPSILON^2;
-    ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
-    BETAS = zeros(size(GAMMAS)) * EPSILON^2;
-    
+%     ALPHAS = [1, 2, 4, 8] / EPSILON^2;
+%     BETAS = zeros(size(ALPHAS)) * EPSILON^2;
+%     GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+% 
+%     % beta_varying
+%     BETAS = [0, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
+%     ALPHAS = ones(size(BETAS)) / EPSILON^2;
+%     GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+%     
+%     % gamma_varying
+%     GAMMAS = [2, 4, 8, 16, 32, 64, 128] * EPSILON^2;
+%     ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
+%     BETAS = zeros(size(GAMMAS)) * EPSILON^2;
+%     
     L = 16;
     T_MAX = 0.4;
     DELTA_T = 1e-4;
