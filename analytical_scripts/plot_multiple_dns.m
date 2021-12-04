@@ -1,10 +1,14 @@
-%% plot_multiple_fd.m
+%% plot_multiple_sna.m
 
-
+close all;
+clear;
 
 %% Parameters
-[EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
+[~, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
     = parameters();
+
+no_params = length(ALPHAS);
+
 
 % Spatial parameters
 DELTA_X = L / (N_MEMBRANE - 1); 
@@ -12,25 +16,23 @@ xs = (0 : DELTA_X : L - DELTA_X)';
 
 % Basilisk parameters
 IMPACT_TIME = 0.125;
-IMPACT_TIMESTEP = 0.125 / DELTA_T;
-T_VALS = -IMPACT_TIME : DELTA_T : T_MAX;
+IMPACT_TIMESTEP = 0;
+T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/confirmation_data/gamma_varying/basilisk_data";
+parent_dir = "/media/michael/newarre/elastic_membrane/basilisk_parameter_sweeping/modulus_varying";
+
 
 %% Loops over time
 % close all;
-for k = IMPACT_TIMESTEP : 100 : length(T_VALS)
+close(figure(1));
+figure(1);
+for k = 1 : 100 : length(T_VALS)
     %% Updates time
     t = T_VALS(k);
     t
-    
-    if (t <= 0) 
-        continue 
-    end
-        
     
     %% Loops over parameters and plots 
     % Resets holds
@@ -43,77 +45,55 @@ for k = IMPACT_TIMESTEP : 100 : length(T_VALS)
     subplot(3, 1, 3);
     hold off;
     
-%     figure(1);
-%     hold off;
-    
-    for ALPHA = ALPHAS
-        for BETA = BETAS
-            for GAMMA = GAMMAS
+
+    for idx = 1 : no_params
+        ALPHA = ALPHAS(idx);
+        BETA = BETAS(idx);
+        GAMMA = GAMMAS(idx);
                 
-                % Loads in parameters
-                parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", ...
-                  parent_dir, ALPHA, BETA, GAMMA);
-                displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
-                
-                % Load in ws
-                w_membrane_mat = dlmread(sprintf("%s/membrane_outputs/w_%d.txt", parameter_dir, k - 1));
-                unsorted_xs = w_membrane_mat(:, 1);
-                unsorted_ws = w_membrane_mat(:, 2);
-                [sorted_xs, idxs] = sort(unsorted_xs);
-                ws = unsorted_ws(idxs);
-                
-                % Load in w_ts
-                w_t_membrane_mat = dlmread(sprintf("%s/membrane_outputs/w_deriv_%d.txt", parameter_dir, k - 1));
-                unsorted_xs = w_t_membrane_mat(:, 1);
-                unsorted_w_ts = w_t_membrane_mat(:, 2);
-                [sorted_xs, idxs] = sort(unsorted_xs);
-                w_ts = unsorted_w_ts(idxs);
-                
-                % Load in ps
-                p_membrane_mat = dlmread(sprintf("%s/membrane_outputs/p_%d.txt", parameter_dir, k - 1));
-                unsorted_xs = p_membrane_mat(:, 1);
-                unsorted_ps = p_membrane_mat(:, 2);
-                [sorted_xs, idxs] = sort(unsorted_xs);
-                ps = unsorted_ps(idxs);
-                
-                % w plot
-                subplot(3, 1, 1);
-                plot(sorted_xs, ws, 'Linewidth', 2, 'Displayname', displayname);
-                hold on;
-                
-%                 xlim([0, 2]);
-                xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
-                set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-%                 legend("interpreter", "latex");
-                title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
-                
-                % w_t plot
-                subplot(3, 1, 2);
-                plot(sorted_xs, w_ts, 'Linewidth', 2, 'Displayname', displayname);
-                hold on;
-                
-%                 xlim([0, 2]);
-                xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
-                set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-%                 legend("interpreter", "latex");
-                title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
-                
-                % p plot
-                subplot(3, 1, 3);
-                plot(sorted_xs, ps, 'Linewidth', 2, 'Displayname', displayname);
-                hold on;
-                
-%                 xlim([0, 2]);
-                xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
-                set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-%                 legend("interpreter", "latex");
-                title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
-                
-            end
-        end
+        % Loads in parameters
+        parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/raw_data", ...
+          parent_dir, ALPHA, BETA, GAMMA);
+        displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
+
+        % w plot
+        ws_mat = readmatrix(sprintf("%s/w_%d.txt", parameter_dir, k - IMPACT_TIMESTEP));
+        [xs_sort, sort_idxs] = sort(ws_mat(:, 1));
+        ws = ws_mat(sort_idxs, 2);
+        
+        subplot(3, 1, 1);
+        plot(xs_sort, ws, 'Linewidth', 2, 'Displayname', displayname);
+        hold on;
+        xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+        ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
+        set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+        title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
+
+        % w_t plot
+        w_ts_mat = readmatrix(sprintf("%s/w_deriv_%d.txt", parameter_dir, k - IMPACT_TIMESTEP));
+        [xs_sort, sort_idxs] = sort(w_ts_mat(:, 1));
+        w_ts = w_ts_mat(sort_idxs, 2);
+        
+        subplot(3, 1, 2);
+        plot(xs_sort, w_ts, 'Linewidth', 2, 'Displayname', displayname);
+        hold on;
+        xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+        ylabel("$w_t(x, t)$", "interpreter", "latex", "Fontsize", 18);
+        set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+        title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
+
+        % p plot
+        ps_mat = readmatrix(sprintf("%s/p_%d.txt", parameter_dir, k - IMPACT_TIMESTEP));
+        [xs_sort, sort_idxs] = sort(ps_mat(:, 1));
+        ps = ps_mat(sort_idxs, 2);
+        
+        subplot(3, 1, 3);
+        plot(xs_sort, ps, 'Linewidth', 2, 'Displayname', displayname);
+        hold on;
+        xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+        ylabel("$p(x, t)$", "interpreter", "latex", "Fontsize", 18);
+        set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+        title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
     end
     
     
@@ -125,9 +105,5 @@ for k = IMPACT_TIMESTEP : 100 : length(T_VALS)
 
     set(gcf,'position',[x0,y0,width,height])
     drawnow;
-    
-    
-    
-    
-    
+
 end

@@ -1,10 +1,14 @@
 %% plot_multiple_fd.m
 
 close all;
+clear;
 
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
     = parameters();
+
+no_params = length(ALPHAS);
+
 
 % Spatial parameters
 DELTA_X = L / (N_MEMBRANE - 1); 
@@ -21,38 +25,38 @@ pressure_type = "composite";
 
 
 %% Data dirs
-parent_dir = "/scratch/negus/gamma_varying";
-
+parent_dir = "/media/michael/newarre/elastic_membrane/parameter_sweeping/gamma_varying";
 
 %% Turnover point comparison
 close(figure(1));
 figure(1);
 hold on;
-% for ALPHA = ALPHAS
-for ALPHA_idx = 1 : length(ALPHAS)
-    ALPHA = ALPHAS(ALPHA_idx);
-    for BETA = BETAS
-        for GAMMA = GAMMAS
-%         GAMMA = GAMMAS(ALPHA_idx);
-            % Loads in parameters
-            parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...
-              parent_dir, ALPHA, BETA, GAMMA, pressure_type)
-            displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
-          
-            % FD turnover points
-            fd_comp_mat = matfile(sprintf("%s/ds.mat", parameter_dir));
-            ds_comp = fd_comp_mat.ds;
-            
-            % Plot line
-            plot(ts_analytical(1 : end - 1), ds_comp(1 : end - 1), 'linewidth', 2, 'Displayname', displayname);
-        end
-    end
+
+for idx = 1 : no_params
+    ALPHA = ALPHAS(idx);
+    BETA = BETAS(idx);
+    GAMMA = GAMMAS(idx);
+    
+    % Loads in parameters
+    parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...
+      parent_dir, ALPHA, BETA, GAMMA, pressure_type)
+    displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
+
+    % FD turnover points
+    fd_comp_mat = matfile(sprintf("%s/ds.mat", parameter_dir));
+    ds_comp = fd_comp_mat.ds;
+
+    % Plot line
+    plot(ts_analytical(1 : end - 1), ds_comp(1 : end - 1), 'linewidth', 2, 'Displayname', displayname);
+
 end
 legend("location", "northeast");
 
 %% Loops over time
 % close all;
-for k = 1 : 10 : length(T_VALS)
+close(figure(2));
+figure(2);
+for k = 1 : 100 : length(T_VALS)
     %% Updates time
     t = T_VALS(k);
     t
@@ -76,65 +80,61 @@ for k = 1 : 10 : length(T_VALS)
 %     figure(1);
 %     hold off;
 
-    for ALPHA_idx = 1 : length(ALPHAS)
-        ALPHA = ALPHAS(ALPHA_idx);
-        for BETA = BETAS
-            for GAMMA = GAMMAS
-%             GAMMA = GAMMAS(ALPHA_idx);
+    for idx = 1 : no_params
+        ALPHA = ALPHAS(idx);
+        BETA = BETAS(idx);
+        GAMMA = GAMMAS(idx);
                 
-                % Loads in parameters
-                parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...
-                  parent_dir, ALPHA, BETA, GAMMA, pressure_type);
-                displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
-                
-                
-                ws_mat = matfile(sprintf("%s/w_%d.mat", parameter_dir, k - IMPACT_TIMESTEP));
-                ws = EPSILON^2 * ws_mat.w_next;
+        % Loads in parameters
+        parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/finite_differences/%s", ...
+          parent_dir, ALPHA, BETA, GAMMA, pressure_type);
+        displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
 
-                w_ts_mat = matfile(sprintf("%s/w_t_%d.mat", parameter_dir, k - IMPACT_TIMESTEP));
-                w_ts = EPSILON^2 * w_ts_mat.w_t;
 
-                ps_mat = matfile(sprintf("%s/p_%d.mat", parameter_dir, k - IMPACT_TIMESTEP));
-                ps = ps_mat.p;
-                
-                % w plot
-                subplot(3, 1, 1);
-                plot(xs, ws, 'Linewidth', 2, 'Displayname', displayname);
-                hold on;
-                
+        ws_mat = matfile(sprintf("%s/w_%d.mat", parameter_dir, k - IMPACT_TIMESTEP));
+        ws = EPSILON^2 * ws_mat.w_next;
+
+        w_ts_mat = matfile(sprintf("%s/w_t_%d.mat", parameter_dir, k - IMPACT_TIMESTEP));
+        w_ts = EPSILON^2 * w_ts_mat.w_t;
+
+        ps_mat = matfile(sprintf("%s/p_%d.mat", parameter_dir, k - IMPACT_TIMESTEP));
+        ps = ps_mat.p;
+
+        % w plot
+        subplot(3, 1, 1);
+        plot(xs, ws, 'Linewidth', 2, 'Displayname', displayname);
+        hold on;
+
 %                 xlim([0, 2]);
-                xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
-                set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+        xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+        ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
+        set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
 %                 legend("interpreter", "latex");
-                title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
-                
-                % w_t plot
-                subplot(3, 1, 2);
-                plot(xs, w_ts, 'Linewidth', 2, 'Displayname', displayname);
-                hold on;
-                
+        title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
+
+        % w_t plot
+        subplot(3, 1, 2);
+        plot(xs, w_ts, 'Linewidth', 2, 'Displayname', displayname);
+        hold on;
+
 %                 xlim([0, 2]);
-                xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$w_t(x, t)$", "interpreter", "latex", "Fontsize", 18);
-                set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+        xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+        ylabel("$w_t(x, t)$", "interpreter", "latex", "Fontsize", 18);
+        set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
 %                 legend("interpreter", "latex");
-                title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
-                
-                % p plot
-                subplot(3, 1, 3);
-                plot(xs, ps, 'Linewidth', 2, 'Displayname', displayname);
-                hold on;
-                
+        title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
+
+        % p plot
+        subplot(3, 1, 3);
+        plot(xs, ps, 'Linewidth', 2, 'Displayname', displayname);
+        hold on;
+
 %                 xlim([0, 2]);
-                xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-                ylabel("$p(x, t)$", "interpreter", "latex", "Fontsize", 18);
-                set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+        xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+        ylabel("$p(x, t)$", "interpreter", "latex", "Fontsize", 18);
+        set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
 %                 legend("interpreter", "latex");
-                title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
-                
-            end
-        end
+        title(sprintf("$t$ = %.4f", t), "Interpreter", "latex"); 
     end
     
     
@@ -146,9 +146,5 @@ for k = 1 : 10 : length(T_VALS)
 
     set(gcf,'position',[x0,y0,width,height])
     drawnow;
-    
-    
-    
-    
-    
+
 end
