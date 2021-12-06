@@ -65,7 +65,7 @@ int membrane_output_no = 0; // Records how many membrane outputs there have been
 int start_membrane = 0; // Boolean to indicate if membrane motion has started
 double drop_thresh = 1e-4; // Remove droplets threshold
 double pinch_off_time = 0.; // Time of pinch-off
-
+FILE * fp_stats; 
 
 /* Function definitions */
 double membrane_bc(double x, double *w_deriv_arr);
@@ -167,8 +167,16 @@ int main() {
     NITERMAX = 300; // Max number of iterations (default 100)
     TOLERANCE = 1e-6; // Possion solver tolerance (default 1e-3)
 
+    /* Open stats file */
+    char name[200];
+    sprintf(name, "logstats.dat");
+    fp_stats = fopen(name, "w");
+
     /* Runs the simulation */
     run(); 
+
+    // Close stats file
+    fclose(fp_stats);
 }
 
 
@@ -635,6 +643,14 @@ event movies (t += 1e-3) {
     }
 }
 
+event logstats (t += 1e-4) {
+
+    timing s = timer_timing (perf.gt, i, perf.tnc, NULL);
+ 
+    // i, timestep, no of cells, real time elapsed, cpu time
+    fprintf(fp_stats, "i: %i t: %g dt: %g #Cells: %ld Wall clock time (s): %g CPU time (s): %g \n", i, t, dt, grid->n, perf.t, s.cpu);
+    fflush(fp_stats);
+}
 
 event end (t = MAX_TIME) {
 /* Ends the simulation */ 
