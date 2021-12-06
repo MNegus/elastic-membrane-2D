@@ -78,6 +78,7 @@ close(figure(1));
 fig1 = figure(1);
 layout = tiledlayout(3, 1);
 layout.Padding = 'compact';
+set(gcf,'color','w');
 
 nexttile(1, [2, 1]);
 stationary_line = animatedline('color', [255, 73, 73] / 255, 'linewidth', 4);
@@ -90,9 +91,8 @@ grid on;
 set(gca, 'TickLabelInterpreter', 'latex', 'Fontsize', fontsize);
 xticks([0 : 0.1 : 1.2]);
 set(gca,'Xticklabel',[]) 
-% xlabel("$x^*$ (mm)", "Fontsize", fontsize, "Interpreter", "latex");
-ylabel("$z^*$ (mm)", "Fontsize", fontsize, "Interpreter", "latex");
-legend(["DNS: Rigid membrane", "DNS: Deformable membrane", "Turnover point"], ...
+ylabel("Free surface, $h(x, t)$ (mm)", "Fontsize", fontsize, "Interpreter", "latex");
+legend(["DNS: Rigid membrane", "DNS: Deformable membrane", "Jet root position"], ...
     'Location', 'Northwest', "Interpreter", "latex")
 
 % Figure 2 setting up
@@ -105,9 +105,9 @@ lower_d_line = animatedline('color', [0 0 0], 'linewidth', 2, 'linestyle', '--')
 grid on;
 set(gca, 'TickLabelInterpreter', 'latex', 'Fontsize', fontsize);
 xlim([0, 1.25]);
-xlabel("$x^*$ (mm)", "Fontsize", fontsize, "Interpreter", "latex");
+xlabel("$x$ (mm)", "Fontsize", fontsize, "Interpreter", "latex");
 xticks([0 : 0.1 : 1.2]);
-ylabel("$-w^*(x^*, t^*)$ (mm)", "Fontsize", fontsize, "Interpreter", "latex");
+ylabel("$-w(x, t)$ (mm)", "Fontsize", fontsize, "Interpreter", "latex");
 ax = gca;
 ax.YAxis.Exponent = 0;
 ytickformat(gca, '%.5f');
@@ -126,13 +126,13 @@ interface_obj = VideoWriter('interfaces.avi');
 open(interface_obj);
 
 %% Loop over time
-for k = 1100 : 10 : length(T_VALS)
+for k = 100 : 10 : length(T_VALS)
     % Updates time
     t = T_VALS(k)
     
     %% DNS interface plotting
     nexttile(1, [2, 1]);
-    title(sprintf("$t^*$ = %.4f (ms)", t * millisecond_scale), "Interpreter", "latex");
+    title(sprintf("$t$ = %.4f (ms)", t * millisecond_scale), "Interpreter", "latex");
     
     % Adds interfacial lines
     stationary_filename = sprintf("%s/interface_%d.txt", stationary_dns_dir, k);
@@ -229,6 +229,7 @@ for k = 1100 : 10 : length(T_VALS)
         ylim([min(-1.1 * max(ws_dns), -1.5e-4), max(0, -1.1 * min(ws_dns))]);
     else
         ylim([-1.1 * max([max(ws_nm), max(ws_composite), max(ws_dns)]), max([0, -1.5 * min(ws_nm)])]);
+         max([0, -1.5 * min(ws_nm)])
     end
 
     
