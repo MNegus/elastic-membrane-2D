@@ -24,16 +24,17 @@ N_MEMBRANE = 10924;
 
 IMPACT_TIME = 0.125;
 
-for varying = ["gamma"]
+varying = ["alpha"]
     parent_dir = sprintf("%s/%s_varying", master_dir, varying);
     
     %% Sets the parameters
     if varying == "alpha"
-        ALPHAS = [1, 2, 4, 8] / EPSILON^2;
-        BETAS = zeros(size(ALPHAS)) * EPSILON^2;
-        GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+%         ALPHAS = [1, 2, 4, 8, 16] / EPSILON^2;
+        ALPHAS = 2.^[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4] / EPSILON^2;
+        BETAS = ones(size(ALPHAS)) * EPSILON^2;
+        GAMMAS = 2 * ones(size(ALPHAS)) * EPSILON^2;
     elseif varying == "beta"
-        BETAS = [0, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
+        BETAS = [0, 5, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2
         ALPHAS = ones(size(BETAS)) / EPSILON^2;
         GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
             
@@ -46,7 +47,7 @@ for varying = ["gamma"]
 %     = parameters();
     no_params = length(ALPHAS);
 %     
-    parfor idx = 1 : no_params
+    for idx = 1 : no_params
         %% Saves specific parameters
         ALPHA = ALPHAS(idx); BETA = BETAS(idx); GAMMA = GAMMAS(idx); 
         
@@ -77,7 +78,7 @@ for varying = ["gamma"]
 % %         save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX - IMPACT_TIME, DELTA_T);
     end
     
-end
+
 
 
 

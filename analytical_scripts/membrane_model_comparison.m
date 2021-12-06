@@ -13,8 +13,8 @@ finite_differences_outer = 0;
 dns = 1;
 
 %% Parameters
-[EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
-    = parameters()
+[EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
+    = parameters();
 ALPHA = ALPHAS(1);
 BETA = BETAS(1);
 GAMMA = GAMMAS(1);
@@ -29,11 +29,15 @@ IMPACT_TIMESTEP = 0.125 / DELTA_T;
 T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
+fontsize = 22;
+
 %% Timesteps to plot
-timesteps = IMPACT_TIMESTEP - 200 : 500 : length(T_VALS);
+% timesteps = ((IMPACT_TIME + [0.01, 0.1, 0.2]) / DELTA_T) + 1;
+times = IMPACT_TIME + [0.01, 0.075, 0.2]
+timesteps = ceil(times / DELTA_T) + 1
 
 %% Data dirs
-parent_dir = "/media/negus/newarre/elastic_membrane/model_comparison_data";
+parent_dir = "/media/michael/newarre/elastic_membrane/model_comparison_data";
 analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 % dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
 dns_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/dns", parent_dir, ALPHA, BETA, GAMMA);
@@ -41,7 +45,7 @@ dns_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/dns", parent_dir, ALPHA, BETA, G
 %% Loads in normal modes solutions
 if (normal_modes)
     N_mat = matfile(sprintf("%s/normal_modes/N.mat", analytical_parent_dir));
-    N = N_mat.N
+    N = N_mat.N;
     
     as_mat = matfile(sprintf("%s/normal_modes/as.mat", analytical_parent_dir));
     as = as_mat.as;
@@ -54,11 +58,6 @@ if (normal_modes)
 end
 
 %% Loads in turnover points
-
-close(figure(1));
-figure(1);
-hold on;
-
 if (dns)
     % DNS turnover points
     dns_mat = dlmread(sprintf("%s/raw_data/turnover_points_basilisk.txt", dns_dir));
@@ -84,16 +83,8 @@ if (finite_differences_outer)
 end
 
 %% Colors of lines, depending on time
-% Line colors
-% colors = [[0, 0.4470, 0.7410]; ...
-%     [0.8500, 0.3250, 0.0980]; ...
-%     [0.9290, 0.6940, 0.1250]; ...
-%     [0.4940, 0.1840, 0.5560]; ...
-%     [0.4660, 0.6740, 0.1880]; ...
-%     [0.3010, 0.7450, 0.9330]; ...
-%     [0.6350, 0.0780, 0.1840]];
-
-color_mags = linspace(0, 0.5, length(timesteps));
+% color_mags = linspace(0, 0.5, length(timesteps));
+color_mags = [0, 0.5, 0.75];
 colors = ones(length(timesteps), 3);
 for k = 1 : length(timesteps)
    colors(k, :) = color_mags(k) * colors(k, :); 
@@ -103,23 +94,16 @@ end
 % Animated lines
 close all;
 
-% Subplot settings
-subplot(3, 1, 1);
-xlim([0, 4]);
-hold on;
 
-subplot(3, 1, 2);
-xlim([0, 4]);
+tiledlayout(2, 3, 'TileSpacing','Compact');
 
-subplot(3, 1, 3);
-xlim([0, 4]);
 
 for timestep_idx = 1 : length(timesteps)
     %% Updates time
     k = timesteps(timestep_idx);
     t = T_VALS(k);
     t
-    color = colors(timestep_idx, :)
+    color = colors(timestep_idx, :);
 
     %% Loads in analytical solutions
     if (t > 0)
@@ -157,7 +141,9 @@ for timestep_idx = 1 : length(timesteps)
     end
         
     %% w plot
-    subplot(3, 1, 1);
+%     subplot(2, 3, timestep_idx);
+    nexttile(timestep_idx);
+    hold on
 
     % DNS
     if (dns)
@@ -168,17 +154,16 @@ for timestep_idx = 1 : length(timesteps)
         ws = unsorted_ws(idxs);
         
         plot(sorted_xs, ws, 'Color', color,'LineWidth', 2);
-        
     end
 
     if (t > 0)
-        if (normal_modes)
-            plot(xs, ws_nm, 'Color', color,'LineWidth', 2, 'linestyle', '--');
-        end
-        
         if (finite_differences_comp)
             plot(xs, ws_comp, 'Color', color,'LineWidth', 2, ...
-                'linestyle', ':');
+                'linestyle', '--');
+        end
+        
+        if (normal_modes)
+            plot(xs, ws_nm, 'Color', color,'LineWidth', 2, 'linestyle', ':');
         end
         
         if (finite_differences_outer)
@@ -186,117 +171,81 @@ for timestep_idx = 1 : length(timesteps)
                 'Displayname', 'FD: Outer');
         end
     end
+
+    xlabel("$x$", "interpreter", "latex", "Fontsize", fontsize);
+    ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", fontsize);
+    ymax = max(ws_nm) * 1.1;
+    ymin = -ymax / 5;
+    ylim([ymin, ymax]);
+    xlim([0, 3]);
+    ax = gca;
+    ax.YAxis.Exponent = -3;
+    set(gca, "ticklabelinterpreter", "latex", "Fontsize", fontsize);
+    grid on;
+    title(sprintf("$t$ = %.2f", t), "Interpreter", "Latex", 'Fontsize', fontsize);
     
-%     if (t > 0)
-%             clearpoints(d_line_1);
-%             addpoints(d_line_1, ds_comp(k - IMPACT_TIMESTEP) * ones(2, 1), [-100, 100]);
-%     %         xline(ds_comp(k - IMPACT_TIMESTEP), 'linestyle', '--', 'linewidth', 2);
-%             ylim([0, 1.2 * ws_comp(1)]);
-%         end
-    % 
-
-    xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-    ylabel("$w(x, t)$", "interpreter", "latex", "Fontsize", 18);
-    set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-
     %% w_t plot
-%     subplot(3, 1, 2);
-%     
-%     % DNS
-%     if (dns)
-%         membrane_mat = dlmread(sprintf("%s/membrane_outputs/w_deriv_%d.txt", dns_dir, k - 1));
-%         unsorted_xs = membrane_mat(:, 1);
-%         unsorted_w_ts = membrane_mat(:, 2);
-%         [sorted_xs, idxs] = sort(unsorted_xs);
-%         w_ts = unsorted_w_ts(idxs);
-%         
-%         clearpoints(dns_w_t_line);
-%         addpoints(dns_w_t_line, sorted_xs, w_ts);
-%         
-%     end
-% 
-%     if (t > 0)
-%         if (normal_modes)
-%             clearpoints(nm_w_t_line);
-%             addpoints(nm_w_t_line, xs, w_ts_nm);
-%         end
-%         
-%         if (finite_differences_comp)
-%             clearpoints(comp_w_t_line);
-%             addpoints(comp_w_t_line, xs, w_ts_comp);
-%         end
-%         
-%         if (finite_differences_outer)
-%             clearpoints(outer_w_t_line);
-%             addpoints(outer_w_t_line, xs, w_ts_outer);
-%         end
-%     end
-%     
-% %     if (t > 0)
-% %         clearpoints(d_line_2);
-% %         addpoints(d_line_2, ds_comp(k - IMPACT_TIMESTEP) * ones(2, 1), [-100, 100]);
-% % %         xline(ds_comp(k - IMPACT_TIMESTEP), 'linestyle', '--', 'linewidth', 2);
-% %         ylim([0, 1.2 * w_ts_comp(1)]);
-% %     end
-% % 
-%     xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-%     ylabel("$w_t(x, t)$", "interpreter", "latex", "Fontsize", 18);
-%     set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-% %     legend("interpreter", "latex");
-% 
-%     %% Pressure plot
-%     subplot(3, 1, 3);
-%     
-%     % DNS
-%     if (dns)
-%         pressure_mat = dlmread(sprintf("%s/membrane_outputs/p_%d.txt", dns_dir, k - 1));
-%         unsorted_xs = pressure_mat(:, 1);
-%         unsorted_ps = pressure_mat(:, 2);
-%         [sorted_xs, idxs] = sort(unsorted_xs);
-%         ps = unsorted_ps(idxs);
-%         
-%         clearpoints(dns_p_line);
-%         addpoints(dns_p_line, sorted_xs, ps);
-% 
-%     end
-%     
-% 
-%     if (t > 0)
-%         if (normal_modes)
-%             clearpoints(nm_p_line);
-%             addpoints(nm_p_line, xs, ps_nm);
-%         end
-%         
-%         if (finite_differences_comp)
-%             clearpoints(comp_p_line);
-%             addpoints(comp_p_line, xs, ps_comp);
-% 
-%            
-%         end
-%         
-%         if (finite_differences_outer)
-%             clearpoints(outer_p_line);
-%             addpoints(outer_p_line, xs, ps_outer);
-%         end
-%     end
-% 
-% 
-% %     legend( "interpreter", "latex");
-%     xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
-%     ylabel("$p(x, t)$", "interpreter", "latex", "Fontsize", 18);
-%     set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+%     subplot(2, 3, timestep_idx + 3);
+    nexttile(timestep_idx + 3);
+    hold on;
+
+    % DNS
+    if (dns)
+        membrane_mat = dlmread(sprintf("%s/membrane_outputs/w_deriv_%d.txt", dns_dir, k - 1));
+        unsorted_xs = membrane_mat(:, 1);
+        unsorted_w_ts = membrane_mat(:, 2);
+        [sorted_xs, idxs] = sort(unsorted_xs);
+        w_ts = unsorted_w_ts(idxs);
+        plot(sorted_xs, w_ts, 'Color', color,'LineWidth', 2);
+        
+    end
+
+    if (t > 0)
+        if (finite_differences_comp)
+            plot(xs, w_ts_comp, 'Color', color,'LineWidth', 2, ...
+                'linestyle', '--');
+        end
+        
+        if (normal_modes)
+            plot(xs, w_ts_nm, 'Color', color,'LineWidth', 2, 'linestyle', ':');
+        end
+        
+        if (finite_differences_outer)
+            plot(xs, w_ts_outer, 'Color', color,'LineWidth', 2, ...
+                'Displayname', 'FD: Outer');
+        end
+    end
+
+    xlabel("$x$", "interpreter", "latex", "Fontsize", fontsize);
+    ylabel("$w_t(x, t)$", "interpreter", "latex", "Fontsize", fontsize);
+    
+    ymax = max(w_ts_nm) * 1.1;
+    ymin = -ymax / 2;
+    ylim([ymin, ymax]);
+    xlim([0, 3]);
+    grid on
+    
+    if (timestep_idx == 1)
+        yticks([-0.04, 0, 0.04, 0.08]);
+    end
+    set(gca, "ticklabelinterpreter", "latex", "Fontsize", fontsize, 'fontsize', fontsize);
 
     %% Figure settings
     x0=400;
     y0=400;
     width=1200;
-    height=800;
+    height=700;
 
     set(gcf,'position',[x0,y0,width,height])
     drawnow;
-    frame = getframe(gcf);
-%         writeVideo(writerobj, frame);
 
-    pause(0.1);
+
 end
-% close(writerobj);
+
+%% Set legend 
+nexttile(2);
+L = legend(["DNS ", "Analytical: Finite differences", "Analytical: Normal modes "], ...
+    'Orientation','horizontal', 'Interpreter', 'latex', 'fontsize', fontsize, ...
+    'Location', 'northoutside');
+exportgraphics(gcf, "figures/membrane_model_comparison.png", "Resolution", 300);
+savefig(gcf, "figures/membrane_model_comparison.fig");
