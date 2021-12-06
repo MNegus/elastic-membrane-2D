@@ -7,10 +7,10 @@ addpath("normal_modes");
 addpath("pressures");
 
 % Options (set to 0 if don't want to plot the solution)
-normal_modes = 1;
+normal_modes = 0;
 finite_differences_comp = 1;
-finite_differences_outer = 1;
-dns = 1;
+finite_differences_outer = 0;
+dns = 0;
 
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
@@ -30,7 +30,7 @@ T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 %% Data dirs
-parent_dir = "/media/negus/newarre/elastic_membrane/model_comparison_data";
+parent_dir = "/media/michael/newarre/elastic_membrane/parameter_sweeping/gamma_varying";
 analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 % dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
 dns_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/dns", parent_dir, ALPHA, BETA, GAMMA);
