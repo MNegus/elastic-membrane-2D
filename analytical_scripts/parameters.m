@@ -11,52 +11,52 @@ function [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_
 %     V = 1; % Droplet speed
     
     EPSILON = 1;
-    ALPHAS = 1;
-    BETAS = 0;
-    GAMMAS = 8192;
+    ALPHAS = 8;
+    BETAS = 0 * 0.04;
+    GAMMAS = 10^6;
 
 
     %% Define parameters
     EPSILON = 1;
-%     ALPHAS = rho_m * nu / (EPSILON^2 * rho_l * R)
-%     BETAS =  EPSILON^2 * T / (rho_l * R * V)
-%     GAMMAS = EPSILON^2 * E * nu^3 / (3 * rho_l * R^3 * V^2)
+%     ALPHAS = rho_m * nu / (rho_l * R)
+%     BETAS =  T / (rho_l * R * V)
+%     GAMMAS = E * nu^3 / (3 * rho_l * R^3 * V^2)
 
     % alpha_varying
-%     ALPHAS = [1, 2, 4, 8, 16] / EPSILON^2;
-%     BETAS = ones(size(ALPHAS)) * EPSILON^2;
-%     GAMMAS = 1 * ones(size(ALPHAS)) * EPSILON^2;
+%     ALPHAS = [1, 2, 4, 8, 16];
+%     BETAS = ones(size(ALPHAS));
+%     GAMMAS = 1 * ones(size(ALPHAS));
 % 
 %     % beta_varying
-%     BETAS = [0, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
-%     ALPHAS = ones(size(BETAS)) / EPSILON^2;
-%     GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+%     BETAS = [0, 10, 20, 40, 80, 160, 320, 640, 1280];
+%     ALPHAS = ones(size(BETAS));
+%     GAMMAS = 2 * (ALPHAS).^3;
 %     
 %     % gamma_varying
-%     GAMMAS = [2, 4, 8, 16, 32, 64, 128] * EPSILON^2;
-%     ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
-%     BETAS = zeros(size(GAMMAS)) * EPSILON^2;
+%     GAMMAS = [2, 4, 8, 16, 32, 64, 128];
+%     ALPHAS = 2 * ones(size(GAMMAS));
+%     BETAS = zeros(size(GAMMAS));
 
-%     ALPHAS = [1, 1.5, 2, 3, 4, 6, 8] / EPSILON^2;
-%     BETAS = zeros(size(ALPHAS)) * EPSILON^2;
-%     GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+%     ALPHAS = [1, 1.5, 2, 3, 4, 6, 8];
+%     BETAS = zeros(size(ALPHAS));
+%     GAMMAS = 2 * (ALPHAS).^3;
 
     % beta_varying
-%     BETAS = [0, 10, 40, 160, 640, 2560, 10240] * EPSILON^2;
-%     ALPHAS = ones(size(BETAS)) / EPSILON^2;
-%     GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+%     BETAS = [0, 10, 40, 160, 640, 2560, 10240];
+%     ALPHAS = ones(size(BETAS));
+%     GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3;
     
     % gamma_varying
-%     GAMMAS = [2, 8, 32, 128, 512, 2048, 8192] * EPSILON^2;
-%     ALPHAS = 1 * ones(size(GAMMAS)) / EPSILON^2;
-%     BETAS = zeros(size(GAMMAS)) * EPSILON^2;
+%     GAMMAS = [2, 8, 32, 128, 512, 2048, 8192];
+%     ALPHAS = 1 * ones(size(GAMMAS));
+%     BETAS = zeros(size(GAMMAS));
 
     L = 16;
-    T_MAX = 0.4;
+    T_MAX = 0.4 / EPSILON^2;
     DELTA_T = 1e-4;
 
     % FD parameters
     N_MEMBRANE = 10924;
     
-    IMPACT_TIME = 0.125;
+    IMPACT_TIME = 0.125 / EPSILON^2;
 end

@@ -15,7 +15,7 @@ function [M, S] = mass_matrix(d, alpha, epsilon, L, N)
         * (besselj(0, epsilon * d * lambdas).^2 + besselj(1, epsilon * d * lambdas).^2);
     
     %% Write the overall matrix
-    M = alpha * eye(N) + S / L;
+    M = (alpha / epsilon^2) * eye(N) + S / L;
     
     %% Manual loop calculation for checking (keep commented)
 %     Snn = @(n) (pi * d^2 / 2) * (besselj(0, epsilon * lambdas(n) * d)^2 + besselj(1, epsilon * lambdas(n) * d)^2);

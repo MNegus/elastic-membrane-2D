@@ -5,7 +5,7 @@ d_vals = 0 : dd : dmax;
 
 % Solves ODE
 lambdas = pi * (2 * (1 : N)' - 1) / (2 * L);
-ks = beta * lambdas.^2 + gamma * lambdas.^4;
+ks = epsilon^2 * (beta * lambdas.^2 + gamma * lambdas.^4);
 odefun = @(d, y) full_odefun(d, y, lambdas, ks, alpha, epsilon, L, N);
 y0 = zeros(2 * N, 1);
 opts = odeset('RelTol',1e-4,'AbsTol',1e-4, 'Stats', 'on', 'Maxstep', dd);
