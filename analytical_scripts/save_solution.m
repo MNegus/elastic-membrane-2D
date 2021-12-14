@@ -6,11 +6,11 @@ addpath("finite_differences");
 addpath("normal_modes");
 addpath("pressures");
 
-parent_dir = "/media/negus/newarre/elastic_membrane/model_comparison_data";
+parent_dir = "/media/michael/newarre/elastic_membrane/scratch";
 
-composite = false;
-outer = true;
-normal_modes = true;
+composite = true;
+outer = false;
+normal_modes = false;
 
 
 %% Parameters
@@ -35,9 +35,11 @@ if ((outer) || (composite))
                 if (composite)
                     composite_dir = sprintf("%s/composite", fd_data_dir);
                     mkdir(composite_dir);
+                    tic
                     save_finite_differences_solution(fd_data_dir, ...
                         ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX - IMPACT_TIME, DELTA_T, ...
                         "composite")
+                    toc
                 end
                 
                 if (outer)
@@ -65,9 +67,10 @@ if (normal_modes)
                 %% Normal modes
                 nm_data_dir = sprintf("%s/normal_modes", data_dir);
                 mkdir(nm_data_dir);
-    %             N = floor(N_stable(ALPHA, BETA, GAMMA, L, 10, 1e-4))
+%                 N = floor(N_stable(ALPHA, BETA, GAMMA, L, 10, 1e-4))
+%                 N = 512
 
-    %             save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX - IMPACT_TIME, DELTA_T);
+%                 save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX - IMPACT_TIME, DELTA_T);
                 save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX - IMPACT_TIME, DELTA_T);
 
 

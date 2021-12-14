@@ -7,8 +7,8 @@ addpath("normal_modes");
 addpath("pressures");
 
 % Options (set to 0 if don't want to plot the solution)
-normal_modes = 0;
-finite_differences_comp = 1;
+normal_modes = 1;
+finite_differences_comp = 0;
 finite_differences_outer = 0;
 dns = 0;
 
@@ -30,7 +30,7 @@ T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/parameter_sweeping/gamma_varying";
+parent_dir = "/media/michael/newarre/elastic_membrane/prescribed_scratch";
 analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 % dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
 dns_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/dns", parent_dir, ALPHA, BETA, GAMMA);
@@ -182,12 +182,38 @@ subplot(3, 1, 3);
 d_line_3 = animatedline('LineWidth', 2, 'linestyle', '--', ...
         'Displayname', 'Turnover point');
 
+%%
+% w0s = [];
+% w_t0s = []
+% p0s = [];
+% 
+% for k = IMPACT_TIMESTEP + (2 : 400)
+%     k
+%     if (finite_differences_comp)
+%         ws_comp_mat = matfile(sprintf("%s/finite_differences/composite/w_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
+%         ws_comp = EPSILON^2 * ws_comp_mat.w_next;
+% 
+%         w_ts_comp_mat = matfile(sprintf("%s/finite_differences/composite/w_t_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
+%         w_ts_comp = EPSILON^2 * w_ts_comp_mat.w_t;
+%         
+%         ps_comp_mat = matfile(sprintf("%s/finite_differences/composite/p_%d.mat", analytical_parent_dir, k - IMPACT_TIMESTEP));
+%         ps_comp = ps_comp_mat.p;
+%         
+%         w0s(end + 1) = ws_comp(1);
+%         w_t0s(end + 1) = w_ts_comp(1);
+%         p0s(end + 1) = ps_comp(1);
+%     end
+% end
+%%
+% plot(w_t0s(1 : 399));
+%%
 
 for k = IMPACT_TIMESTEP - 200 : 100 : length(T_VALS)
+% for k = IMPACT_TIMESTEP + (300 : 500)
     %% Updates time
     t = T_VALS(k);
     t
-
+    pause(0.5)
     %% Loads in analytical solutions
     if (t > 0)
         
