@@ -40,12 +40,12 @@ move_dest=$3
 #     ./run_simulation.sh $code_name 8
 # done
 
-for MAXLEVEL in 10 11 12 13
+for MAXLEVEL in 12 13
 do
     echo Max level = $MAXLEVEL
     cd $parent_dir/max_level_$MAXLEVEL/code
 
-    ./run_simulation.sh $code_name 8
+    ./run_simulation.sh $code_name 4
 done
 
 # for XMIN in 0 1 2 3 4

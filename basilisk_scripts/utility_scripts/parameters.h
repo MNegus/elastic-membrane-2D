@@ -17,16 +17,16 @@ const double DROP_RADIUS = 1.0; // Radius of droplet
 const double INITIAL_DROP_HEIGHT = 0.125; // Initial gap between drop and plate
 
 /* Membrane parameters */
-const double ALPHA = 1; // Mass ratio
-const double BETA = 0; // Tension term
-const double GAMMA = 128; // Bending term
+const double ALPHA = 2; // Mass ratio
+const double BETA = 1; // Tension term
+const double GAMMA = 2; // Bending term
 const double DELTA_T = 1e-4; // Timestep for membrane solution
-const int COUPLED = 0; // Set to 1 if membrane motion is coupled to the fluid
-const int STATIONARY = 1; // Set to 1 if enforcing membrane to be stationary
+const int COUPLED = 1; // Set to 1 if membrane motion is coupled to the fluid
+const int STATIONARY = 0; // Set to 1 if enforcing membrane to be stationary
 
 /* Computational constants */
 const int MINLEVEL = 7; // Minimum refinement level 
-const int MAXLEVEL = 14; // Maximum refinement level
+const int MAXLEVEL = 13; // Maximum refinement level
 const double BOX_WIDTH = 24.0; // Width of the computational box
 const double MEMBRANE_RADIUS = 16.0; // Width of the membrane
 const double GFS_OUTPUT_TIMESTEP = 1e-2; // Time between gfs outputs

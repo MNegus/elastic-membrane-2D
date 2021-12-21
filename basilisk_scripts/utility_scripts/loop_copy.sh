@@ -40,7 +40,7 @@ ALPHA=1;
 #     ./code_copy.sh $code_dir $dest_dir coarsen_$COARSEN
 # done
 
-for MAXLEVEL in 10 11 12 13
+for MAXLEVEL in 12 13
 do
     # Changes the parameters file
     sed -i "/MAXLEVEL/c\const int MAXLEVEL = $MAXLEVEL; // Maximum refinement level" parameters.h
