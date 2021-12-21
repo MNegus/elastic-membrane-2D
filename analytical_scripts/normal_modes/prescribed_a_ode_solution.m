@@ -5,7 +5,7 @@ d_vals = 0 : dd : dmax;
 
 % Defines constant vectors
 lambdas = pi * (2 * (1 : N)' - 1) / (2 * L);
-ks = beta * lambdas.^2 + gamma * lambdas.^4;
+ks = epsilon^2 * (beta * lambdas.^2 + gamma * lambdas.^4);
 pns = (alpha / epsilon^2) ./ sqrt(L * lambdas);
 
 % Solves ODE
