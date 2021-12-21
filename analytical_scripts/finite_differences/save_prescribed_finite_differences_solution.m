@@ -1,8 +1,7 @@
 function save_prescribed_finite_differences_solution(parent_dir, ...
-    ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T, Ne)
+    ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T, Ne, freq)
 
-    %% Saves data in sub-directory depending on pressure type
-    fd_data_dir = sprintf("%s/%s", parent_dir);
+    fd_data_dir = parent_dir;
 
     %% Derived parameters
     DELTA_X = L / (N_MEMBRANE - 1); 
@@ -32,8 +31,8 @@ function save_prescribed_finite_differences_solution(parent_dir, ...
     Js = zeros(size(T_VALS));
     
     %% Save initial arrays
-    save(sprintf("%s/w_%d.mat", fd_data_dir, 0), 'w_previous');
-    save(sprintf("%s/w_%d.mat", fd_data_dir, 1), 'w');
+    save(sprintf("%s/w_%d.mat", fd_data_dir, 0), 'w_next');
+    save(sprintf("%s/w_%d.mat", fd_data_dir, 1), 'w_next');
     save(sprintf("%s/w_t_%d.mat", fd_data_dir, 0), 'w_t');
     save(sprintf("%s/p_%d.mat", fd_data_dir, 0), 'p');
     
@@ -53,9 +52,11 @@ function save_prescribed_finite_differences_solution(parent_dir, ...
         Js(k) = J;
 
         % Saves arrays
-        save(sprintf("%s/w_%d.mat", fd_data_dir, k + 1), 'w_next');
-        save(sprintf("%s/w_t_%d.mat", fd_data_dir, k), 'w_t');
-        save(sprintf("%s/p_%d.mat", fd_data_dir, k), 'p');
+        if (mod(k - 1, freq) == 0)
+            save(sprintf("%s/w_%d.mat", fd_data_dir, k), 'w_next');
+            save(sprintf("%s/w_t_%d.mat", fd_data_dir, k), 'w_t');
+            save(sprintf("%s/p_%d.mat", fd_data_dir, k), 'p');
+        end
         
         % Swaps ws
         temp = w_previous;
