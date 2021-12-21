@@ -26,7 +26,7 @@ function [N, delta_d, ds, as, a_ts, a_tts, q_ts] ...
         N_max = N_stable(alpha, beta, gamma, L, q, delta_d)
         
         %% Initialise N and solves ode
-        N0 = min(32, floor(N_max / 4));
+        N0 = min(64, floor(N_max / 4));
         N = N0;
         [t_vals_d_form, d_vals_d_form, as_d_form, a_ts_d_form, kvals] ...
             = a_ode_solution(alpha, beta, gamma, epsilon, delta_d, d_max, N, L);
@@ -67,7 +67,7 @@ function [N, delta_d, ds, as, a_ts, a_tts, q_ts] ...
                 hold on;
                 plot(xs, new_ws);
                 hold off;
-                title(k);
+                title(['k = ', num2str(k), ', new_N = ', num2str(new_N), ', delta_d = ', num2str(delta_d)]);
                 drawnow;
                 pause(0.0000001);
             end
@@ -85,7 +85,7 @@ function [N, delta_d, ds, as, a_ts, a_tts, q_ts] ...
         if (diff < tol)
             converged = 1;
         else
-           N = N0;
+%            N = N0;
            delta_d = delta_d / 10;
         end
     
