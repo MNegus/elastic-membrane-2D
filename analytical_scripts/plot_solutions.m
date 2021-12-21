@@ -1,14 +1,15 @@
 %% plot_solutions.m
 % Plots the saved solutions using normal modes, FD and DNS
 clear;
+close all;
 
 addpath("finite_differences");
 addpath("normal_modes");
 addpath("pressures");
 
 % Options (set to 0 if don't want to plot the solution)
-normal_modes = 1;
-finite_differences_comp = 0;
+normal_modes = 0;
+finite_differences_comp = 1;
 finite_differences_outer = 0;
 dns = 0;
 
@@ -30,7 +31,7 @@ T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/prescribed_scratch";
+parent_dir = "/media/michael/newarre/elastic_membrane/scratch";
 analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
 % dns_dir = "/media/michael/newarre/elastic_membrane/gamma_vary_test/basilisk_data/gamma_0.1";
 dns_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/dns", parent_dir, ALPHA, BETA, GAMMA);
@@ -92,6 +93,23 @@ end
 legend(["DNS", "Normal modes", "FD: Outer", "FD: Composite"], 'location', 'northwest');
 xlabel("t");
 ylabel("d(t)");
+
+%% Plot a_n magnitude
+close all
+figure(79)
+% hold on;
+if (normal_modes)
+%     for n = 1 : 10 : N
+%         plot(as(:, n));
+%     end
+    for k = IMPACT_TIMESTEP + 1 : 10 : length(T_VALS)
+        size(as)
+        plot(as(k - IMPACT_TIMESTEP, :))
+        drawnow;
+        pause(0.1);
+    end
+end
+
 
 %% Loops and plots
 % writerobj = VideoWriter("four_model_compare.avi");
@@ -204,16 +222,16 @@ d_line_3 = animatedline('LineWidth', 2, 'linestyle', '--', ...
 %         p0s(end + 1) = ps_comp(1);
 %     end
 % end
-%%
-% plot(w_t0s(1 : 399));
-%%
 
-for k = IMPACT_TIMESTEP - 200 : 100 : length(T_VALS)
+
+
+%%
+for k = IMPACT_TIMESTEP + 1 : 10 : length(T_VALS)
 % for k = IMPACT_TIMESTEP + (300 : 500)
     %% Updates time
     t = T_VALS(k);
     t
-    pause(0.5)
+%     pause(0.5)
     %% Loads in analytical solutions
     if (t > 0)
         
@@ -405,6 +423,6 @@ for k = IMPACT_TIMESTEP - 200 : 100 : length(T_VALS)
     frame = getframe(gcf);
 %         writeVideo(writerobj, frame);
 
-    pause(0.1);
+    pause(0.01);
 end
 % close(writerobj);

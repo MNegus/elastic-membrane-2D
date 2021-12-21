@@ -8,14 +8,14 @@ addpath("pressures");
 
 parent_dir = "/media/michael/newarre/elastic_membrane/scratch";
 
-composite = true;
+composite = false;
 outer = false;
-normal_modes = false;
+normal_modes = true;
 
 
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
-    = parameters();
+    = parameters()
 
 %% Finite differences
 if ((outer) || (composite))
@@ -68,7 +68,7 @@ if (normal_modes)
                 nm_data_dir = sprintf("%s/normal_modes", data_dir);
                 mkdir(nm_data_dir);
 %                 N = floor(N_stable(ALPHA, BETA, GAMMA, L, 10, 1e-4))
-%                 N = 512
+%                 N = 128
 
 %                 save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX - IMPACT_TIME, DELTA_T);
                 save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX - IMPACT_TIME, DELTA_T);
