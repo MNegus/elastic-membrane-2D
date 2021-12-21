@@ -2,6 +2,10 @@
 clear;
 close all;
 
+% Load in red-blue colour map
+cmap_mat = matfile('red_blue_cmap.mat');
+cmap = cmap_mat.cmap;
+
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
     = parameters();
@@ -38,23 +42,25 @@ for var_idx = [1, 2, 3]
     %% Sets the parameters
     if varying == "alpha"
         ALPHAS = 2.^[0, 0.5, 1, 1.5, 2, 2.5, 3] / EPSILON^2;
-        BETAS = ones(size(ALPHAS)) * EPSILON^2;
+        BETAS = zeros(size(ALPHAS)) * EPSILON^2;
         GAMMAS = 2 * ones(size(ALPHAS)) * EPSILON^2;
         independent_param = ALPHAS;
     elseif varying == "beta"
-        BETAS = [5, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
+        BETAS = [5, 10, 20, 40, 80, 160, 320, 640] * EPSILON^2;
         ALPHAS = ones(size(BETAS)) / EPSILON^2;
         GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
         independent_param = BETAS;
     elseif varying == "gamma"
-        GAMMAS = [2, 8, 32, 128, 512, 2048, 8192] * EPSILON^2;
-        ALPHAS = 1 * ones(size(GAMMAS)) / EPSILON^2;
+%         GAMMAS = [2, 8, 32, 128, 512, 2048, 8192] * EPSILON^2;
+        GAMMAS = [0.5, 1, 2, 4, 8, 16, 32] * EPSILON^2;
+        ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
         BETAS = zeros(size(GAMMAS)) * EPSILON^2;
         independent_param = GAMMAS;
     end
     
     no_params = length(ALPHAS);
-    color_mags = linspace(0.75, 0, no_params + 1);
+%     color_mags = linspace(0.75, 0, no_params + 1);
+    color_idxs = floor(linspace(1, length(cmap), no_params));
     
     %% Plots turnover points
     nexttile(var_idx);
@@ -63,6 +69,7 @@ for var_idx = [1, 2, 3]
     
     min_final = 1e6;
     for idx = 1 : no_params
+        idx
         % Determine parameters
         ALPHA = ALPHAS(idx);
         BETA = BETAS(idx);
@@ -76,7 +83,7 @@ for var_idx = [1, 2, 3]
 
         % Plot ds
         plot(ts_analytical, ds(timesteps), ...
-            'color', color_mags(idx) * [1 1 1], 'linewidth', 1.5);
+            'color', cmap(color_idxs(idx), :), 'linewidth', 1.5);
         
         % Finds min final
         min_final = min(min_final, ds(timesteps(end)));
@@ -103,7 +110,7 @@ for var_idx = [1, 2, 3]
         annotation('arrow',[0.626 0.626], [0.8566 0.9112]);
         text(0.222, 0.87, "$\beta$", "interpreter", "latex", "fontsize", fontsize);
     else
-        title("$\alpha = 1$, $\beta = 0$", "interpreter", "latex", "fontsize", fontsize);
+        title("$\alpha = 2$, $\beta = 0$", "interpreter", "latex", "fontsize", fontsize);
         set(gca,'YTickLabel',[]);
         annotation('arrow',[0.915 0.915], [0.8566 0.9112]);
         text(0.222, 0.87, "$\gamma$", "interpreter", "latex", "fontsize", fontsize);
@@ -128,7 +135,7 @@ for var_idx = [1, 2, 3]
 
         % Plot ds
         plot(ts_analytical, Js(timesteps), ...
-            'color', color_mags(idx) * [1 1 1], 'linewidth', 1.5);
+            'color', cmap(color_idxs(idx), :), 'linewidth', 1.5);
     end
 
     % Plot stationary value 

@@ -13,6 +13,10 @@ master_dir = "/media/michael/newarre/elastic_membrane/parameter_sweeping";
 % [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
 %     = parameters();
 
+composite = true;
+outer = false;
+normal_modes = true;
+
 %% MANUAL PARAMETERS VARYING
 EPSILON = 1;
 L = 16;
@@ -24,23 +28,22 @@ N_MEMBRANE = 10924;
 
 IMPACT_TIME = 0.125;
 
-varying = ["alpha"]
+for varying = ["beta"]
     parent_dir = sprintf("%s/%s_varying", master_dir, varying);
     
     %% Sets the parameters
     if varying == "alpha"
-%         ALPHAS = [1, 2, 4, 8, 16] / EPSILON^2;
-        ALPHAS = 2.^[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4] / EPSILON^2;
-        BETAS = ones(size(ALPHAS)) * EPSILON^2;
+        ALPHAS = 2.^[0, 0.5, 1, 1.5, 2, 2.5, 3] / EPSILON^2;
+        BETAS = zeros(size(ALPHAS)) * EPSILON^2;
         GAMMAS = 2 * ones(size(ALPHAS)) * EPSILON^2;
     elseif varying == "beta"
-        BETAS = [0, 5, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2
-        ALPHAS = ones(size(BETAS)) / EPSILON^2;
-        GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
-            
+        BETAS = [5, 10, 20, 40, 80, 160, 320, 640] * EPSILON^2
+        ALPHAS = 2 * ones(size(BETAS)) / EPSILON^2;
+        GAMMAS = 2 * ones(size(BETAS)) * EPSILON^2;
     elseif varying == "gamma"
-        GAMMAS = [2, 8, 32, 128, 512, 2048, 8192] * EPSILON^2;
-        ALPHAS = 1 * ones(size(GAMMAS)) / EPSILON^2;
+%         GAMMAS = [2, 8, 32, 128, 512, 2048, 8192] * EPSILON^2;
+        GAMMAS = [0.5, 1, 2, 4, 8, 16, 32] * EPSILON^2;
+        ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
         BETAS = zeros(size(GAMMAS)) * EPSILON^2;
     end
 %     [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
@@ -55,29 +58,37 @@ varying = ["alpha"]
         mkdir(data_dir);
 
         %% Finite differences
+        if (outer || composite)
         fd_data_dir = sprintf("%s/finite_differences", data_dir);
         mkdir(fd_data_dir);
-
-        composite_dir = sprintf("%s/composite", fd_data_dir);
-        mkdir(composite_dir);
-        save_finite_differences_solution(fd_data_dir, ...
-            ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX - IMPACT_TIME, DELTA_T, ...
-                "composite");
             
-%         outer_dir = sprintf("%s/outer", fd_data_dir);
-%         mkdir(outer_dir);
-%         save_finite_differences_solution(fd_data_dir, ...
-%             ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX - IMPACT_TIME, DELTA_T, ...
-%                 "outer");
+            if (composite)
+                composite_dir = sprintf("%s/composite", fd_data_dir);
+                mkdir(composite_dir);
+                save_finite_differences_solution(fd_data_dir, ...
+                    ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX - IMPACT_TIME, DELTA_T, ...
+                        "composite");
+            end
+            
+%             if (outer)
+%                 outer_dir = sprintf("%s/outer", fd_data_dir);
+%                 mkdir(outer_dir);
+%                 save_finite_differences_solution(fd_data_dir, ...
+%                     ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX - IMPACT_TIME, DELTA_T, ...
+%                         "outer");
+%             end
+        end
         
         %% Normal modes
-%         nm_data_dir = sprintf("%s/normal_modes", data_dir);
-%         mkdir(nm_data_dir);
+        if (normal_modes)
+        nm_data_dir = sprintf("%s/normal_modes", data_dir);
+        mkdir(nm_data_dir);
 %         N = 128;
 %         save_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, N, L, T_MAX, DELTA_T);
-% %         save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX - IMPACT_TIME, DELTA_T);
+        save_validated_normal_modes_solution(nm_data_dir, ALPHA, BETA, GAMMA, EPSILON, L, T_MAX - IMPACT_TIME, DELTA_T);
+        end
     end
-    
+end
 
 
 

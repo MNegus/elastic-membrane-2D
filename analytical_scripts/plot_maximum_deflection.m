@@ -2,6 +2,10 @@
 clear;
 close all;
 
+% Load in red-blue colour map
+cmap_mat = matfile('red_blue_cmap.mat');
+cmap = cmap_mat.cmap;
+
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
     = parameters();
@@ -35,26 +39,29 @@ for varying = ["alpha", "beta", "gamma"]
     %% Sets the parameters
     if varying == "alpha"
         ALPHAS = 2.^[0, 0.5, 1, 1.5, 2, 2.5, 3] / EPSILON^2;
-        BETAS = ones(size(ALPHAS)) * EPSILON^2;
+        BETAS = zeros(size(ALPHAS)) * EPSILON^2;
         GAMMAS = 2 * ones(size(ALPHAS)) * EPSILON^2;
         independent_param = ALPHAS;
     elseif varying == "beta"
         BETAS = [5, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
         ALPHAS = ones(size(BETAS)) / EPSILON^2;
-        GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+        GAMMAS = 2 * (EPSILON^2  * ALPHAS).^3 * EPSILON^2;
         independent_param = BETAS;
     elseif varying == "gamma"
-        GAMMAS = [2, 8, 32, 128, 512, 2048, 8192] * EPSILON^2;
-        ALPHAS = 1 * ones(size(GAMMAS)) / EPSILON^2;
+%         GAMMAS = [2, 8, 32, 128, 512, 2048, 8192] * EPSILON^2;
+        GAMMAS = [0.5, 1, 2, 4, 8, 16, 32] * EPSILON^2;
+        ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
         BETAS = zeros(size(GAMMAS)) * EPSILON^2;
         independent_param = GAMMAS;
     end
     
     no_params = length(ALPHAS);
-    color_mags = linspace(0.75, 0, no_params + 1);
     colors = ones(no_params, 3);
+    
+    color_idxs = floor(linspace(1, length(cmap), no_params));
+    
     for q = 1 : no_params
-        colors(q, :) = color_mags(q) * colors(q, :);
+        colors(q, :) = cmap(color_idxs(q), :);
     end
     
     %% Plots max deflection
@@ -69,6 +76,7 @@ for varying = ["alpha", "beta", "gamma"]
        % Loads in w values
        ws_mat = matfile(sprintf("%s/finite_differences/composite/w_%d.mat", param_dir, timestep - IMPACT_TIMESTEP));
        ws = EPSILON^2 * ws_mat.w_next;
+       idx
        % Saves deflection at x = 0
        deflections(idx) = ws(1);
     end
@@ -80,7 +88,7 @@ for varying = ["alpha", "beta", "gamma"]
     set(gca, 'xscale', 'log');
 %     set(gca, 'yscale', 'log');
     xticks(independent_param);
-    ylim([0.01, 0.051]);
+    ylim([0.01, 0.06]);
     
     
     %% Labels
@@ -97,9 +105,10 @@ for varying = ["alpha", "beta", "gamma"]
         set(gca,'YTickLabel',[]);
         xlabel("$\beta$", "interpreter", "latex", "fontsize", fontsize);
     else
-        title("$\alpha = 1$, $\beta = 0$", "interpreter", "latex", "fontsize", fontsize);
-        xticks([2, 32,  512, 8192]);
-        xlim([0.5, 8192*4]);
+        title("$\alpha = 2$, $\beta = 0$", "interpreter", "latex", "fontsize", fontsize);
+%         xticks(10.^[-5, -4, -3, -2, -1, 0, 1, 2]);
+%         xticks(10.^(-4 : 2 : 2));
+        xlim([0.25, 64]);
         set(gca,'YTickLabel',[]);
         xlabel("$\gamma$", "interpreter", "latex", "fontsize", fontsize);
     end

@@ -2,6 +2,7 @@ function [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_
     = parameters()
 
     %% Define dimensional values (in SI units)
+    EPSILON = 1;
 %     rho_m = 1200; % Membrane density
 %     nu = 10^-3; % Membrane thickness
 %     E = 2.2 * 10^9; % Membrane Young's modulus
@@ -11,13 +12,22 @@ function [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_
 %     V = 1; % Droplet speed
     
     EPSILON = 1;
-    ALPHAS = 8;
-    BETAS = 0 * 0.04;
-    GAMMAS = 10^6;
+    ALPHAS = 2;
+    BETAS = 1;
+    GAMMAS = 2;
 
+    %% Saran wrap
+%     ALPHAS = 1.7 * 10^-2;
+%     BETAS = 0;
+%     GAMMAS = 1 * 0.00337;
+    
+    %% LDPE
+%     ALPHAS = 0.9;
+%     BETAS = 2.2;
+%     GAMMAS = 4660;
 
     %% Define parameters
-    EPSILON = 1;
+%     EPSILON = 1;
 %     ALPHAS = rho_m * nu / (rho_l * R)
 %     BETAS =  T / (rho_l * R * V)
 %     GAMMAS = E * nu^3 / (3 * rho_l * R^3 * V^2)
@@ -48,11 +58,13 @@ function [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_
     
     % gamma_varying
 %     GAMMAS = [2, 8, 32, 128, 512, 2048, 8192];
-%     ALPHAS = 1 * ones(size(GAMMAS));
-%     BETAS = zeros(size(GAMMAS));
+    GAMMAS = 10.^[-4, -3, -2, -1, 0, 1, 2] * EPSILON^2;
+    ALPHAS = 1 * ones(size(GAMMAS));
+    BETAS = zeros(size(GAMMAS));
 
     L = 16;
-    T_MAX = 0.4 / EPSILON^2;
+    T_MAX = 0.4;
+%     T_MAX = 0.125 + 0.01;
     DELTA_T = 1e-4;
 
     % FD parameters
