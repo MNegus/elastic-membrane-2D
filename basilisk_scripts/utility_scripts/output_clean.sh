@@ -36,3 +36,15 @@ mv raw_data/w_*.txt membrane_outputs
 mv raw_data/p_*.txt membrane_outputs
 mv raw_data/*.mp4 movies
 mv raw_data/interface_* interfaces
+
+
+################################################################################
+# Cleans the log file 
+################################################################################
+# We are interested in the lines which start with "t = ", and can remove all 
+# all other lines
+sed -n '/^t = /p' log > output.txt
+
+# Removes readable qualifies
+sed -e "s/t = //g" -i output.txt
+sed -e "s/v = //g" -i output.txt
