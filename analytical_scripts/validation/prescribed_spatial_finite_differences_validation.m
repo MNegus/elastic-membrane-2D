@@ -5,8 +5,14 @@ clear;
 close all;
 
 addpath("../finite_differences");
+addpath("../normal_modes");
 
 parent_dir = "/media/michael/newarre/elastic_membrane/analytical_validation/finite_differences_validation";
+
+fontsize = 28;
+
+cmap_mat = matfile('red_blue_cmap.mat');
+cmap = cmap_mat.cmap;
 
 %% Parameters
 EPSILON = 1;
@@ -14,7 +20,7 @@ L = 16;
 IMPACT_TIME = 0.125;
 T_MAX = 0.4;
 DELTA_T = 1e-4;
-IMPACT_TIMESTEP = 0.125 / DELTA_T
+IMPACT_TIMESTEP = 0.125 / DELTA_T;
 T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 % N_MEMBRANE_MAX = 10924;
 N_MEMBRANES = 2.^(7:14);
@@ -36,16 +42,46 @@ for varying = ["alpha", "beta", "gamma"]
         BETAS = zeros(size(ALPHAS)) * EPSILON^2;
         GAMMAS = 2 * ones(size(ALPHAS)) * EPSILON^2;
         Ne = 256;
+        
+        displaynames = string(length(ALPHAS));
+        for name_idx = 1 : length(ALPHAS)
+           displaynames(name_idx) = "$\alpha = $" + num2str(ALPHAS(name_idx), "%.3f"); 
+        end
+        
+        titlestr = "$\beta = 0$, $\gamma = 2$";
+        
     elseif varying == "beta"
         BETAS = [0, 5, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
         ALPHAS = ones(size(BETAS)) / EPSILON^2;
         GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+        
+        displaynames = string(length(ALPHAS));
+        for name_idx = 1 : length(ALPHAS)
+           displaynames(name_idx) = "$\beta = $" + num2str(BETAS(name_idx)); 
+        end
+        
+        titlestr = "$\alpha = 1$, $\gamma = 2$";
+        
     elseif varying == "gamma"
         GAMMAS = [0.5, 1, 2, 4, 8, 16, 32] * EPSILON^2;
         ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
         BETAS = zeros(size(GAMMAS)) * EPSILON^2;
+        
+        for name_idx = 1 : length(ALPHAS)
+           displaynames(name_idx) = "$\gamma = $" + num2str(GAMMAS(name_idx)); 
+        end
+        
+        titlestr = "$\alpha = 2$, $\beta = 0$";
     end
     no_params = length(ALPHAS);
+    
+    colors = ones(no_params, 3);
+    
+    color_idxs = floor(linspace(1, length(cmap), no_params));
+    
+    for q = 1 : no_params
+        colors(q, :) = cmap(color_idxs(q), :);
+    end
     
     %% Loops over parameters and saves
     figure(figno);
@@ -65,6 +101,9 @@ for varying = ["alpha", "beta", "gamma"]
         Ne_power = floor(log2(0.75 * Nstable));
         if (varying == "alpha")
             Ne = 256;
+            Ne_power = log2(Ne);
+        elseif (varying == "gamma")
+            Ne = 128;
             Ne_power = log2(Ne);
         else
             Ne = 2^Ne_power;
@@ -126,7 +165,9 @@ for varying = ["alpha", "beta", "gamma"]
         errors_mat = matfile(sprintf("%s/ws_errors.mat", data_dir));
         ws_errors = errors_mat.ws_errors;
         N_MEMBRANES
-        loglog(N_MEMBRANES, ws_errors, 'Displayname', sprintf("idx = %d", idx));
+        loglog(N_MEMBRANES, ws_errors, '-o', 'Displayname', displaynames(idx), ...
+            'color', colors(idx, :), 'markerfacecolor', colors(idx, :), ...
+            'markersize', 10);
         drawnow;
         
         %% OPTIONAL: Plots solutions
@@ -170,128 +211,32 @@ for varying = ["alpha", "beta", "gamma"]
     end
     
     %% Set figure properties
-    legend();
+%     legend("interpreter", "latex", "fontsize", fontsize);
     set(gca, 'Yscale', 'log');
     set(gca, 'Xscale', 'log');
+    set(gca, "ticklabelinterpreter", "latex", "Fontsize", fontsize);
+    xticks(2.^(7 : 2 : 13))
+    xlabel("$N_F$", 'interpreter', 'latex');
+    ylabel("$||w - w_{exact}||_\infty$", 'interpreter', 'latex');
+    ylim([1e-6, 0.015]);
+    title(titlestr, "interpreter", "latex", "fontsize", fontsize);
+    
+    grid on;
+    
+    x0=400;
+    y0=400;
+    height=650;
+    width=500;
+
+    set(gcf,'position',[x0,y0,width,height]);
+    
+    name = sprintf("validation_figures/fd_spatial_validation_%s_varying", varying);
+    exportgraphics(gcf, sprintf("%s.png", name), "Resolution", 300);
+    savefig(gcf, sprintf("%s.fig", name));
+
 end
 
 %% Function definitions
 function ws = w_solution(xs, as, L, lambdas)
     ws = sum(cos(xs * lambdas') .* as', 2) / sqrt(L);
 end
-
-
-% 
-% 
-% %% Loops over parameters
-% if (save_solutions)
-% for ALPHA = ALPHAS
-%     for BETA = BETAS
-%         for GAMMA = GAMMAS
-%             %% Make a directory for these parameters
-%             param_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
-%             mkdir(param_dir);
-%             
-%             %% Loops over values of N_MEMBRANE
-%             for N_MEMBRANE = N_MEMBRANES
-%                 DELTA_X = L / (N_MEMBRANE - 1); 
-%                 xs = (0 : DELTA_X : L - DELTA_X)';
-%                 
-%                 % Makes directory for this value of N
-%                 data_dir = sprintf("%s/N_MEMBRANE_%d", param_dir, N_MEMBRANE);
-%                 mkdir(data_dir);
-%                 
-%                 % Saves numerical solution
-%                 save_prescribed_finite_differences_solution(data_dir, ...
-%                     ALPHA, BETA, GAMMA, EPSILON, N_MEMBRANE, L, T_MAX, DELTA_T, N_imposed)
-%                 
-%             end
-%             
-%         end
-%     end
-% end
-% end
-% 
-% %% Compares each saved solution to the exact solution
-% for ALPHA = ALPHAS
-%     for BETA = BETAS
-%         for GAMMA = GAMMAS
-%             param_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
-%             max_errors = [];
-%             ks = BETA * lambdas_imposed.^2 + GAMMA * lambdas_imposed.^4;
-%             
-%             %% Loops over values of N_MEMBRANE
-%             for N_MEMBRANE = N_MEMBRANES
-%                 
-%                 DELTA_X = L / (N_MEMBRANE - 1); 
-%                 xs = (0 : DELTA_X : L - DELTA_X)';
-%                 
-%                 % Solution directory
-%                 data_dir = sprintf("%s/N_MEMBRANE_%d", param_dir, N_MEMBRANE);
-%                 
-%                 %% Loops over time, saving difference between numerical and exact solutions
-%                 max_diff = 0;
-%                 for q = 2 : 10 : length(tvals)
-%                     t = tvals(q)
-%                     
-%                     % Finds exact solution for as
-%                     exact_as = ALPHA * (1 - cos(sqrt(ks) * t / sqrt(ALPHA))) ./ (ks .* sqrt(L * lambdas_imposed));
-%                     
-%                     % Reads in  numerical solution
-%                     ws_mat = matfile(sprintf("%s/w_%d.mat", data_dir, q));
-%                     
-%                     % Finds w solutions
-%                     exact_solution = w_solution(xs, exact_as, L, N_imposed);
-%                     numerical_solution = EPSILON^2 * ws_mat.w_next;
-%                     
-%                     % Finds absolute difference, and saves if largest
-%                     max_diff = max(max_diff, ...
-%                         max(abs(exact_solution - numerical_solution)));
-%                 end
-%                 
-%                 % Update max_errors
-%                 max_errors(end + 1, 1) = N_MEMBRANE;
-%                 max_errors(end, 2) = max_diff;
-% 
-%             end
-%             
-%             %% Saves max_errors in directory
-%             save(sprintf("%s/max_errors.mat", param_dir), 'max_errors'); 
-%         end 
-%     end 
-% end
-% 
-% %% Plots errors
-% close(figure(1));
-% figure(1);
-% hold on;
-% for ALPHA = ALPHAS
-%     for BETA = BETAS
-%         for GAMMA = GAMMAS
-%             param_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
-%             max_errors_dir = matfile(sprintf("%s/max_errors.mat", param_dir));
-%             max_errors = max_errors_dir.max_errors;
-%             plot(max_errors(:, 1), max_errors(:, 2), '-o', 'Displayname', sprintf("gamma = %g", GAMMA));
-%         end 
-%     end 
-% end
-% legend("interpreter", "latex", "fontsize", 12, "location", "southwest");
-% % grid on;
-% xlabel("$N$ (Number of $x$ grid points)", "interpreter", "latex", "fontsize", 15);
-% ylabel("Max norm error", "interpreter", "latex", "fontsize", 15);
-% set(gca, 'Ticklabelinterpreter', 'latex'); 
-% set(gca, 'yscale', 'log');
-% set(gca, 'xscale', 'log');
-% set(gca, 'fontsize', 12);
-% title("Finite differences, membrane validation: alpha = 1, beta = 1", "interpreter", "latex");
-% savefig(sprintf("%s/finite_differences_membrane_validation.fig", parent_dir));
-% exportgraphics(gca, sprintf("%s/finite_differences_membrane_validation.png", parent_dir), "resolution", 300);
-% 
-% 
-% function ws = w_solution(xs, as, L, N)
-%     
-%     lambdas = pi * (2 * (1 : N) - 1) / (2 * L);
-%     
-%     % Find ws
-%     ws = sum(as .* cos(xs * lambdas), 2) / sqrt(L);
-% end

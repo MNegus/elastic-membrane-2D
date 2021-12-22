@@ -7,6 +7,11 @@ addpath("../normal_modes");
 
 parent_dir = "/media/michael/newarre/elastic_membrane/analytical_validation/normal_modes_validation";
 
+fontsize = 28;
+
+cmap_mat = matfile('red_blue_cmap.mat');
+cmap = cmap_mat.cmap;
+
 %% Parameters
 EPSILON = 1;
 L = 16;
@@ -36,16 +41,31 @@ for varying = ["alpha", "beta", "gamma"]
         BETAS = zeros(size(ALPHAS)) * EPSILON^2;
         GAMMAS = 2 * ones(size(ALPHAS)) * EPSILON^2;
         Ne = 256;
+        
+        titlestr = "$\beta = 0$, $\gamma = 2$";
     elseif varying == "beta"
         BETAS = [0, 5, 10, 20, 40, 80, 160, 320, 640, 1280] * EPSILON^2;
         ALPHAS = ones(size(BETAS)) / EPSILON^2;
         GAMMAS = 2 * (EPSILON^2 * ALPHAS).^3 * EPSILON^2;
+        
+        titlestr = "$\alpha = 1$, $\gamma = 2$";
     elseif varying == "gamma"
         GAMMAS = [0.5, 1, 2, 4, 8, 16, 32] * EPSILON^2;
         ALPHAS = 2 * ones(size(GAMMAS)) / EPSILON^2;
         BETAS = zeros(size(GAMMAS)) * EPSILON^2;
+        
+        titlestr = "$\alpha = 2$, $\beta = 0$";
     end
     no_params = length(ALPHAS);
+    
+    colors = ones(no_params, 3);
+    
+    color_idxs = floor(linspace(1, length(cmap), no_params));
+    
+    for q = 1 : no_params
+        colors(q, :) = cmap(color_idxs(q), :);
+    end
+    
     
     %% Loops over parameters and saves
     figure(figno);
@@ -66,6 +86,9 @@ for varying = ["alpha", "beta", "gamma"]
         if (varying == "alpha")
             Ne = 256;
             Ne_power = log2(Ne);
+        elseif (varying == "gamma")
+            Ne = 128;
+            Ne_power = log2(Ne);
         else
             Ne = 2^Ne_power;
         end
@@ -77,6 +100,8 @@ for varying = ["alpha", "beta", "gamma"]
             save(sprintf("%s/Ne.mat", data_dir), 'Ne');
             save(sprintf("%s/Nms.mat", data_dir), 'Nms');
         end
+        
+        xline(Ne, 'linestyle', '--', 'linewidth', 2);
         
         %% Determine exact solution
         lambdas = pi * (2 * (1 : Ne)' - 1) / (2 * L);
@@ -134,10 +159,10 @@ for varying = ["alpha", "beta", "gamma"]
         %% Load errors back in and plot
         errors_mat = matfile(sprintf("%s/ws_errors.mat", data_dir));
         ws_errors = errors_mat.ws_errors;
-        loglog(Nms, ws_errors);
-        
-        
-        
+        loglog(Nms, ws_errors, '-o', ...
+            'color', colors(idx, :), 'markerfacecolor', colors(idx, :), ...
+            'markersize', 10);
+       
         %% OPTIONAL: Plots solutions
 %         figure(1);
 %         for k = IMPACT_TIMESTEP + 1 : 100 : length(T_VALS)
@@ -178,9 +203,30 @@ for varying = ["alpha", "beta", "gamma"]
 %         end
     end
     
+    
     %% Set figure properties
     set(gca, 'Yscale', 'log');
     set(gca, 'Xscale', 'log');
+    grid on;
+    set(gca, "ticklabelinterpreter", "latex", "Fontsize", fontsize);
+%     xticks(Nms(1 : 2 : end));
+    xticks([2, 8, 32, 128, 512]);
+    xlim([1, 512]);
+    xlabel("$N_M$", 'interpreter', 'latex');
+    ylabel("$||w - w_{exact}||_\infty$", 'interpreter', 'latex');
+    title(titlestr, "interpreter", "latex", "fontsize", fontsize);
+    
+    x0=400;
+    y0=400;
+    height=650;
+    width=500;
+
+    set(gcf,'position',[x0,y0,width,height]);
+    
+    name = sprintf("validation_figures/normal_modes_validation_%s_varying", varying);
+    exportgraphics(gcf, sprintf("%s.png", name), "Resolution", 300);
+    savefig(gcf, sprintf("%s.fig", name));
+    
 end
 
 %% Function definitions

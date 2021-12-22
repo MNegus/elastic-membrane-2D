@@ -8,11 +8,12 @@ addpath("pressures");
 
 
 %% Parameters
-[EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
-    = parameters()
-ALPHA = ALPHAS(1);
-BETA = BETAS(1);
-GAMMA = GAMMAS(1);
+L = 16;
+N_MEMBRANE = 10924;
+DELTA_T = 1e-4;
+T_MAX = 0.4;
+
+EPSILON = 1;
 
 % FD parameters
 DELTA_X = L / (N_MEMBRANE - 1); 
@@ -25,9 +26,9 @@ T_VALS = -IMPACT_TIME : DELTA_T : T_MAX - IMPACT_TIME;
 ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/model_comparison_data";
-analytical_parent_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g", parent_dir, ALPHA, BETA, GAMMA);
-dns_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/dns", parent_dir, ALPHA, BETA, GAMMA);
+parent_dir = "/media/michael/newarre/elastic_membrane/model_comparison_data/alpha_2-beta_1-gamma_2";
+analytical_parent_dir = parent_dir;
+dns_dir = sprintf("%s/dns", parent_dir);
 
 %% Turnover matrices
 fd_comp_mat = matfile(sprintf("%s/finite_differences/composite/ds.mat", analytical_parent_dir));

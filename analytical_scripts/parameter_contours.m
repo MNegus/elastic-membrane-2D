@@ -127,7 +127,8 @@ for varying = ["alpha", "betas"]
     else
         xticks(10 * 2.^(-2 : 3 : 8));
         xlabel("$\beta$", "interpreter", "latex", "Fontsize", fontsize);
-        set(gca,'YTickLabel',[]);
+        ylabel("$\gamma$", "interpreter", "latex", "Fontsize", fontsize);
+%         set(gca,'YTickLabel',[]);
         
         beta_scatter = [5, 10, 20, 40, 80, 160, 320, 640, 1280];
         scatter(beta_scatter, 16 * ones(size(beta_scatter)), [], 'd', 'black');
