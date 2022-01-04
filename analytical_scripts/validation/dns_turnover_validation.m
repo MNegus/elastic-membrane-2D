@@ -56,7 +56,6 @@ for type = ["stationary", "moving"]
     no_levels = length(levels);
     colors = ones(no_levels - 1, 3);
    
-    
     for q = 1 : no_levels - 1
         colors(q, :) = cmap(color_idxs(q), :);
     end
