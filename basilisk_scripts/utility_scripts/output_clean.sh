@@ -29,6 +29,7 @@ NOFILES=$(ls raw_data/ | grep 'boundary_output_.*\.txt' | wc -l)
 
 # Copies the log file into the upper directory 
 cp raw_data/log .
+cp raw_data/turnover_points_basilisk.txt . 
 
 # Move files
 mv raw_data/boundary_output_*.txt boundary_outputs
