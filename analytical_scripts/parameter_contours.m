@@ -54,8 +54,11 @@ color_idxs = floor(linspace(1, length(cmap), length(Ns)));
 
 tiledlayout(1, 2, 'TileSpacing','Compact', 'Padding', 'Compact');
 
-for varying = ["alpha", "betas"]
-    nexttile;
+figno = 0;
+for varying = ["alpha", "beta"]
+    figno = figno + 1;
+%     nexttile;
+    figure(figno);
     hold on;
     
     if varying == "alpha"
@@ -95,12 +98,12 @@ for varying = ["alpha", "betas"]
         patch([INDEP_PARAM(Li) fliplr(INDEP_PARAM(Li))], [lower_gammas(Li) fliplr(upper_gammas(Li))], cmap(color_idxs(N_idx), :), ...
             'edgecolor', 'none')
 
-        plot(INDEP_PARAM, gammas_pos, 'color', cmap(color_idxs(N_idx), :), ...
-            'linewidth', 2, 'linestyle', ':');
-        plot(INDEP_PARAM, gammas_stable, 'color', cmap(color_idxs(N_idx), :), ...
-            'linewidth', 2, 'linestyle', '--');
-        plot(INDEP_PARAM, upper_gammas, 'color', cmap(color_idxs(N_idx), :), ...
-            'linewidth', 2);
+%         plot(INDEP_PARAM, gammas_pos, 'color', cmap(color_idxs(N_idx), :), ...
+%             'linewidth', 2, 'linestyle', ':');
+%         plot(INDEP_PARAM, gammas_stable, 'color', cmap(color_idxs(N_idx), :), ...
+%             'linewidth', 2, 'linestyle', '--');
+%         plot(INDEP_PARAM, upper_gammas, 'color', cmap(color_idxs(N_idx), :), ...
+%             'linewidth', 2);
     end
 
     %%
@@ -123,6 +126,11 @@ for varying = ["alpha", "betas"]
         gamma_scatter = [0.5, 1, 2, 4, 8, 16, 32];
         scatter(2 * ones(size(gamma_scatter)), gamma_scatter, [], '+', 'black');
         
+        sz = 72;
+        scatter([0.5], [16.7], 2 * sz, 'black', 's');
+        scatter([2], [1069], sz, 'black', '^');
+        
+        
         title("$\beta$ = 0", "interpreter", "latex", "fontsize", fontsize);
     else
         xticks(10 * 2.^(-2 : 3 : 8));
@@ -131,24 +139,23 @@ for varying = ["alpha", "betas"]
 %         set(gca,'YTickLabel',[]);
         
         beta_scatter = [5, 10, 20, 40, 80, 160, 320, 640, 1280];
-        scatter(beta_scatter, 16 * ones(size(beta_scatter)), [], 'd', 'black');
+        scatter(beta_scatter, 2 * ones(size(beta_scatter)), [], 'd', 'black');
         
         title("$\alpha$ = 1", "interpreter", "latex", "fontsize", fontsize);
     end
     Ax = gca;
     Ax.Layer = 'top';
     
+    x0=400;
+    y0=400;
+    width=500;
+    height=500;
+
+    set(gcf,'position',[x0,y0,width,height])
+    
+    exportgraphics(gcf, sprintf("figures/parameter_%s_contours.png", varying), "Resolution", 300);
+    savefig(gcf, sprintf("figures/parameter_%s_contours.fig", varying));
+
 %     legend();
     
 end
-
-x0=400;
-y0=400;
-width=1000;
-height=500;
-
-set(gcf,'position',[x0,y0,width,height])
-
-exportgraphics(gcf, "figures/parameter_contours.png", "Resolution", 300);
-savefig(gcf, "figures/parameter_contours.fig");
-

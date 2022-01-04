@@ -8,9 +8,9 @@ addpath("pressures");
 
 parent_dir = "/media/michael/newarre/elastic_membrane/scratch";
 
-composite = false;
+composite = true;
 outer = false;
-normal_modes = true;
+normal_modes = false;
 
 
 %% Parameters

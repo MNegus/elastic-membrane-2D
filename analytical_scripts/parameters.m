@@ -12,9 +12,9 @@ function [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_
 %     V = 1; % Droplet speed
     
     EPSILON = 1;
-    ALPHAS = 2;
-    BETAS = 1;
-    GAMMAS = 2;
+    ALPHAS = 0.5;
+    BETAS = 0;
+    GAMMAS = 16.7;
 
     %% Saran wrap
 %     ALPHAS = 1.7 * 10^-2;
@@ -58,9 +58,9 @@ function [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_
     
     % gamma_varying
 %     GAMMAS = [2, 8, 32, 128, 512, 2048, 8192];
-    GAMMAS = 10.^[-4, -3, -2, -1, 0, 1, 2] * EPSILON^2;
-    ALPHAS = 1 * ones(size(GAMMAS));
-    BETAS = zeros(size(GAMMAS));
+%     GAMMAS = 10.^[-4, -3, -2, -1, 0, 1, 2] * EPSILON^2;
+%     ALPHAS = 1 * ones(size(GAMMAS));
+%     BETAS = zeros(size(GAMMAS));
 
     L = 16;
     T_MAX = 0.4;

@@ -15,9 +15,9 @@ dns = 1;
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
     = parameters();
-ALPHA = ALPHAS(1);
-BETA = BETAS(1);
-GAMMA = GAMMAS(1);
+ALPHA = 2
+BETA = 1
+GAMMA = 2
 
 % FD parameters
 DELTA_X = L / (N_MEMBRANE - 1); 
@@ -84,7 +84,8 @@ end
 
 %% Colors of lines, depending on time
 % color_mags = linspace(0, 0.5, length(timesteps));
-color_mags = [0, 0.5, 0.75];
+% color_mags = [0, 0.5, 0.75];
+color_mags = [0, 0, 0];
 colors = ones(length(timesteps), 3);
 for k = 1 : length(timesteps)
    colors(k, :) = color_mags(k) * colors(k, :); 
@@ -179,7 +180,8 @@ for timestep_idx = 1 : length(timesteps)
     ylim([ymin, ymax]);
     xlim([0, 3]);
     ax = gca;
-    ax.YAxis.Exponent = -3;
+    ax.YAxis.Exponent = 0;
+%     ax.YAxis.TickLabelFormat = '%.4f';
     set(gca, "ticklabelinterpreter", "latex", "Fontsize", fontsize);
     grid on;
     title(sprintf("$t$ = %.2f", t), "Interpreter", "Latex", 'Fontsize', fontsize);

@@ -9,9 +9,9 @@ addpath("pressures");
 %% Parameters
 [EPSILON, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE, IMPACT_TIME] ...
     = parameters();
-ALPHA = ALPHAS(1);
-BETA = BETAS(1);
-GAMMA = GAMMAS(1);
+ALPHA = 2;
+BETA = 1;
+GAMMA = 2;
 
 % FD parameters
 DELTA_X = L / (N_MEMBRANE - 1); 
@@ -53,7 +53,8 @@ ds_nm = ds_mat.ds;
 
 %% Colors of lines, depending on time
 % color_mags = linspace(0, 0.75, length(timesteps));
-color_mags = [0, 0.5, 0.75];
+% color_mags = [0, 0.5, 0.75];
+color_mags = [0, 0, 0];
 colors = ones(length(timesteps), 3);
 for k = 1 : length(timesteps)
    colors(k, :) = color_mags(k) * colors(k, :); 
