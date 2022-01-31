@@ -16,7 +16,6 @@
 #include "view.h" // Creating movies using bview
 
 #include "tag.h" // For removing small droplets
-#include "heights.h"
 // #include "contact.h" // For imposing contact angle on the surface
 // #include "membrane-equation.h" // For solving the membrane equation
 #include <omp.h> // For openMP parallel
@@ -97,6 +96,7 @@ p[right] = dirichlet(0.); // 0 pressure far from surface
 
 /* Field definitions */
 // vector h_test[]; // Height function field
+scalar mean_curvature[];
 
 /* Scalar fields for membrane displacement */
 scalar W[]; // Membrane displacement
@@ -109,6 +109,7 @@ scalar Wtx[]; // Mixed time and x derivative of membrane displacement
 scalar Wtxx[]; // Mixed time and second x derivative of membrane displacement
 
 #include "tension.h" // Surface tension of droplet
+#include "heights.h"
 
 int main() {
 /* Main function for running the simulation */
@@ -210,11 +211,17 @@ event init(t = 0) {
     for (int k = 0; k < M; k++) {
         // Initialise membrane based on a single mode
         double x = k * DELTA_X;
-        w_previous[k] = mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
-        w[k] = w_previous[k];
-        wx[k] = - (pi * mag / (2 * MEMBRANE_RADIUS)) * sin(pi * x / (2 * MEMBRANE_RADIUS));
-        wxx[k] = - pow(pi / (2 * MEMBRANE_RADIUS), 2) * mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
-        wxxx[k] = pow(pi / (2 * MEMBRANE_RADIUS), 3) * mag * sin(pi * x / (2 * MEMBRANE_RADIUS));
+        // w_previous[k] = mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
+        // w[k] = w_previous[k];
+        // wx[k] = - (pi * mag / (2 * MEMBRANE_RADIUS)) * sin(pi * x / (2 * MEMBRANE_RADIUS));
+        // wxx[k] = - pow(pi / (2 * MEMBRANE_RADIUS), 2) * mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
+        // wxxx[k] = pow(pi / (2 * MEMBRANE_RADIUS), 3) * mag * sin(pi * x / (2 * MEMBRANE_RADIUS));
+        w_previous[k] = 0;
+        w[k] = 0;
+        wx[k] = 0;
+        wxx[k] = 0;
+        wxxx[k] = 0;
+
         wt[k] = 0;
         wtt[k] = 0;
         wtx[k] = 0;
@@ -324,7 +331,23 @@ event additional_acceleration (i++) {
 /* Impose additional acceleration due to the change of frame */
     face vector av = a; // Acceleration at each face
     
-    foreach() {
+    foreach_face(x) {
+        /* Determine the derivatives of the horizontal velocity, u */
+        double uy = (u.x[0, 1] - u.x[0, -1]) / (2 * Delta); // y derivative of u
+        double uyy = (u.x[0, 1] - 2 * u.x[] + u.x[0, -1]) \
+            / (Delta * Delta); // Second y derivative of u
+        double uxy = (u.x[1, 1] - u.x[1, -1] - u.x[-1, 1] + u.x[-1, -1]) \
+            / (4 * Delta * Delta); // Mixed x and y derivative of u
+
+        /* Determine derivatives of pressure, p */
+        double py = (p[0, 1] - p[0, -1]) / (2 * Delta); // y derivative of p
+
+        /* Increment horizontal acceleration */
+        av.x[] += (1 / rho[]) * (- Wx[] * py \
+            + mu.x[] * (Wxx[] * uy + 2 * Wx[] * uxy + Wx[] * Wx[] * uyy));
+    }
+
+    foreach_face(y) {
         /* Determine derivatives of horizontal velocity, u */
         double ut = av.x[]; // Time derivative i.e. the current velocity
         double ux = (u.x[1, 0] - u.x[-1, 0]) / (2 * Delta); // x derivative of u
@@ -343,13 +366,6 @@ event additional_acceleration (i++) {
         double vxy = (u.y[1, 1] - u.y[1, -1] - u.y[-1, 1] + u.y[-1, -1]) \
             / (4 * Delta * Delta); // Mixed x and y derivative of v
 
-        /* Determine derivatives of pressure, p */
-        double py = (p[0, 1] - p[0, -1]) / (2 * Delta); // y derivative of p
-
-        /* Increment horizontal acceleration */
-        av.x[] += (1 / rho[]) * (- Wx[] * py \
-            + mu.x[] * (Wxx[] * uy + 2 * Wx[] * uxy + Wx[] * Wx[] * uyy));
-
         /* Incremement vertical acceleration */
         av.y[] += Wtt[] + 2 * Wtx[] * u.x[] + Wx[] * ut \
             + Wxx[] * u.x[] * u.x[] + Wx[] * ux * u.x[] + Wx[] * uy * u.y[] \
@@ -359,8 +375,6 @@ event additional_acceleration (i++) {
                         + Wx[] * uyy + 3 * Wx[] * Wxx[] * uy \
                         + 2 * Wx[] * Wx[] * uxy + pow(Wx[], 3) * uyy));
     }
-
-
 }
 // event gravity (i++) {
 // /* Adds acceleration due to gravity in the vertical direction */
@@ -384,6 +398,10 @@ event small_droplet_removal (t += 1e-4) {
 
 event output_data (t += LOG_OUTPUT_TIMESTEP) {
 /* Outputs data about the flow */
+
+    /* Determine (lab frame) curvature */
+    curvature(f, mean_curvature);
+
     /* Outputs data to log file */
     fprintf(stderr, \
         "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
