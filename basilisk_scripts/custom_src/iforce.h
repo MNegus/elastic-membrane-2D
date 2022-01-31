@@ -85,7 +85,8 @@ event acceleration (i++)
   */
 
   face vector ia = a;
-  foreach_face()
+  
+  foreach_face(x)
     for (scalar f in list)
       if (f[] != f[-1] && fm.x[] > 0.) {
 
@@ -107,11 +108,33 @@ event acceleration (i++)
 
 	ia.x[] += alpha.x[]/fm.x[]*phif*(f[] - f[-1])/Delta;
 
-  // MAKE THIS JUST ADD TO Y
-  #if MOVING
-    ia.x[] += alpha.x[]/fm.x[]*phif*Wx[]*(f[] - f[0, -1])/Delta;
-  #endif
+      }
 
+  foreach_face(y)
+    for (scalar f in list)
+      if (f[] != f[-1] && fm.y[] > 0.) {
+
+	/**
+	We need to compute the potential *phif* on the face, using its
+	values at the center of the cell. If both potentials are
+	defined, we take the average, otherwise we take a single
+	value. If all fails we set the potential to zero: this should
+	happen only because of very pathological cases e.g. weird
+	boundary conditions for the volume fraction. */
+	
+	scalar phi = f.phi;
+	double phif =
+	  (phi[] < nodata && phi[-1] < nodata) ?
+	  (phi[] + phi[-1])/2. :
+	  phi[] < nodata ? phi[] :
+	  phi[-1] < nodata ? phi[-1] :
+	  0.;
+
+	ia.y[] += alpha.y[]/fm.y[]*phif*(f[] - f[-1])/Delta;
+
+  #if MOVING
+    ia.y[] += alpha.y[]/fm.y[]*phif*Wx[]*(f[] - f[0, -1])/Delta;
+  #endif
       }
 
   /**
