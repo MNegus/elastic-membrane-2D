@@ -283,7 +283,6 @@ void heights (scalar c, vector h)
   #if MOVING
   foreach() {
     h.y[] += W[] / Delta;
-    fprintf(stderr, "W[] / Delta = %g\n", W[] / Delta);
   }
   #endif
 }
@@ -456,8 +455,9 @@ void heights (scalar c, vector h)
   /**
   If we are in the moving frame, then alter the vertical heights */
   #if MOVING
-  foreach() 
+  foreach() {
     h.y[] += W[] / Delta;
+  } 
   #endif
 }
 
