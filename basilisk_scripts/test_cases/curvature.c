@@ -16,33 +16,72 @@ We use the
 for accurate initialisation of interfacial shapes [Bna et al,
 2015](/src/references.bib#bna2015). */
 
+#define MOVING 1
+
 #include <vofi.h>
+#include "parameters.h" // Includes all defined parameters
 // #pragma autolink -L$HOME/local/lib -lvofi
+scalar W[], Wx[], Wxx[];
 
 #include "fractions.h"
 #include "curvature.h"
 
+
+double mag = 0.08;
+double DROP_REFINED_WIDTH = 0.01;
+
+
+double membrane_position(double x) {
+/* Continuous function for the membrane position */
+    #if MOVING
+    if (fabs(x) <= MEMBRANE_RADIUS) {
+        return mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
+    } else {
+        return 0;
+    }
+    #else
+    return 0;
+    #endif
+}
+
+double membrane_first_derivative(double x) {
+/* Continuous function for the first derivative of the membrane position */
+    if (fabs(x) <= MEMBRANE_RADIUS) {
+        return -mag * (pi / (2 * MEMBRANE_RADIUS)) \
+            * sin(pi * x / (2 * MEMBRANE_RADIUS));
+    } else {
+        return 0;
+    }
+}
+
+double membrane_second_derivative(double x) {
+/* Continuous function for the second derivative of the membrane position */
+    if (fabs(x) <= MEMBRANE_RADIUS) {
+        return -mag * pow(pi / (2 * MEMBRANE_RADIUS), 2) \
+            * cos(pi * x / (2 * MEMBRANE_RADIUS));
+    } else {
+        return 0;
+    }
+}
+
+
 /**
 We pass arguments to *Vofi* through these global variables. */
 
-static double xc, yc, zc, Rc;
+static double xc, yc, Rc;
 int gfs_counter = 0;
 
-static double sphere (creal p[dimension])
+static double circle (creal p[dimension])
 {
-#if dimension == 3
-  return sq(p[0] - xc) + sq(p[1] - yc) + sq(p[2] - zc) - sq(Rc);
-#else
-  return sq(p[0] - xc) + sq(p[1] - yc) - sq(Rc);
-#endif
+  return sq(p[0] - xc) + sq(p[1] - membrane_position(p[0]) - yc) - sq(Rc);
 }
 
 static void vofi (scalar c, int levelmax)
 {
-  double fh = Get_fh (sphere, NULL, 1./(1 << levelmax), dimension, 0);
+  double fh = Get_fh (circle, NULL, 1./(1 << levelmax), dimension, 0);
   foreach() {
-    creal p[3] = {x - Delta/2., y - Delta/2., z - Delta/2.};
-    c[] = Get_cc (sphere, p, Delta, fh, dimension);
+    creal p[2] = {x - Delta/2., y - Delta/2.};
+    c[] = Get_cc (circle, p, Delta, fh, dimension);
   }
 }
 
@@ -65,18 +104,39 @@ void sample_circles (int nr, double R, int levelmax, norm * n, cstats * sc)
     c.refine = c.prolongation = fraction_refine;
 
     init_grid (1 << 5);
-    xc = noise()/8., yc = noise()/8., zc = noise()/8., Rc = R;
+    xc = noise()/8., yc = noise()/8., Rc = R;
     vofi (c, 5);
     for (int l = 6; l <= levelmax; l++) {
       refine (c[] > 0. && c[] < 1. && level < l);
+      refine((sq(x - xc) + sq(y - membrane_position(x) - yc) < sq(Rc + DROP_REFINED_WIDTH)) \
+        && (sq(x - xc) + sq(y - membrane_position(x) - yc)  > sq(Rc - DROP_REFINED_WIDTH)) \
+        && (level < l));
       vofi (c, l);
     }
     
+    foreach() { 
+        W[] = membrane_position(x);
+        Wx[] = membrane_first_derivative(x);
+        Wxx[] = membrane_second_derivative(x);
+    }
     
-    if (levelmax == 8) {
+    cstats s = curvature (c, kappa, sigma = 2.);
+    if (levelmax == 10) {
+        // Output gfs file
         char gfs_filename[80];
         sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_counter);
         output_gfs(file = gfs_filename);
+
+        // Output curvature
+        char curvature_filename[80];
+        sprintf(curvature_filename, "curvature_%d.gfs", gfs_counter);
+        FILE *curvature_file = fopen(curvature_filename, "w");
+        foreach() {
+            if (kappa[] != nodata) {
+                fprintf(curvature_file, "%g %g %g\n", x, y, kappa[]);
+            }
+        }
+        fclose(curvature_file);
 
         gfs_counter++;
     }
@@ -115,8 +175,9 @@ void sample_circles (int nr, double R, int levelmax, norm * n, cstats * sc)
 
 int main()
 {
-  origin (-0.5, -0.5, -0.5);
+  origin (-0.5, -0.5);
   init_grid (N);
+  size(1);
 
     /* Creates log file */
     FILE *logfile = fopen("log", "w");
@@ -131,7 +192,7 @@ int main()
     We initialize the arrays required to store the statistics for each
     level of refinement. */
 
-    int levelmax = 8;
+    int levelmax = 10;
     norm n[levelmax + 1];
     cstats sc[levelmax + 1];
     for (int i = 0; i <= levelmax; i++) {
@@ -145,15 +206,11 @@ int main()
     total runtime by sampling many (100) locations on coarse meshes
     but only few (1) location on the finest mesh. */
 
-#if dimension == 2
     sample_circles (1000, R, 4, n, sc);
     sample_circles (100, R, 6, n, sc);
+    sample_circles (100, R, 8, n, sc);
     sample_circles (10, R, levelmax, n, sc);
-#else // dimension == 3
-    sample_circles (100, R, 4, n, sc);
-    sample_circles (10, R, 6, n, sc);
-    sample_circles (1, R, levelmax, n, sc);
-#endif
+
     
     /**
     Finally we output the statistics for this particular radius and for
