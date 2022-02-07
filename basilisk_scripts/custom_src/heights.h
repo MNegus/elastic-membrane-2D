@@ -280,11 +280,11 @@ void heights (scalar c, vector h)
 
   /**
   If we are in the moving frame, then alter the vertical heights */
-  #if MOVING
-  foreach() {
-    h.y[] += W[] / Delta;
-  }
-  #endif
+//   #if MOVING
+//   foreach() {
+//     h.y[] += W[] / Delta;
+//   }
+//   #endif
 }
 
 /**
@@ -451,14 +451,6 @@ void heights (scalar c, vector h)
   
   foreach_dimension()
     h.x.prolongation = refine_h_x;
-
-  /**
-  If we are in the moving frame, then alter the vertical heights */
-  #if MOVING
-  foreach() {
-    h.y[] += W[] / Delta;
-  } 
-  #endif
 }
 
 #endif // TREE
