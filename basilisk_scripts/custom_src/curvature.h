@@ -85,7 +85,7 @@ static double kappa_x (Point point, vector h)
             return nodata;
     double hy = (h.x[0, 1] - h.x[0, -1])/2.;
     double hyy = (h.x[0, 1] + h.x[0, -1] - 2.*h.x[])/Delta;
-    return (hyy + pow(hy, 3) * Wxx[]) / pow(sq(1. - Wx[] * hy) + sq(hy), 3/2.);
+    return (hyy + pow(hy, 3.) * Wxx[]) / pow(sq(1. - Wx[] * hy) + sq(hy), 3/2.);
 }
 #else
 foreach_dimension()
@@ -95,8 +95,8 @@ static double kappa_y (Point point, vector h)
     for (int i = -1; i <= 1; i++)
         if (h.y[i] == nodata || orientation(h.y[i]) != ori)
             return nodata;
-    double hx = (h.y[1, 0] - h.y[-1, 0])/2.;
-    double hxx = (h.y[1, 0] + h.y[-1, 0] - 2.*h.y[])/Delta;
+    double hx = (h.y[1] - h.y[-1])/2.;
+    double hxx = (h.y[1] + h.y[-1] - 2.*h.y[])/Delta;
     return hxx/pow(1. + sq(hx), 3/2.);
 }
 #endif
