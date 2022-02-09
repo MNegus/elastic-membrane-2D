@@ -101,6 +101,8 @@ void sample_circles (int nr, double R, int levelmax, norm * n, cstats * sc)
     We refine the grid down to *levelmax* but only around the interface. */
 
     scalar c[], kappa[];
+    scalar kappax[], kappay[]; // Stores kappax and kappay too
+    vector htest[];
     c.refine = c.prolongation = fraction_refine;
 
     init_grid (1 << 5);
@@ -120,16 +122,43 @@ void sample_circles (int nr, double R, int levelmax, norm * n, cstats * sc)
         Wxx[] = membrane_second_derivative(x);
     }
     
+    // Determines curvature
     cstats s = curvature (c, kappa, sigma = 2.);
-    if (levelmax == 10) {
+
+    // Determines kappax and kappay
+    heights (c, htest);
+    foreach() { 
+        if (c[] == 0 || c[] == 1) {
+            kappax[] = nodata;
+            kappay[] = nodata;
+        } else {
+            double kappaxVal = kappa_x(point, htest);
+            double kappayVal = kappa_y(point, htest);
+
+            if (fabs(kappaxVal) > 1e3) {
+                kappax[] = nodata;
+            } else {
+                kappax[] = 2 * fabs(kappaxVal);
+            }
+
+            if (fabs(kappayVal) > 1e3) {
+                kappay[] = nodata;
+            } else {
+                kappay[] = 2 * fabs(kappayVal);
+            }
+        }
+    }
+
+    double noGridPoints = 2.*R*(1 << levelmax);
+    if (noGridPoints > 245) {
         // Output gfs file
         char gfs_filename[80];
-        sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_counter);
+        sprintf(gfs_filename, "gfs_output_noGrid_%g_level_%d_%d.gfs", noGridPoints, levelmax, gfs_counter);
         output_gfs(file = gfs_filename);
 
         // Output curvature
         char curvature_filename[80];
-        sprintf(curvature_filename, "curvature_%d.gfs", gfs_counter);
+        sprintf(curvature_filename, "curvature_%d.txt", gfs_counter);
         FILE *curvature_file = fopen(curvature_filename, "w");
         foreach() {
             if (kappa[] != nodata) {
@@ -140,6 +169,7 @@ void sample_circles (int nr, double R, int levelmax, norm * n, cstats * sc)
 
         gfs_counter++;
     }
+    
     /**
     We then successively coarsen this fine initial grid to compute the
     curvature on coarser and coarser grids (thus saving on the
@@ -151,6 +181,13 @@ void sample_circles (int nr, double R, int levelmax, norm * n, cstats * sc)
       
       cstats s = curvature (c, kappa, sigma = 2.);
       
+    if (levelmax == 10) {
+        char gfs_filename[80];
+        sprintf(gfs_filename, "gfs_output_R_%g_level_%d.gfs", R, l);
+        output_gfs(file = gfs_filename);
+    }
+
+
       /**
       We store statistics on the methods used for curvature
       computation... */
@@ -175,9 +212,9 @@ void sample_circles (int nr, double R, int levelmax, norm * n, cstats * sc)
 
 int main()
 {
-  origin (-0.5, -0.5);
-  init_grid (N);
-  size(1);
+    origin (-0.5, -0.5);
+    init_grid (N);
+    size(1);
 
     /* Creates log file */
     FILE *logfile = fopen("log", "w");
@@ -186,54 +223,54 @@ int main()
   /**
   We try a wide enough range of radii. */
 
-  for (double R = 0.1; R <= 0.2; R *= 1.2) {
+    for (double R = 0.1; R <= 0.2; R *= 1.2) {
 
-    /**
-    We initialize the arrays required to store the statistics for each
-    level of refinement. */
+        /**
+        We initialize the arrays required to store the statistics for each
+        level of refinement. */
 
-    int levelmax = 10;
-    norm n[levelmax + 1];
-    cstats sc[levelmax + 1];
-    for (int i = 0; i <= levelmax; i++) {
-      n[i].volume = n[i].avg = n[i].rms = n[i].max = 0;
-      sc[i].h = sc[i].f = sc[i].a = sc[i].c = 0.;
+        int levelmax = 10;
+        norm n[levelmax + 1];
+        cstats sc[levelmax + 1];
+        for (int i = 0; i <= levelmax; i++) {
+            n[i].volume = n[i].avg = n[i].rms = n[i].max = 0;
+            sc[i].h = sc[i].f = sc[i].a = sc[i].c = 0.;
+        }
+
+        /**
+        We can limit randomisation for the higher resolutions (since we
+        expect less "special cases" on fine meshes). We thus limit the
+        total runtime by sampling many (100) locations on coarse meshes
+        but only few (1) location on the finest mesh. */
+
+        sample_circles (1000, R, 4, n, sc);
+        sample_circles (100, R, 6, n, sc);
+        sample_circles (100, R, 8, n, sc);
+        sample_circles (10, R, levelmax, n, sc);
+
+        
+        /**
+        Finally we output the statistics for this particular radius and for
+        each level of refinement. */
+
+        for (int l = levelmax; l >= 3; l--)
+            if (n[l].volume) {
+                n[l].avg /= n[l].volume;
+                n[l].rms = sqrt(n[l].rms/n[l].volume);
+                double t = sc[l].h + sc[l].f + sc[l].a + sc[l].c;
+                fprintf (stderr, "%g %g %g %g %g %g %g %g\n",
+                        2.*R*(1 << l),
+                        n[l].avg, n[l].rms, n[l].max,
+                        sc[l].h/t, sc[l].f/t, sc[l].a/t, sc[l].c/t);
+
+                FILE *logfile = fopen("log", "a");
+                fprintf(logfile, "%g %g %g %g %g %g %g %g\n",
+                    2.*R*(1 << l),
+                    n[l].avg, n[l].rms, n[l].max,
+                    sc[l].h/t, sc[l].f/t, sc[l].a/t, sc[l].c/t);
+                fclose(logfile);
+            }   
     }
-
-    /**
-    We can limit randomisation for the higher resolutions (since we
-    expect less "special cases" on fine meshes). We thus limit the
-    total runtime by sampling many (100) locations on coarse meshes
-    but only few (1) location on the finest mesh. */
-
-    sample_circles (1000, R, 4, n, sc);
-    sample_circles (100, R, 6, n, sc);
-    sample_circles (100, R, 8, n, sc);
-    sample_circles (10, R, levelmax, n, sc);
-
-    
-    /**
-    Finally we output the statistics for this particular radius and for
-    each level of refinement. */
-
-    for (int l = levelmax; l >= 3; l--)
-      if (n[l].volume) {
-	n[l].avg /= n[l].volume;
-	n[l].rms = sqrt(n[l].rms/n[l].volume);
-	double t = sc[l].h + sc[l].f + sc[l].a + sc[l].c;
-	fprintf (stderr, "%g %g %g %g %g %g %g %g\n",
-		 2.*R*(1 << l),
-		 n[l].avg, n[l].rms, n[l].max,
-		 sc[l].h/t, sc[l].f/t, sc[l].a/t, sc[l].c/t);
-
-    FILE *logfile = fopen("log", "a");
-    fprintf(logfile, "%g %g %g %g %g %g %g %g\n",
-        2.*R*(1 << l),
-        n[l].avg, n[l].rms, n[l].max,
-        sc[l].h/t, sc[l].f/t, sc[l].a/t, sc[l].c/t);
-    fclose(logfile);
-      }
-  }
 
   /**
   At the end of the run, we sort the data by increasing order of
