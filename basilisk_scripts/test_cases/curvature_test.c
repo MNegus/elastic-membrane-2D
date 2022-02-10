@@ -196,6 +196,26 @@ int main() {
             fclose(heights_y_file);
 
 
+            /* Output the interface and curvature along it */
+            char interface_filename[80];
+            sprintf(interface_filename, "interface_mag_%g.txt", mag);
+            FILE *interface_file = fopen(interface_filename, "w");
+
+            foreach() {
+                if (c[] > 1e-6 && c[] < 1. - 1e-6) {
+                    coord n = interface_normal(point, c);
+                    double alpha = plane_alpha(c[], n);
+                    coord segment[2];
+                    if (facets(n, alpha, segment) == 2) {
+                        fprintf(interface_file, "%g %g %g %g %g\n", \
+                            x + segment[0].x * Delta, y + segment[0].y * Delta,\
+                            x + segment[1].x * Delta, y + segment[1].y * Delta,\
+                            kappa[]);
+                    }
+                }
+            }
+            fclose(interface_file);
+
 
             /* Determine error in curvature */
             // int l = levelmax;
