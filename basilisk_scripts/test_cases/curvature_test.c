@@ -92,18 +92,9 @@ int main() {
             init_grid(1 << MINLEVEL); // Create grid according to the minimum level
             size(BOX_WIDTH); // Size of the domain
 
-            scalar c[], kappa[];
+            scalar c[], kappa[], kappax[], kappay[];
             c.refine = c.prolongation = fraction_refine;
             c.height = htest;
-
-            /* Norm stats to save */
-            
-            norm n[levelmax + 1];
-            cstats sc[levelmax + 1];
-            for (int i = 0; i <= levelmax; i++) {
-                n[i].volume = n[i].avg = n[i].rms = n[i].max = 0;
-                sc[i].h = sc[i].f = sc[i].a = sc[i].c = 0.;
-            }
 
             /* Define the volume fraction and the curvature */
             vofi (c, MINLEVEL);
@@ -114,16 +105,40 @@ int main() {
                     && (level < l));
                 vofi (c, l);
             }
-
-            /* Set the global W[] field to 0 and output */
-            foreach() {
-                W[] = 0;
+            
+            /* Set fields for membrane position */
+            foreach() { 
+                W[] = membrane_position(x);
+                Wx[] = membrane_first_derivative(x);
+                Wxx[] = membrane_second_derivative(x);
             }
 
-            // Determine the curvature and heights
+            /* Determine the curvature and heights */
             heights(c, htest);
             cstats s = curvature (c, kappa, sigma = 2., add = false);
+            foreach() { 
+                if (c[] == 0 || c[] == 1) {
+                    kappax[] = nodata;
+                    kappay[] = nodata;
+                } else {
+                    double kappaxVal = kappa_x(point, htest);
+                    double kappayVal = kappa_y(point, htest);
 
+                    if (fabs(kappaxVal) > 1e3) {
+                        kappax[] = nodata;
+                    } else {
+                        kappax[] = 2 * fabs(kappaxVal);
+                    }
+
+                    if (fabs(kappayVal) > 1e3) {
+                        kappay[] = nodata;
+                    } else {
+                        kappay[] = 2 * fabs(kappayVal);
+                    }
+                }
+            }
+
+            /* Output gfs and curvature files */
             char gfs_filename[80];
             char curvature_filename[80];
             if (mag == 0) {
@@ -144,34 +159,7 @@ int main() {
             }
             fclose(curvature_file);
             
-
-            /* Sets the global W[] field to membrane position and output */
-            if (mag > 0) {
-                foreach() { 
-                    W[] = membrane_position(x);
-                    Wx[] = membrane_first_derivative(x);
-                    Wxx[] = membrane_second_derivative(x);
-                }
-                // Determine the curvature and heights
-                heights(c, htest);
-                s = curvature (c, kappa, sigma = 2., add = false);
-                
-                sprintf(gfs_filename, "gfs_output_%d_adjusted.gfs", levelmax);;
-                output_gfs(file = gfs_filename);
-
-                // Output the curvature
-                sprintf(curvature_filename, "curvature_adjusted.txt");
-                FILE *curvature_file = fopen(curvature_filename, "w");
-                foreach() {
-                    if (kappa[] != nodata) {
-                        fprintf(curvature_file, "%g %g %g\n", x, y, kappa[]);
-                    }
-                }
-                fclose(curvature_file);
-            }
-            
-
-            // Output the heights
+            /* Output the heights */
             char heights_x_filename[80];
             sprintf(heights_x_filename, "heights_x_mag_%g.txt", mag);
             FILE *heights_x_file = fopen(heights_x_filename, "w");
@@ -203,14 +191,23 @@ int main() {
 
             foreach() {
                 if (c[] > 1e-6 && c[] < 1. - 1e-6) {
+
+                    // Height function derivatives
+                    double hx = (htest.y[1, 0] - htest.y[-1, 0])/2.;
+                    double hxx = (htest.y[1, 0] + htest.y[-1, 0] - 2.*htest.y[])/Delta;
+                    double hy = (htest.x[0, 1] - htest.x[0, -1])/2.;
+                    double hyy = (htest.x[0, 1] + htest.x[0, -1] - 2.*htest.x[])/Delta;
+
+                    // Segment info
                     coord n = interface_normal(point, c);
                     double alpha = plane_alpha(c[], n);
                     coord segment[2];
                     if (facets(n, alpha, segment) == 2) {
-                        fprintf(interface_file, "%g %g %g %g %g\n", \
+                        fprintf(interface_file, "%g %g %g %g %g %g %g %g %g %g %g\n", \
                             x + segment[0].x * Delta, y + segment[0].y * Delta,\
                             x + segment[1].x * Delta, y + segment[1].y * Delta,\
-                            kappa[]);
+                            kappa[], kappax[], kappay[], \
+                            hx, hxx, hy, hyy);
                     }
                 }
             }
