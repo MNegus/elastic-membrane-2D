@@ -89,69 +89,197 @@ end
 segmentLengths = sqrt((B(:, 1) - B(:, 3)).^2 + (B(:, 2) - B(:, 4)).^2);
 arcLengths = cumtrapz(segmentLengths);
 
-%% Plot interface
-figure(1);
-plot(B(:, 1), B(:, 2));
-
-%% Plot curvature as a function of arclength
+%% Load in variables
 kappa = B(:, 5);
 kappax = B(:, 6);
 kappay = B(:, 7);
+heightY = B(:, 8);
+hx = B(:, 9);
+hxx = B(:, 10);
+heightX = B(:, 11);
+hy = B(:, 12);
+hyy = B(:, 13);
+W = B(:, 14);
+Wx = B(:, 15);
+Wxx = B(:, 16);
 
+%% Plot interface
+figure(1);
+plot(B(:, 1), B(:, 2), 'linewidth', 2);
+xlim([0 3]);
+grid on;
+xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+ylabel("$y$", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+title("Droplet interface in the moving frame", "interpreter", "latex", "Fontsize", 15);
+pbaspect([1 1 1]); 
+exportgraphics(gca, "curvature_figures/interface.png");
+savefig(gcf, "curvature_figures/interface.fig");
+
+%% Plot curvature as a function of arclength
+close all;
 % Determine indices where kappa is equal to kappax and kappay
-xIdxs = (kappa == kappax);
-yIdxs = (kappa == kappay);
-% kappax(kappax > 1e3) = nan;
-% kappay(kappay > 1e3) = nan;
+kappax(kappax > 1e3) = nan;
+kappay(kappay > 1e3) = nan;
+
+subplot(2,1,1);
+scatter(arcLengths, kappa, [], [0.9290, 0.6940, 0.1250]);
+grid on
+legend("kappa", "interpreter", "latex", "Fontsize", 15);
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+ylim([1.997, 2.003]);
+title("Comparison of curvature", "interpreter", "latex", "Fontsize", 18);
+
+subplot(2,1,2); 
+hold on;
+scatter(arcLengths, kappax);
+scatter(arcLengths, kappay);
+grid on
+legend(["kappa\_x", "kappa\_y"], "interpreter", "latex", "Fontsize", 15);
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+ylim([1.997, 2.003]);
+
+
+set(gcf, 'position', [200 200 1200 800]);
+
+exportgraphics(gcf, "curvature_figures/kappas.png");
+savefig(gcf, "curvature_figures/kappas.fig");
+
+
+%% Plot height functions
+heightY(abs(heightY) > 1e3) = nan;
+heightX(abs(heightX) > 1e3) = nan;
 
 close(figure(2));
-figure(2);
+figure(2)
 hold on;
-scatter(arcLengths(xIdxs), kappax(xIdxs));
-scatter(arcLengths(yIdxs), kappay(yIdxs));
-% plot(arcLengths, kappa, 'linewidth', 2);
-legend(["kappax", "kappay", "kappa"]);
+scatter(arcLengths, heightX);
+scatter(arcLengths, heightY);
+grid on
+legend(["h.x[]", "h.y[]"], "interpreter", "latex", "Fontsize", 15);
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Height function", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
 
+title("Comparison of height functions", "interpreter", "latex", "Fontsize", 18);
 
-% Find non-NaN kappay values
-nonNaNIdxs = not(isnan(kappay));
+set(gcf, 'position', [200 200 1400 600]);
 
-% Find non-2 values of kappay
-nonTwoIdxs = not(kappay == 2);
-idxs = nonNaNIdxs & nonTwoIdxs
+exportgraphics(gcf, "curvature_figures/heights.png");
+savefig(gcf, "curvature_figures/heights.fig");
 
-% close(figure(3));
-% figure(3);
-% scatter(arcLengths(idxs), kappay(idxs), [], 'red');
-set(gca, 'yscale', 'log');
-
-%% Plot heights
-hx = B(:, 8);
-hxx = B(:, 9);
-hy = B(:, 10);
-hyy = B(:, 11);
-
-% hx(abs(hx) > 1e3) = nan;
-% hy(abs(hy) > 1e3) = nan;
-% hxx(abs(hxx) > 1e3) = nan;
-% hyy(abs(hyy) > 1e3) = nan;
+%% Height function first derivatives
+hx(abs(hx) > 1e3) = nan;
+hy(abs(hy) > 1e3) = nan;
 
 close(figure(3));
 figure(3);
 hold on;
-scatter(arcLengths(xIdxs), hy(xIdxs));
-scatter(arcLengths(yIdxs), hx(yIdxs));
-legend(["hy", "hx"]);
+scatter(arcLengths, hy);
+scatter(arcLengths, hx);
+grid on
+legend(["hy (y derivative of h.x[])", "hx (x derivative of h.y[])"], ...
+    "interpreter", "latex", "Fontsize", 15, 'location', 'northwest');
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Height derivative", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+set(gcf, 'position', [200 200 1400 400]);
+
+title("First derivatives of height functions", "interpreter", "latex", "Fontsize", 18);
+
+
+exportgraphics(gcf, "curvature_figures/height_first_derivative.png");
+savefig(gcf, "curvature_figures/height_first_derivative.fig");
+
+
+%% Height function second derivatives
+hxx(abs(hxx) > 1e3) = nan;
+hyy(abs(hyy) > 1e3) = nan;
 
 close(figure(4));
 figure(4);
 hold on;
-scatter(arcLengths(xIdxs), hyy(xIdxs));
-legend(["hyy", "hxx"]);
-scatter(arcLengths(yIdxs), hxx(yIdxs));
+scatter(arcLengths, hyy);
+scatter(arcLengths, hxx);
+grid on
+legend(["hyy (Second y derivative of h.x[])", "hxx (Second x derivative of h.y[])"], ...
+    "interpreter", "latex", "Fontsize", 15, 'location', 'northwest');
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Height derivative", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+set(gcf, 'position', [200 200 1400 400]);
 
-%%
+title("Second derivatives of height functions", "interpreter", "latex", "Fontsize", 18);
+
+exportgraphics(gcf, "curvature_figures/height_second_derivative.png");
+savefig(gcf, "curvature_figures/height_second_derivative.fig");
+
+
+%% First derivative of W
+close(figure(5));
 figure(5);
-hold on;
-scatter(arcLengths, xIdxs)
-scatter(arcLengths, yIdxs)
+scatter(arcLengths, Wx);
+grid on
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Wx", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+set(gcf, 'position', [200 200 1400 400]);
+
+title("First derivative of membrane position", "interpreter", "latex", "Fontsize", 18);
+
+exportgraphics(gcf, "curvature_figures/membrane_first_derivative.png");
+savefig(gcf, "curvature_figures/memrbane_first_derivative.fig");
+
+%% Second derivative of W
+close(figure(6));
+figure(6);
+scatter(arcLengths, Wxx);
+grid on
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Wxx", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+set(gcf, 'position', [200 200 1400 400]);
+
+title("Second derivative of membrane position", "interpreter", "latex", "Fontsize", 18);
+
+exportgraphics(gcf, "curvature_figures/membrane_second_derivative.png");
+savefig(gcf, "curvature_figures/memrbane_second_derivative.fig");
+
+% %%
+% % Compare kappax to its components
+% 
+% 
+% kappax_manual = 2 * abs((hyy + hy.^3 .* Wxx) ./ ((1 - Wx .* hy).^2 + hy.^2).^(3/2));
+% % kappax_manual = 2 * abs((hyy + hy.^3 .* Wxx) ./ ((1 - Wx).^2 + hy.^2).^(3/2));
+% kappax_manual((abs(hy) > 1e3) | (abs(hyy) > 1e3)) = nan;
+% 
+% close(figure(6));
+% figure(6)
+% hold on;
+% scatter(arcLengths, kappax);
+% % scatter(arcLengths, kappax_manual);
+% % scatter(arcLengths, Wx);
+% % scatter(arcLengths, Wxx);
+% % scatter(arcLengths, hy);
+% scatter(arcLengths, hyy);
+% % scatter(arcLengths, kappax_manual);
+% % ylim([1.995, 2.005]);
+% legend(["kappax", "kappax manual", "Wx", "Wxx", "hy", "hyy"]);
+% 
+% %%
+% % Compare kappay to its components
+% close(figure(7));
+% figure(7)
+% hold on;
+% scatter(arcLengths, kappay);
+% % scatter(arcLengths, Wx);
+% % scatter(arcLengths, Wxx);
+% scatter(arcLengths, hx);
+% % scatter(arcLengths, hxx);
+% % scatter(arcLengths, kappax_manual);
+% legend(["kappay", "Wx", "Wxx", "hx", "hxx"]);
+
