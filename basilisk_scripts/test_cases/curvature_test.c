@@ -203,11 +203,14 @@ int main() {
                     double alpha = plane_alpha(c[], n);
                     coord segment[2];
                     if (facets(n, alpha, segment) == 2) {
-                        fprintf(interface_file, "%g %g %g %g %g %g %g %g %g %g %g\n", \
-                            x + segment[0].x * Delta, y + segment[0].y * Delta,\
-                            x + segment[1].x * Delta, y + segment[1].y * Delta,\
-                            kappa[], kappax[], kappay[], \
-                            hx, hxx, hy, hyy);
+                        fprintf(interface_file, \
+                            "%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", 
+                            x + segment[0].x * Delta, y + segment[0].y * Delta,
+                            x + segment[1].x * Delta, y + segment[1].y * Delta,
+                            kappa[], kappax[], kappay[],
+                            htest.y[], hx, hxx, 
+                            htest.x[], hy, hyy,
+                            W[], Wx[], Wxx[]);
                     }
                 }
             }
