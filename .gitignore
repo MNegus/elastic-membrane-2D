@@ -63,5 +63,8 @@ dkms.conf
 *.avi
 *.txt
 
+# MATLAB figures
+*.fig
+
 # vscode files
 .vscode
