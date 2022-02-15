@@ -25,7 +25,7 @@ vector htest[];
 #include "curvature.h"
 
 double mag;
-double magMax = 0.75; // Magnitude of membrane displacement
+double magMax = 0.5; // Magnitude of membrane displacement
 int gfs_output_no = 1;
 double drop_centre;
 double DROP_REFINED_WIDTH = 0.01;
@@ -204,13 +204,14 @@ int main() {
                     coord segment[2];
                     if (facets(n, alpha, segment) == 2) {
                         fprintf(interface_file, \
-                            "%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", 
+                            "%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", 
                             x + segment[0].x * Delta, y + segment[0].y * Delta,
                             x + segment[1].x * Delta, y + segment[1].y * Delta,
                             kappa[], kappax[], kappay[],
                             htest.y[], hx, hxx, 
                             htest.x[], hy, hyy,
-                            W[], Wx[], Wxx[]);
+                            W[], Wx[], Wxx[], 
+                            x, y);
                     }
                 }
             }
