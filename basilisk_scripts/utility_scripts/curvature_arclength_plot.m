@@ -6,8 +6,21 @@
 clear;
 close all;
 
+% Radius and centre of the droplet in the lab frame
+R = 1;
+Yc = 0.125 + R;
+
+% Membrane parameters
+mag = 0.5; % Magnitude of displacement
+L = 1.25; % Width of membrane
+
+% Exact solution for membrane
+WExact = @(X) mag * cos(pi * X / (2 * L)); 
+WxExact = @(X) -(pi / (2 * L)) * mag * sin(pi * X / (2 * L));
+WxxExact = @(X) -(pi / (2 * L))^2 * mag * cos(pi * X / (2 * L));
+
 % Load in output file
-outputFilename = "interface_mag_0.75.txt";
+outputFilename = "interface_mag_0.5.txt";
 A = readmatrix(outputFilename);
 
 % Set constants related to data size
@@ -45,11 +58,7 @@ startDists = zeros(noSegments); % Intialise distance array
 currPoint = B(1, 3 : 4); % Current point 
 
 for k = 2 : noSegments
-% for k = 2
     k
-   
-    % End point of current segment
-%     currPoint = B(k - 1, 3 : 4); 
     
     % Find distances of the start and end points in A form currPoint
     startDists = sqrt((currPoint(1) - A(:, 1)).^2 + (currPoint(2) - A(:, 2)).^2);
@@ -90,6 +99,10 @@ segmentLengths = sqrt((B(:, 1) - B(:, 3)).^2 + (B(:, 2) - B(:, 4)).^2);
 arcLengths = cumtrapz(segmentLengths);
 
 %% Load in variables
+xStarts = B(:, 1);
+yStarts = B(:, 2);
+xEnds = B(:, 3);
+yEnds = B(:, 4);
 kappa = B(:, 5);
 kappax = B(:, 6);
 kappay = B(:, 7);
@@ -102,10 +115,90 @@ hyy = B(:, 13);
 W = B(:, 14);
 Wx = B(:, 15);
 Wxx = B(:, 16);
+xCellCentres = B(:, 17);
+yCellCentres = B(:, 18);
+
+% Convert large values to NaN
+kappax(kappax > 1e3) = nan;
+kappay(kappay > 1e3) = nan;
+hx(abs(hx) > 1e3) = nan;
+hy(abs(hy) > 1e3) = nan;
+hxx(abs(hxx) > 1e3) = nan;
+hyy(abs(hyy) > 1e3) = nan;
+
+%% Find centres of segments
+% Different to xCentres and yCentres, which are the x and y coordinates of
+% the centre of the CELL, not the segment
+xLineCentres = 0.5 * (xStarts + xEnds);
+yLineCentres = 0.5 * (yStarts + yEnds);
+
+
+%% Find exact solution for the interface, Y = T(X)
+% As Y = T(X) will be multivalued, we define TPlus and TMinus to handle the
+% upper and lower part of the droplet, respectively 
+
+% Use the xCentres array
+% X = xCentres;
+% 
+% TPlus = Yc + WExact(X) + sqrt(R^2 - X.^2);
+% TMinus = Yc + WExact(X) - sqrt(R^2 - X.^2);
+% 
+% TPlusX = WxExact(X) - X ./ sqrt(R^2 - X.^2);
+% TMinusX = WxExact(X) + X ./ sqrt(R^2 - X.^2);
+% 
+% TPlusXX = -WxxExact(X) - (1 ./ sqrt(R^2 - X.^2) ...
+%     + X.^2 ./ (R^2 - X.^2).^(3/2));
+% TMinusXX = -WxxExact(X) + (1 ./ sqrt(R^2 - X.^2) ...
+%     + X.^2 ./ (R^2 - X.^2).^(3/2));
+% 
+
+
+%% Find exact solution for the interface, X = S(Y)
+% Define range for Y values
+% Ymin = Yc + WExact(0) - R;
+% Ymax = Yc + WExact(0) + R;
+% Y = linspace(Ymin, Ymax, 1e3);
+% 
+% % Use minimimsation to find X and a function of Y
+% zeroFun = @(X) X.^2 + (Y - WExact(X) - Yc).^2 - R^2; % Levelset function
+% X0 = sqrt(R^2 - (Y - Yc).^2); % Initial guess for X values
+% S = fsolve(zeroFun, X0); % Solve for S, i.e. X = S(Y)
+% S = abs(S); % Ensure we keep the positive solutions
+% 
+% % Find derivatives of S
+% dy = Y(2) - Y(1);
+% 
+% % First Y derivative
+% SY = zeros(size(S));
+% SY(2 : end - 1) = (S(3 : end) - S(1 : end - 2)) / (2 * dy);
+% SY(1) = (S(2) - S(1)) / dy;
+% SY(end) = (S(end) - S(end - 1)) / dy;
+% 
+% % Second y derivative
+% SYY = zeros(size(S));
+% SYY(2 : end - 1) = (S(3 : end) - 2 * S(2 : end - 1) + S(1 : end - 2)) / dy^2;
+% SYY(1) = (SY(2) - SY(1)) / dy;
+% SYY(end) = (SY(end) - SY(end - 1)) / dy;
+
+%% Plot kappa and arc lengths
+% close all;
+% figure(56565);
+% hold on;
+% scatter(yCentres, kappay);
+% scatter(yCentres, kappax);
+% % scatter(yCentres, kappa);
+
 
 %% Plot interface
+close all;
 figure(1);
-plot(B(:, 1), B(:, 2), 'linewidth', 2);
+hold on;
+% plot(B(:, 1), B(:, 2), 'linewidth', 2);
+scatter(B(:, 1), B(:, 2));
+
+% Plot exact interface
+% plot(S, Y, 'color', 'black');
+
 xlim([0 3]);
 grid on;
 xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
@@ -116,11 +209,94 @@ pbaspect([1 1 1]);
 exportgraphics(gca, "curvature_figures/interface.png");
 savefig(gcf, "curvature_figures/interface.fig");
 
+%% Errors in hx
+
+% % First isolate hx and hxx from its positive and negative parts
+% poshxIdxs = (hx > 0) & (kappa == kappay) & (kappax ~= kappay);
+% neghxIdxs = (hx < 0) & (kappa == kappay) & (kappax ~= kappay);
+% 
+% % Restrict numerical solutions for positive solution
+% xPosq = xCentres(poshxIdxs);
+% xNegq = xCentres(neghxIdxs);
+% hxPosq = hx(poshxIdxs);
+% hxNegq = hx(neghxIdxs);
+% 
+% 
+% % Restrict the exact solution along xq
+% TPlusXq = TPlusX(neghxIdxs);
+% TMinusXq = TMinusX(poshxIdxs);
+% 
+% % Plot error
+% close(figure(22));
+% figure(22);
+% hold on;
+% scatter([xPosq; xNegq], [TMinusXq - hxPosq; TPlusXq - hxNegq]);
+% grid on
+% xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+% ylabel("Error", "interpreter", "latex", "Fontsize", 18);
+% set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+% title("Error between $h_x$ and exact", "interpreter", "latex", "Fontsize", 18);
+% set(gcf, 'position', [200 200 1400 600]);
+
+%% Errors in hxx
+
+% % First isolat hxx from its positive and negative parts
+% poshxxIdxs = (hxx > 0) & (kappa == kappay) & (kappax ~= kappay);
+% neghxxIdxs = (hxx < 0) & (kappa == kappay) & (kappax ~= kappay);
+% 
+% % Restrict numerical solutions for positive solution
+% xPosq = xCentres(poshxxIdxs);
+% xNegq = xCentres(neghxxIdxs);
+% hxxPosq = hxx(poshxxIdxs);
+% hxxNegq = hxx(neghxxIdxs);
+% 
+% 
+% % Restrict the exact solution along xq
+% TPlusXXq = TPlusXX(neghxxIdxs);
+% TMinusXXq = TMinusXX(poshxxIdxs);
+% 
+% % Plot error
+% close(figure(23));
+% figure(23);
+% hold on;
+% % scatter([xPosq; xNegq], [TMinusXXq - hxxPosq; TPlusXXq - hxxNegq]);
+% scatter([xPosq; xNegq], [TMinusXXq; TPlusXXq]);
+% scatter([xPosq; xNegq], [hxxPosq; hxxNegq]);
+% grid on
+% xlabel("$x$", "interpreter", "latex", "Fontsize", 18);
+% ylabel("Error", "interpreter", "latex", "Fontsize", 18);
+% set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+% title("Error between $h_{xx}$ and exact", "interpreter", "latex", "Fontsize", 18);
+% set(gcf, 'position', [200 200 1400 600]);
+% 
+
+%% Errors in hy and hyy
+
+% % Find where hy and hyy are nonzero and non-NaN, and such that the
+% % contribution to kappa is from kappax.
+% nonZeroYIdxs = (hy ~= 0) & (hyy ~= 0) & not(isnan(hy)) & not(isnan(hyy)) ...
+%     & (kappa == kappax) & (kappax ~= kappay);
+% 
+% % Restrict the exact solutions to where hy and hy ~= 0
+% yq = yCentres(nonZeroYIdxs);
+% hyq = hy(nonZeroYIdxs);
+% hyyq = hyy(nonZeroYIdxs);
+% 
+% % Plot errors between the exact solutions for height functions
+% Syq = interp1(Y, SY, yq);
+% Syyq = interp1(Y, SYY, yq);
+% 
+% close(figure(15));Line
+% figure(15);
+% plot(yq, abs(Syq - hyq));
+% 
+% close(figure(16));
+% figure(16);
+% plot(yq, abs(Syyq - hyyq));
+
+
 %% Plot curvature as a function of arclength
 close all;
-% Determine indices where kappa is equal to kappax and kappay
-kappax(kappax > 1e3) = nan;
-kappay(kappay > 1e3) = nan;
 
 subplot(2,1,1);
 scatter(arcLengths, kappa, [], [0.9290, 0.6940, 0.1250]);
@@ -164,7 +340,8 @@ legend(["h.x[]", "h.y[]"], "interpreter", "latex", "Fontsize", 15);
 xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
 ylabel("Height function", "interpreter", "latex", "Fontsize", 18);
 set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-
+hxx(abs(hxx) > 1e3) = nan;
+hyy(abs(hyy) > 1e3) = nan;
 title("Comparison of height functions", "interpreter", "latex", "Fontsize", 18);
 
 set(gcf, 'position', [200 200 1400 600]);
@@ -173,8 +350,6 @@ exportgraphics(gcf, "curvature_figures/heights.png");
 savefig(gcf, "curvature_figures/heights.fig");
 
 %% Height function first derivatives
-hx(abs(hx) > 1e3) = nan;
-hy(abs(hy) > 1e3) = nan;
 
 close(figure(3));
 figure(3);
@@ -197,9 +372,6 @@ savefig(gcf, "curvature_figures/height_first_derivative.fig");
 
 
 %% Height function second derivatives
-hxx(abs(hxx) > 1e3) = nan;
-hyy(abs(hyy) > 1e3) = nan;
-
 close(figure(4));
 figure(4);
 hold on;
@@ -249,29 +421,45 @@ title("Second derivative of membrane position", "interpreter", "latex", "Fontsiz
 exportgraphics(gcf, "curvature_figures/membrane_second_derivative.png");
 savefig(gcf, "curvature_figures/memrbane_second_derivative.fig");
 
-% %%
-% % Compare kappax to its components
-% 
-% 
-% kappax_manual = 2 * abs((hyy + hy.^3 .* Wxx) ./ ((1 - Wx .* hy).^2 + hy.^2).^(3/2));
-% % kappax_manual = 2 * abs((hyy + hy.^3 .* Wxx) ./ ((1 - Wx).^2 + hy.^2).^(3/2));
-% kappax_manual((abs(hy) > 1e3) | (abs(hyy) > 1e3)) = nan;
-% 
-% close(figure(6));
-% figure(6)
-% hold on;
-% scatter(arcLengths, kappax);
-% % scatter(arcLengths, kappax_manual);
-% % scatter(arcLengths, Wx);
-% % scatter(arcLengths, Wxx);
-% % scatter(arcLengths, hy);
-% scatter(arcLengths, hyy);
-% % scatter(arcLengths, kappax_manual);
-% % ylim([1.995, 2.005]);
-% legend(["kappax", "kappax manual", "Wx", "Wxx", "hy", "hyy"]);
-% 
-% %%
-% % Compare kappay to its components
+%%
+% Compare kappax to its components
+kappax_cellCentred = 2 * abs((hyy + hy.^3 .* WxxExact(xCellCentres)) ./ ((1 - WxExact(xCellCentres) .* hy).^2 + hy.^2).^(3/2));
+% kappax_cellCentred(kappax_cellCentred == 0) = nan;
+kappax_cellCentred(kappa == kappay) = nan;
+
+kappax_lineCentred = 2 * abs((hyy + hy.^3 .* WxxExact(xLineCentres)) ./ ((1 - WxExact(xLineCentres) .* hy).^2 + hy.^2).^(3/2));
+% kappax_lineCentred(kappax_lineCentred == 0) = nan;
+kappax_lineCentred(kappa == kappay) = nan;
+
+
+
+close(figure(6));
+figure(6)
+hold on;
+scatter(arcLengths, kappax_cellCentred);
+scatter(arcLengths, kappax_lineCentred);
+% scatter(arcLengths, kappax_manual);
+grid on
+legend(["kappa (Cell centred)", "kappa (Line centred)"], ...
+    "interpreter", "latex", "Fontsize", 15, 'location', 'northeast');
+xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+set(gcf, 'position', [200 200 800 600]);
+
+% title("Second derivative of membrane position", "interpreter", "latex", "Fontsize", 18);
+exportgraphics(gcf, "curvature_figures/cell_vs_line_centred.png");
+savefig(gcf, "curvature_figures/cell_vs_line_centred.fig");
+
+%% L2 norm error for kappax
+% Determines the L2-norm error for the kappax calulcations, given that it
+% should be 2 everywhere
+kappax_cellCentred_L2Norm = sqrt(sum((kappax_cellCentred - 2).^2, 'omitnan'))
+kappax_lineCentred_L2Norm = sqrt(sum((kappax_lineCentred - 2).^2, 'omitnan'))
+
+
+%%
+% Compare kappay to its components
 % close(figure(7));
 % figure(7)
 % hold on;
