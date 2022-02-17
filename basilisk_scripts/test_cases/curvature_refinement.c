@@ -24,7 +24,7 @@ vector htest[];
 #include "fractions.h"
 #include "curvature.h"
 
-double mag = 0;
+double mag = 0.5;
 int gfs_output_no = 1;
 double drop_centre;
 double DROP_REFINED_WIDTH = 0.01;
@@ -35,7 +35,8 @@ double DROP_REFINED_WIDTH = 0.01;
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
     if (x <= MEMBRANE_RADIUS) {
-        return mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
+        // return mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
+        return mag * x;
     } else {
         return 0;
     }
@@ -44,8 +45,9 @@ double membrane_position(double x) {
 double membrane_first_derivative(double x) {
 /* Continuous function for the first derivative of the membrane position */
     if (x <= MEMBRANE_RADIUS) {
-        return -mag * (pi / (2 * MEMBRANE_RADIUS)) \
-            * sin(pi * x / (2 * MEMBRANE_RADIUS));
+        // return -mag * (pi / (2 * MEMBRANE_RADIUS)) \
+        //     * sin(pi * x / (2 * MEMBRANE_RADIUS));
+        return mag;
     } else {
         return 0;
     }
@@ -54,8 +56,9 @@ double membrane_first_derivative(double x) {
 double membrane_second_derivative(double x) {
 /* Continuous function for the second derivative of the membrane position */
     if (x <= MEMBRANE_RADIUS) {
-        return -mag * pow(pi / (2 * MEMBRANE_RADIUS), 2) \
-            * cos(pi * x / (2 * MEMBRANE_RADIUS));
+        // return -mag * pow(pi / (2 * MEMBRANE_RADIUS), 2) \
+        //     * cos(pi * x / (2 * MEMBRANE_RADIUS));
+        return 0;
     } else {
         return 0;
     }
