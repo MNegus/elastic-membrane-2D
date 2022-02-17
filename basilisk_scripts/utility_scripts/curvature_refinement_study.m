@@ -12,7 +12,7 @@ Yc = 0.125 + R;
 L = 1.25; % Width of membrane
 
 % Range of levels
-levels = 5 : 12;
+levels = 5 : 14;
 
 % Set up figure
 close all;
@@ -197,9 +197,36 @@ for shape = ["flat", "curved"]
 
 
     %% Plot L2-norm errors
-    plot(levels, cellCentredL2Norms, 'Displayname', sprintf("Cell centred (%s)", shape));
-    plot(levels, lineCentredL2Norms, 'Displayname', sprintf("Line centred (%s)", shape));
+    
+    if (shape == 'flat')
+        plot(levels, cellCentredL2Norms, '-o', 'Linewidth', 2, ...
+        'Displayname', "Undeformed case", 'Linestyle', 'None');
+        
+    else
+        plot(levels, cellCentredL2Norms, '-o', 'Linewidth', 2, ...
+        'Displayname', sprintf("Deformed case (Cell centred)", shape), 'Linestyle', 'None');
+        plot(levels, lineCentredL2Norms, '-o', 'linewidth', 2, ...
+                'Displayname', sprintf("Deformed case (Line centred)", shape), 'Linestyle', 'None');
+    end
 
 end
+
+%%
+plot(levels, 28 * exp(-sqrt(2) * levels), 'linestyle', '--', ...
+            'color', 'black', 'linewidth', 2, ...
+            'Displayname', "$\sim \exp(-\sqrt{2} m)$)");
+plot(levels, 1.75 * exp(-levels / sqrt(2)), 'linestyle', ':', ...
+            'color', 'black', 'linewidth', 2, ...
+            'Displayname', "$\sim \exp(-m / \sqrt{2})$)");
 set(gca, 'yscale', 'log');
 legend();
+grid on
+legend("interpreter", "latex", "Fontsize", 15, 'location', 'southwest');
+xlabel("Refinement level, $m$", "interpreter", "latex", "Fontsize", 18);
+ylabel("RMS error", "interpreter", "latex", "Fontsize", 18);
+set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+set(gcf, 'position', [200 200 800 600]);
+
+exportgraphics(gcf, "curvature_figures/curvature_refinement.png");
+savefig(gcf, "curvature_figures/curvature_refinement.fig");
+
