@@ -8,6 +8,9 @@ close all;
 R = 1;
 Yc = 0.125 + R;
 
+% Grid definitions
+boxWidth = 3;
+
 % Membrane parameters
 L = 1.25; % Width of membrane
 
@@ -20,7 +23,7 @@ figure(1);
 hold on;
 
 %% Loop over levels
-for shape = ["flat", "curved"]
+for shape = ["curved", "flat"]
     
     if shape == "flat"
         mag = 0;
@@ -29,15 +32,22 @@ for shape = ["flat", "curved"]
     end
     
     % Set W solution
-    WExact = @(X) mag * cos(pi * X / (2 * L)); 
-    WxExact = @(X) -(pi / (2 * L)) * mag * sin(pi * X / (2 * L));
-    WxxExact = @(X) -(pi / (2 * L))^2 * mag * cos(pi * X / (2 * L));
-    
+%     WExact = @(X) mag * cos(pi * X / (2 * L)); 
+%     WxExact = @(X) -(pi / (2 * L)) * mag * sin(pi * X / (2 * L));
+%     WxxExact = @(X) -(pi / (2 * L))^2 * mag * cos(pi * X / (2 * L));
+    WExact = @(X) mag * X; 
+    WxExact = @(X) mag * ones(size(X));
+    WxxExact = @(X) zeros(size(X));
+
     % L2 norm error arrays
     lineCentredL2Norms = zeros(size(levels));
     cellCentredL2Norms = zeros(size(levels));
     for levelIdx = 1 : length(levels)
+%     for levelIdx = length(levels)
         level = levels(levelIdx);
+        
+        % Saves minimum cell size
+        minCellSize = boxWidth / 2^level;
 
         % Load in output file
         outputFilename = sprintf("refinement_data_%s/interface_%d.txt", shape, level);
@@ -145,6 +155,21 @@ for shape = ["flat", "curved"]
         hy(abs(hy) > 1e3) = nan;
         hxx(abs(hxx) > 1e3) = nan;
         hyy(abs(hyy) > 1e3) = nan;
+        
+        % Exclude the curvature at the boundary
+%         zeroIdxs = (xStarts == 0) | (xEnds == 0);
+        zeroIdxs = (xStarts <= minCellSize) | (xEnds <= minCellSize);
+        find(zeroIdxs)
+        kappa(zeroIdxs) = nan;
+        kappax(zeroIdxs) = nan;
+        kappay(zeroIdxs) = nan;
+        
+%         largeIdx = find(kappa > 3);
+%         xCellCentres(largeIdx)
+%         yCellCentres(largeIdx)
+%         kappa(abs(kappa) > 4) = nan;
+%         kappax(abs(kappax) > 4) = nan;
+%         kappay(abs(kappay) > 4) = nan;
 
 %         close all;
 
@@ -156,19 +181,20 @@ for shape = ["flat", "curved"]
 %         xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
 %         ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
 %         set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-%     %     ylim([1.997, 2.003]);
+% %         ylim([2 - 1e-5, 2 + 1e-5]);
 %         title("Comparison of curvature", "interpreter", "latex", "Fontsize", 18);
 % 
 %         subplot(2,1,2); 
-%         hold on;
 %         scatter(arcLengths, kappax);
+%         hold on;
 %         scatter(arcLengths, kappay);
+%         hold off;
 %         grid on
 %         legend(["kappa\_x", "kappa\_y"], "interpreter", "latex", "Fontsize", 15);
 %         xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
 %         ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
 %         set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-%     %     ylim([1.997, 2.003]);
+% %         ylim([2 - 1e-5, 2 + 1e-5]);
 %         set(gcf, 'position', [200 200 1200 800]);
 %         pause(1);
 
@@ -189,8 +215,10 @@ for shape = ["flat", "curved"]
         kappax_lineCentred(kappa == kappay) = nan;
 
         %% Determine L2-norm errors
-        cellCentredL2Norms(levelIdx) = sqrt(sum((kappax_cellCentred - 2).^2, 'omitnan') / noSegments);
-        lineCentredL2Norms(levelIdx) = sqrt(sum((kappax_lineCentred - 2).^2, 'omitnan') / noSegments)
+        format long
+%         cellCentredL2Norms(levelIdx) = sqrt(sum((kappax_cellCentred - 2).^2, 'omitnan') / noSegments);
+        cellCentredL2Norms(levelIdx) = sqrt(sum((kappax - 2).^2, 'omitnan') / noSegments);
+%         lineCentredL2Norms(levelIdx) = sqrt(sum((kappax_lineCentred - 2).^2, 'omitnan') / noSegments)
 
     end
 
@@ -198,7 +226,7 @@ for shape = ["flat", "curved"]
 
     %% Plot L2-norm errors
     plot(levels, cellCentredL2Norms, 'Displayname', sprintf("Cell centred (%s)", shape));
-    plot(levels, lineCentredL2Norms, 'Displayname', sprintf("Line centred (%s)", shape));
+%     plot(levels, lineCentredL2Norms, 'Displayname', sprintf("Line centred (%s)", shape));
 
 end
 set(gca, 'yscale', 'log');
