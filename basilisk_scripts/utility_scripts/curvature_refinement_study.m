@@ -15,15 +15,17 @@ boxWidth = 3;
 L = 1.25; % Width of membrane
 
 % Range of levels
-levels = 5 : 12;
-
+levels = 5 : 13;
+ 
 % Set up figure
 close all;
 figure(1);
 hold on;
 
 %% Loop over levels
-for shape = ["curved", "flat"]
+mkrs = ['o', '^', 's'];
+mkrCtr = 1;
+for shape = ["flat", "linear", "quadratic"]
     
     if shape == "flat"
         mag = 0;
@@ -35,9 +37,9 @@ for shape = ["curved", "flat"]
 %     WExact = @(X) mag * cos(pi * X / (2 * L)); 
 %     WxExact = @(X) -(pi / (2 * L)) * mag * sin(pi * X / (2 * L));
 %     WxxExact = @(X) -(pi / (2 * L))^2 * mag * cos(pi * X / (2 * L));
-    WExact = @(X) mag * X; 
-    WxExact = @(X) mag * ones(size(X));
-    WxxExact = @(X) zeros(size(X));
+    WExact = @(X) mag * X.^2; 
+    WxExact = @(X) 2 * mag * X;
+    WxxExact = @(X) 2 * mag * ones(size(X));
 
     % L2 norm error arrays
     lineCentredL2Norms = zeros(size(levels));
@@ -147,6 +149,8 @@ for shape = ["curved", "flat"]
         Wxx = B(:, 16);
         xCellCentres = B(:, 17);
         yCellCentres = B(:, 18);
+        
+        
 
         % Convert large values to NaN
         kappax(kappax > 1e3) = nan;
@@ -158,18 +162,11 @@ for shape = ["curved", "flat"]
         
         % Exclude the curvature at the boundary
 %         zeroIdxs = (xStarts == 0) | (xEnds == 0);
-        zeroIdxs = (xStarts <= minCellSize) | (xEnds <= minCellSize);
+        zeroIdxs = (xStarts <= 3 * minCellSize) | (xEnds <= 3 * minCellSize);
         find(zeroIdxs)
         kappa(zeroIdxs) = nan;
         kappax(zeroIdxs) = nan;
         kappay(zeroIdxs) = nan;
-        
-%         largeIdx = find(kappa > 3);
-%         xCellCentres(largeIdx)
-%         yCellCentres(largeIdx)
-%         kappa(abs(kappa) > 4) = nan;
-%         kappax(abs(kappax) > 4) = nan;
-%         kappay(abs(kappay) > 4) = nan;
 
 %         close all;
 
@@ -181,7 +178,7 @@ for shape = ["curved", "flat"]
 %         xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
 %         ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
 %         set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-% %         ylim([2 - 1e-5, 2 + 1e-5]);
+% %         ylim([2 - 1e-3, 2 + 1e-3]);
 %         title("Comparison of curvature", "interpreter", "latex", "Fontsize", 18);
 % 
 %         subplot(2,1,2); 
@@ -194,9 +191,9 @@ for shape = ["curved", "flat"]
 %         xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
 %         ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
 %         set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-% %         ylim([2 - 1e-5, 2 + 1e-5]);
+% %         ylim([2 - 1e-3, 2 + 1e-3]);
 %         set(gcf, 'position', [200 200 1200 800]);
-%         pause(1);
+%         pause(2);
 
         %% Find centres of segments
         % Different to xCentres and yCentres, which are the x and y coordinates of
@@ -217,29 +214,40 @@ for shape = ["curved", "flat"]
         %% Determine L2-norm errors
         format long
 %         cellCentredL2Norms(levelIdx) = sqrt(sum((kappax_cellCentred - 2).^2, 'omitnan') / noSegments);
-        cellCentredL2Norms(levelIdx) = sqrt(sum((kappax - 2).^2, 'omitnan') / noSegments);
+        cellCentredL2Norms(levelIdx) = sqrt(sum((kappa - 2).^2, 'omitnan') / noSegments);
 %         lineCentredL2Norms(levelIdx) = sqrt(sum((kappax_lineCentred - 2).^2, 'omitnan') / noSegments)
 
     end
 
     %% Plot L2-norm errors
-    plot(levels, cellCentredL2Norms, 'Displayname', sprintf("Cell centred (%s)", shape));
+    sz = 100;
+    scatter(2.^levels, cellCentredL2Norms, sz, mkrs(mkrCtr), 'filled');
+    mkrCtr = mkrCtr + 1;
 %     plot(levels, lineCentredL2Norms, 'Displayname', sprintf("Line centred (%s)", shape));
 
 end
 
 %%
-plot(levels, 28 * exp(-sqrt(2) * levels), 'linestyle', '--', ...
+coeff2 = (2^levels(1))^2 * 0.044;
+coeff1 = (2^levels(1)) * 0.168;
+plot(2.^levels, coeff2 ./ (2.^levels).^2, 'linestyle', '--', ...
             'color', 'black', 'linewidth', 2, ...
-            'Displayname', "$\sim \exp(-\sqrt{2} m)$)");
-plot(levels, 1.75 * exp(-levels / sqrt(2)), 'linestyle', ':', ...
+            'Displayname', "$\sim 1 / N^2$");
+plot(2.^levels, coeff1 ./ (2.^levels), 'linestyle', ':', ...
             'color', 'black', 'linewidth', 2, ...
-            'Displayname', "$\sim \exp(-m / \sqrt{2})$)");
+            'Displayname', "$\sim 1 / N$");
+        
+% plot(levels, 28 * exp(-sqrt(2) * levels), 'linestyle', '--', ...
+%             'color', 'black', 'linewidth', 2, ...
+%             'Displayname', "$\sim \exp(-\sqrt{2} m)$)");
+% plot(levels, 1.75 * exp(-levels / sqrt(2)), 'linestyle', ':', ...
+%             'color', 'black', 'linewidth', 2, ...
+%             'Displayname', "$\sim \exp(-m / \sqrt{2})$)");
 set(gca, 'yscale', 'log');
-legend();
+set(gca, 'xscale', 'log');
 grid on
-legend("interpreter", "latex", "Fontsize", 15, 'location', 'southwest');
-xlabel("Refinement level, $m$", "interpreter", "latex", "Fontsize", 18);
+legend(["Flat membrane", "Linear membrane", "Quadratic membrane", "$\sim 1 / N^2$", "$\sim 1 / N$"], "interpreter", "latex", "Fontsize", 15, 'location', 'southwest');
+xlabel("Points per unit radius, $N$", "interpreter", "latex", "Fontsize", 18);
 ylabel("RMS error", "interpreter", "latex", "Fontsize", 18);
 set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
 set(gcf, 'position', [200 200 800 600]);
