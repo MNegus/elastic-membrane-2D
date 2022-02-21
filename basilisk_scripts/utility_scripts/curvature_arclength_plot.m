@@ -15,12 +15,16 @@ mag = 0.5; % Magnitude of displacement
 L = 1.25; % Width of membrane
 
 % Exact solution for membrane
-WExact = @(X) mag * cos(pi * X / (2 * L)); 
-WxExact = @(X) -(pi / (2 * L)) * mag * sin(pi * X / (2 * L));
-WxxExact = @(X) -(pi / (2 * L))^2 * mag * cos(pi * X / (2 * L));
+% WExact = @(X) mag * cos(pi * X / (2 * L)); 
+% WxExact = @(X) -(pi / (2 * L)) * mag * sin(pi * X / (2 * L));
+% WxxExact = @(X) -(pi / (2 * L))^2 * mag * cos(pi * X / (2 * L));
+WExact = @(X) mag * X.^2; 
+WxExact = @(X) 2 * mag * X;
+WxxExact = @(X) 2 * mag * ones(size(X));
+
 
 % Load in output file
-outputFilename = "interface_mag_0.5.txt";
+outputFilename = "refinement_data_curved/interface_13.txt";
 A = readmatrix(outputFilename);
 
 % Set constants related to data size
@@ -326,6 +330,8 @@ exportgraphics(gcf, "curvature_figures/kappas.png");
 savefig(gcf, "curvature_figures/kappas.fig");
 
 
+
+
 %% Plot height functions
 heightY(abs(heightY) > 1e3) = nan;
 heightX(abs(heightX) > 1e3) = nan;
@@ -450,6 +456,31 @@ set(gcf, 'position', [200 200 800 600]);
 % title("Second derivative of membrane position", "interpreter", "latex", "Fontsize", 18);
 exportgraphics(gcf, "curvature_figures/cell_vs_line_centred.png");
 savefig(gcf, "curvature_figures/cell_vs_line_centred.fig");
+
+%% 
+close all;
+figure(45);
+hold on;
+originalTerm = hyy;
+originalTerm(kappa == kappay) = nan;
+adjustedTerm = hy.^3 .* Wxx;
+adjustedTerm(kappa == kappay) = nan;
+
+% scatter(arcLengths, originalTerm);
+% scatter(arcLengths, adjustedTerm);
+
+numerator = hyy + hy.^3 .* Wxx;
+numerator(kappa == kappay) = nan;
+
+denominator = ((1 - Wx .* hy).^2 + hy.^2).^(3/2);
+denominator(kappa == kappay) = nan;
+
+fullsol = numerator ./ denominator;
+fullsol(kappa == kappay) = nan;
+
+% scatter(arcLengths, numerator);
+% scatter(arcLengths, denominator);
+scatter(arcLengths, numerator + denominator);
 
 %% L2 norm error for kappax
 % Determines the L2-norm error for the kappax calulcations, given that it
