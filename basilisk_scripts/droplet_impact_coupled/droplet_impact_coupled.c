@@ -462,7 +462,7 @@ event output_turnover_point (t += DELTA_T) {
         foreach(reduction(min:turnover_x)) {
             /* POSITIONS METHOD */
             // Continues if current point is not on the interface
-            if ((positions_x[] == nodata) || (positions_y[] == nodata)) continue;
+            // if ((positions_x[] == nodata) || (positions_y[] == nodata)) continue;
 
             // Checks if current point is the new minimum
             if ((positions_x[] < turnover_x) && (positions_y[] <= max_y)) {
