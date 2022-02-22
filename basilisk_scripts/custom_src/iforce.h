@@ -132,9 +132,6 @@ event acceleration (i++)
 
 	ia.y[] += alpha.y[]/fm.y[]*phif*(f[] - f[-1])/Delta;
 
-  #if MOVING
-    ia.y[] += alpha.y[]/fm.y[]*phif*Wx[]*(f[] - f[0, -1])/Delta;
-  #endif
       }
 
   /**
