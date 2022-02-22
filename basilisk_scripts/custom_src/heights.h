@@ -278,13 +278,6 @@ void heights (scalar c, vector h)
   
   column_propagation (h);
 
-  /**
-  If we are in the moving frame, then alter the vertical heights */
-//   #if MOVING
-//   foreach() {
-//     h.y[] += W[] / Delta;
-//   }
-//   #endif
 }
 
 /**
