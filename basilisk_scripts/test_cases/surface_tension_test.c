@@ -12,11 +12,10 @@
 
 */
 
-#define MOVING 0
+#define MOVING 1
 
 #include <vofi.h>
 #include "parameters.h" // Includes all defined parameters
-
 
 scalar W[], Wx[], Wxx[];
 
@@ -27,7 +26,7 @@ scalar W[], Wx[], Wxx[];
 double mag = 0.5;
 int gfs_output_no = 1;
 double drop_centre;
-double DROP_REFINED_WIDTH = 0.01;
+double DROP_REFINED_WIDTH = 0.05;
 int refineLevel;
 
 /* Physical constants */
@@ -45,10 +44,12 @@ u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
 uf.n[bottom] = dirichlet(0.);
 uf.t[bottom] = dirichlet(0.);
 
-double TMAX = 0.1;
+double TMAX = 0.5;
 
-// vector htest[];
-// scalar kappa[], kappax[], kappay[];
+vector htest[];
+scalar c[];
+scalar kappa[], kappax[], kappay[];
+scalar origf[];
 
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
@@ -103,7 +104,9 @@ static void vofi (scalar c, int levelmax) {
 
 int main() {
 
-    drop_centre = 2 * INITIAL_DROP_HEIGHT + DROP_RADIUS;
+    origin(-0.5 * BOX_WIDTH, -0.5 * BOX_WIDTH);
+
+    drop_centre = 0;
 
     /* Determine physical constants */
     REYNOLDS = RHO_L * V * R / MU_L; // Reynolds number of liquid
@@ -120,11 +123,7 @@ int main() {
     f.sigma = 1. / WEBER; // Surface tension at interface
 
 
-    /* Conditions for the solver */
-    TMAX = 0.1;
-
-
-    for (refineLevel = MINLEVEL; refineLevel <= MAXLEVEL; refineLevel++) {
+    for (refineLevel = MAXLEVEL; refineLevel <= MAXLEVEL; refineLevel++) {
         fprintf(stderr, "refineLevel = %d\n", refineLevel);
 
         init_grid(1 << MINLEVEL); // Create grid according to the minimum level
@@ -163,45 +162,101 @@ event init (t = 0) {
         vofi (f, l);
     }
     
+    // refine((sq(x) + sq(y - membrane_position(x) - drop_centre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+    //     && (sq(x) + sq(y - membrane_position(x) - drop_centre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+    //     && (level < refineLevel));
+    
+    // /* Initialises the droplet volume fraction */
+    // fraction(f, -sq(x) - sq(y - membrane_position(x) - drop_centre) + sq(DROP_RADIUS));
+
     /* Set fields for membrane position */
     foreach() { 
         W[] = membrane_position(x);
         Wx[] = membrane_first_derivative(x);
         Wxx[] = membrane_second_derivative(x);
+        
+        origf[] = f[];
     }
 
 }
 
+#if MOVING
+event accAdjustment(i++) {
+    face vector av = a; // Acceleration at each face
+    
+    // y acceleration
+    foreach_face(y) {
+        double v = u.y[];
+        double ut = av.x[];
+        double ux = (u.x[1, 0] - u.x[-1, 0]) / (2 * Delta);
+        double uy = (u.x[0, 1] - u.x[0, -1]) / (2 * Delta);
+        double uxx = (u.x[1, 0] - u.x[] + u.x[-1, 0]) / (Delta * Delta);
+        double uyy = (u.x[0, 1] - u.x[] + u.x[0, -1]) / (Delta * Delta);
+        double uxy = (u.x[1, 1] - u.x[-1, 1] - u.x[1, -1] + u.x[-1, -1]) / (4 * Delta * Delta);
+        double vxy = (u.y[1, 1] - u.y[-1, 1] - u.y[1, -1] + u.y[-1, -1]) / (4 * Delta * Delta);
+        double vyy = (u.y[0, 1] - u.y[] + u.y[0, -1]) / (Delta * Delta);
+
+        av.y[] += Wx[] * ut + Wx[] * ux * u.x[] + Wx[] * uy * v \
+            + (mu.y[] / rho[]) * (2 * Wx[] * vxy + Wx[] * Wx[] * vyy \
+                - (Wx[] * uxx + Wx[] * uyy + 2. * Wx[] * Wx[] * uxy \
+                    + Wx[] * Wx[] * Wx[] * uyy));
+    }
+
+    // x acceleration
+    foreach_face(x) {
+        double py = (p[0, 1] - p[0, -1]) / (2 * Delta);
+        double uyy = (u.x[0, 1] - u.x[] + u.x[0, -1]) / (Delta * Delta);
+        double uxy = (u.x[1, 1] - u.x[-1, 1] - u.x[1, -1] + u.x[-1, -1]) / (4 * Delta * Delta);
+
+        av.x[] += (1 / rho[]) * (-Wx[] * py + mu.x[] * (2 * Wx[] * uxy + Wx[] * Wx[] * uyy));
+    }
+
+}
+#endif
+
+event refinement (i++) {
+/* Adaptive grid refinement */
+
+    refine((sq(x) + sq(y - membrane_position(x) - drop_centre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+        && (sq(x) + sq(y - membrane_position(x) - drop_centre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+        && (level < refineLevel));
+}
+
+event logOutput (t += 1e-3) {
+    fprintf(stderr, "Level = %d, t = %g, i = %d\n", refineLevel, t, i);
+}
+
+
 event output_data(t = TMAX) {
-    // /* Set c to be f */
-    // foreach() {
-    //     c[] = f[];
-    // }
+    /* Set c to be f */
+    foreach() {
+        c[] = f[];
+    }
 
     /* Determine the curvature and heights */
-    // heights(c, htest);
-    // cstats s = curvature (c, kappa, sigma, add = false);
-    // foreach() { 
-    //     if (c[] == 0 || c[] == 1) {
-    //         kappax[] = nodata;
-    //         kappay[] = nodata;
-    //     } else {
-    //         double kappaxVal = kappa_x(point, htest);
-    //         double kappayVal = kappa_y(point, htest);
+    heights(c, htest);
+    cstats s = curvature (c, kappa, 1. / WEBER, add = false);
+    foreach() { 
+        if (c[] == 0 || c[] == 1) {
+            kappax[] = nodata;
+            kappay[] = nodata;
+        } else {
+            double kappaxVal = kappa_x(point, htest);
+            double kappayVal = kappa_y(point, htest);
 
-    //         if (fabs(kappaxVal) > 1e3) {
-    //             kappax[] = nodata;
-    //         } else {
-    //             kappax[] = sigma * fabs(kappaxVal);
-    //         }
+            if (fabs(kappaxVal) > 1e3) {
+                kappax[] = nodata;
+            } else {
+                kappax[] = fabs(kappaxVal) / WEBER;
+            }
 
-    //         if (fabs(kappayVal) > 1e3) {
-    //             kappay[] = nodata;
-    //         } else {
-    //             kappay[] = sigma * fabs(kappayVal);
-    //         }
-    //     }
-    // }
+            if (fabs(kappayVal) > 1e3) {
+                kappay[] = nodata;
+            } else {
+                kappay[] = fabs(kappayVal) / WEBER;
+            }
+        }
+    }
 
     /* Output gfs and curvature files */
     char gfs_filename[80];
