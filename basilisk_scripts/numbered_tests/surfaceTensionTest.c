@@ -3,7 +3,9 @@
     without AMR (adaptive mesh refinement), without parallelisation
 */
 
-#define MOVING 1
+#define MOVING 1 // Moving frame adjustment
+#define AMR 0 // Adaptive mesh refinement
+#define WALL 0 // Droplet along the wall
 
 #include <vofi.h>
 #include "test_parameters.h" // Includes all defined parameters
@@ -69,6 +71,25 @@ double membrane_second_derivative(double x) {
     }
 }
 
+double x_derivative(Point point, scalar q) {
+    return (q[1, 0] - q[-1, 0]) / (2. * Delta);
+}
+
+double y_derivative(Point point, scalar q) {
+    return (q[0, 1] - q[0, -1]) / (2. * Delta);
+}
+
+double xx_derivative(Point point, scalar q) {
+    return (q[1, 0] - 2 * q[] + q[-1, 0]) / (Delta * Delta);
+}
+
+double yy_derivative(Point point, scalar q) {
+    return (q[0, 1] - 2 * q[] + q[0, -1]) / (Delta * Delta);
+}
+
+double xy_derivative(Point point, scalar q) {
+    return (q[1, 1] - q[-1, 1] - q[1, -1] + q[-1, -1]) / (4. * Delta * Delta);
+}
 
 static double droplet_phi (creal xy[2]) {
 /* Level-set function for the initial position of the droplet, where xy is an 
@@ -90,7 +111,12 @@ static void vofi (scalar c, int levelmax) {
 
 int main() {
 
-    x_drop_centre = 0.25 * BOX_WIDTH;
+    #if WALL
+        x_drop_centre = 0.0 * BOX_WIDTH;
+    #else
+        x_drop_centre = 0.25 * BOX_WIDTH;
+    #endif
+
     y_drop_centre = 0.25 * BOX_WIDTH;
 
     /* Determine physical constants */
@@ -107,7 +133,12 @@ int main() {
     mu2 = mu1 * MU_R; // Viscosity of air phase
     f.sigma = 1. / WEBER; // Surface tension at interface
 
-    init_grid(1 << MAXLEVEL); // Create grid according to the minimum level
+    #if AMR
+        init_grid(1 << MINLEVEL); // Create grid according to the minimum level
+    #else
+        init_grid(1 << MAXLEVEL);
+    #endif 
+
     size(BOX_WIDTH); // Size of the domain
 
     // c.refine = c.prolongation = fraction_refine;
@@ -138,6 +169,12 @@ event init (t = 0) {
         refine (f[] > 0. && f[] < 1. && level < l);
         vofi (f, l);
     }
+
+    #if AMR
+    refine((sq(x - x_drop_centre) + sq(y - membrane_position(x) - y_drop_centre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+        && (sq(x - x_drop_centre) + sq(y - membrane_position(x) - y_drop_centre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+        && (level < MAXLEVEL));
+    #endif
     
     /* Set fields for membrane position */
     foreach() { 
@@ -156,33 +193,60 @@ event accAdjustment(i++) {
     
     // y acceleration
     foreach_face(y) {
-        double v = uf.y[];
+        
         double ut = av.x[];
-        double ux = (uf.x[1, 0] - uf.x[-1, 0]) / (2. * Delta);
-        double uy = (uf.x[0, 1] - uf.x[0, -1]) / (2. * Delta);
-        double uxx = (uf.x[1, 0] - uf.x[] + uf.x[-1, 0]) / (Delta * Delta);
-        double uyy = (uf.x[0, 1] - uf.x[] + uf.x[0, -1]) / (Delta * Delta);
-        double uxy = (uf.x[1, 1] - uf.x[-1, 1] - uf.x[1, -1] + uf.x[-1, -1]) / (4. * Delta * Delta);
-        double vxy = (uf.y[1, 1] - uf.y[-1, 1] - uf.y[1, -1] + uf.y[-1, -1]) / (4. * Delta * Delta);
-        double vyy = (uf.y[0, 1] - uf.y[] + uf.y[0, -1]) / (Delta * Delta);
+
+        double ux = x_derivative(point, uf.x);
+        double uy = y_derivative(point, uf.x);
+        double uxx = xx_derivative(point, uf.x);
+        double uyy = yy_derivative(point, uf.x);
+        double uxy = xy_derivative(point, uf.x);
+
+        double v = uf.y[];
+        double vy = y_derivative(point, uf.y);
+        double vyy = yy_derivative(point, uf.y);
+        double vxy = xy_derivative(point, uf.y);
 
         double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
 
-        av.y[] += Wxf * ut + Wxf * ux * u.x[] + Wxf * uy * v \
-            + (mu.y[] / rho[]) * (2. * Wxf * vxy + Wxf * Wxf * vyy \
-                - (Wxf * uxx + Wxf * uyy + 2. * Wxf * Wxf * uxy \
-                    + Wxf * Wxf * Wxf * uyy));
+        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
+            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
+                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
+                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
+                    + pow(Wxf, 3.) * uyy));
     }
 
     // x acceleration
     foreach_face(x) {
-        double py = (p[0, 1] - p[0, -1]) / (2. * Delta);
-        double uyy = (uf.x[0, 1] - uf.x[] + uf.x[0, -1]) / (Delta * Delta);
-        double uxy = (uf.x[1, 1] - uf.x[-1, 1] - uf.x[1, -1] + uf.x[-1, -1]) / (4. * Delta * Delta);
+        double py = y_derivative(point, p);
+        
+        double uy = y_derivative(point, uf.x);
+        double uyy = yy_derivative(point, uf.x);
+        double uxy = xy_derivative(point, uf.x);
 
         double Wxf = interpolate(Wx, x, y);
-        av.x[] += (1. / rho[]) * (-Wxf * py + mu.x[] * (2. * Wxf * uxy + Wxf * Wxf * uyy));
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.x[] += (1. / rho[]) * (-Wxf * py \
+            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
     }
+
+}
+#endif
+
+#if AMR
+event refinement (i++) {
+/* Adaptive grid refinement */
+
+    // Adapts with respect to velocities and volume fraction 
+    // adapt_wavelet ({u.x, u.y, f}, (double[]){1e-3, 1e-3, 1e-3},
+    //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
+
+    refine((sq(x - x_drop_centre) + sq(y - membrane_position(x) - y_drop_centre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+            && (sq(x - x_drop_centre) + sq(y - membrane_position(x) - y_drop_centre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+            && (level < MAXLEVEL));
+
 
 }
 #endif
