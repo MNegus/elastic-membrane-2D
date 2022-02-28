@@ -3,7 +3,7 @@ Header file for the parameters to feed into the simulations for droplet impact
 */
 
 /* Dimensional fluid properties */
-const double R = 1.0e-4; // Radius of droplet (metres)
+const double R = 1.0e-5; // Radius of droplet (metres)
 const double V = 5.0; // Velocity of droplet (metres per second)
 const double RHO_L = 998.0; // Density of liquid (kilograms per metre cubed)
 const double RHO_G = 1.23; // Density of gas (kilograms per metre cubed)
@@ -26,7 +26,7 @@ const int STATIONARY = 1; // Set to 1 if enforcing membrane to be stationary
 
 /* Computational constants */
 const int MINLEVEL = 5; // Minimum refinement level 
-const int MAXLEVEL = 10; // Maximum refinement level
+const int MAXLEVEL = 8; // Maximum refinement level
 const double BOX_WIDTH = 6.0; // Width of the computational box
 const double MEMBRANE_RADIUS = 1.25; // Width of the membrane
 const double GFS_OUTPUT_TIMESTEP = 1e-2; // Time between gfs outputs
