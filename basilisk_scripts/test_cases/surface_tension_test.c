@@ -54,8 +54,7 @@ scalar origf[];
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
     if (x <= MEMBRANE_RADIUS) {
-        // return mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
-        return mag * x;
+        return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
     } else {
         return 0;
     }
@@ -64,9 +63,7 @@ double membrane_position(double x) {
 double membrane_first_derivative(double x) {
 /* Continuous function for the first derivative of the membrane position */
     if (x <= MEMBRANE_RADIUS) {
-        // return -mag * (pi / (2 * MEMBRANE_RADIUS)) \
-        //     * sin(pi * x / (2 * MEMBRANE_RADIUS));
-        return mag;
+        return mag * (-2 * x / sq(MEMBRANE_RADIUS));
     } else {
         return 0;
     }
@@ -75,12 +72,30 @@ double membrane_first_derivative(double x) {
 double membrane_second_derivative(double x) {
 /* Continuous function for the second derivative of the membrane position */
     if (x <= MEMBRANE_RADIUS) {
-        // return -mag * pow(pi / (2 * MEMBRANE_RADIUS), 2) \
-        //     * cos(pi * x / (2 * MEMBRANE_RADIUS));
-        return 0;
+        return mag * (-2 / sq(MEMBRANE_RADIUS));
     } else {
         return 0;
     }
+}
+
+double x_derivative(Point point, scalar q) {
+    return (q[1, 0] - q[-1, 0]) / (2. * Delta);
+}
+
+double y_derivative(Point point, scalar q) {
+    return (q[0, 1] - q[0, -1]) / (2. * Delta);
+}
+
+double xx_derivative(Point point, scalar q) {
+    return (q[1, 0] - 2 * q[] + q[-1, 0]) / (Delta * Delta);
+}
+
+double yy_derivative(Point point, scalar q) {
+    return (q[0, 1] - 2 * q[] + q[0, -1]) / (Delta * Delta);
+}
+
+double xy_derivative(Point point, scalar q) {
+    return (q[1, 1] - q[-1, 1] - q[1, -1] + q[-1, -1]) / (4. * Delta * Delta);
 }
 
 
@@ -186,32 +201,43 @@ event accAdjustment(i++) {
     
     // y acceleration
     foreach_face(y) {
-        double v = uf.y[];
+        
         double ut = av.x[];
-        double ux = (uf.x[1, 0] - uf.x[-1, 0]) / (2. * Delta);
-        double uy = (uf.x[0, 1] - uf.x[0, -1]) / (2. * Delta);
-        double uxx = (uf.x[1, 0] - uf.x[] + uf.x[-1, 0]) / (Delta * Delta);
-        double uyy = (uf.x[0, 1] - uf.x[] + uf.x[0, -1]) / (Delta * Delta);
-        double uxy = (uf.x[1, 1] - uf.x[-1, 1] - uf.x[1, -1] + uf.x[-1, -1]) / (4. * Delta * Delta);
-        double vxy = (uf.y[1, 1] - uf.y[-1, 1] - uf.y[1, -1] + uf.y[-1, -1]) / (4. * Delta * Delta);
-        double vyy = (uf.y[0, 1] - uf.y[] + uf.y[0, -1]) / (Delta * Delta);
+
+        double ux = x_derivative(point, uf.x);
+        double uy = y_derivative(point, uf.x);
+        double uxx = xx_derivative(point, uf.x);
+        double uyy = yy_derivative(point, uf.x);
+        double uxy = xy_derivative(point, uf.x);
+
+        double v = uf.y[];
+        double vy = y_derivative(point, uf.y);
+        double vyy = yy_derivative(point, uf.y);
+        double vxy = xy_derivative(point, uf.y);
 
         double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
 
-        av.y[] += Wxf * ut + Wxf * ux * u.x[] + Wxf * uy * v \
-            + (mu.y[] / rho[]) * (2. * Wxf * vxy + Wxf * Wxf * vyy \
-                - (Wxf * uxx + Wxf * uyy + 2. * Wxf * Wxf * uxy \
-                    + Wxf * Wxf * Wxf * uyy));
+        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
+            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
+                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
+                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
+                    + pow(Wxf, 3.) * uyy));
     }
 
     // x acceleration
     foreach_face(x) {
-        double py = (p[0, 1] - p[0, -1]) / (2. * Delta);
-        double uyy = (uf.x[0, 1] - uf.x[] + uf.x[0, -1]) / (Delta * Delta);
-        double uxy = (uf.x[1, 1] - uf.x[-1, 1] - uf.x[1, -1] + uf.x[-1, -1]) / (4. * Delta * Delta);
+        double py = y_derivative(point, p);
+        
+        double uy = y_derivative(point, uf.x);
+        double uyy = yy_derivative(point, uf.x);
+        double uxy = xy_derivative(point, uf.x);
 
         double Wxf = interpolate(Wx, x, y);
-        av.x[] += (1. / rho[]) * (-Wxf * py + mu.x[] * (2. * Wxf * uxy + Wxf * Wxf * uyy));
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.x[] += (1. / rho[]) * (-Wxf * py \
+            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
     }
 
 }
