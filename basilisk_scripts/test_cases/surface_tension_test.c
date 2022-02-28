@@ -44,7 +44,7 @@ u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
 uf.n[bottom] = dirichlet(0.);
 uf.t[bottom] = dirichlet(0.);
 
-double TMAX = 0.5;
+double TMAX = 1.0;
 
 vector htest[];
 scalar c[];
@@ -186,29 +186,32 @@ event accAdjustment(i++) {
     
     // y acceleration
     foreach_face(y) {
-        double v = u.y[];
+        double v = uf.y[];
         double ut = av.x[];
-        double ux = (u.x[1, 0] - u.x[-1, 0]) / (2 * Delta);
-        double uy = (u.x[0, 1] - u.x[0, -1]) / (2 * Delta);
-        double uxx = (u.x[1, 0] - u.x[] + u.x[-1, 0]) / (Delta * Delta);
-        double uyy = (u.x[0, 1] - u.x[] + u.x[0, -1]) / (Delta * Delta);
-        double uxy = (u.x[1, 1] - u.x[-1, 1] - u.x[1, -1] + u.x[-1, -1]) / (4 * Delta * Delta);
-        double vxy = (u.y[1, 1] - u.y[-1, 1] - u.y[1, -1] + u.y[-1, -1]) / (4 * Delta * Delta);
-        double vyy = (u.y[0, 1] - u.y[] + u.y[0, -1]) / (Delta * Delta);
+        double ux = (uf.x[1, 0] - uf.x[-1, 0]) / (2. * Delta);
+        double uy = (uf.x[0, 1] - uf.x[0, -1]) / (2. * Delta);
+        double uxx = (uf.x[1, 0] - uf.x[] + uf.x[-1, 0]) / (Delta * Delta);
+        double uyy = (uf.x[0, 1] - uf.x[] + uf.x[0, -1]) / (Delta * Delta);
+        double uxy = (uf.x[1, 1] - uf.x[-1, 1] - uf.x[1, -1] + uf.x[-1, -1]) / (4. * Delta * Delta);
+        double vxy = (uf.y[1, 1] - uf.y[-1, 1] - uf.y[1, -1] + uf.y[-1, -1]) / (4. * Delta * Delta);
+        double vyy = (uf.y[0, 1] - uf.y[] + uf.y[0, -1]) / (Delta * Delta);
 
-        av.y[] += Wx[] * ut + Wx[] * ux * u.x[] + Wx[] * uy * v \
-            + (mu.y[] / rho[]) * (2 * Wx[] * vxy + Wx[] * Wx[] * vyy \
-                - (Wx[] * uxx + Wx[] * uyy + 2. * Wx[] * Wx[] * uxy \
-                    + Wx[] * Wx[] * Wx[] * uyy));
+        double Wxf = interpolate(Wx, x, y);
+
+        av.y[] += Wxf * ut + Wxf * ux * u.x[] + Wxf * uy * v \
+            + (mu.y[] / rho[]) * (2. * Wxf * vxy + Wxf * Wxf * vyy \
+                - (Wxf * uxx + Wxf * uyy + 2. * Wxf * Wxf * uxy \
+                    + Wxf * Wxf * Wxf * uyy));
     }
 
     // x acceleration
     foreach_face(x) {
-        double py = (p[0, 1] - p[0, -1]) / (2 * Delta);
-        double uyy = (u.x[0, 1] - u.x[] + u.x[0, -1]) / (Delta * Delta);
-        double uxy = (u.x[1, 1] - u.x[-1, 1] - u.x[1, -1] + u.x[-1, -1]) / (4 * Delta * Delta);
+        double py = (p[0, 1] - p[0, -1]) / (2. * Delta);
+        double uyy = (uf.x[0, 1] - uf.x[] + uf.x[0, -1]) / (Delta * Delta);
+        double uxy = (uf.x[1, 1] - uf.x[-1, 1] - uf.x[1, -1] + uf.x[-1, -1]) / (4. * Delta * Delta);
 
-        av.x[] += (1 / rho[]) * (-Wx[] * py + mu.x[] * (2 * Wx[] * uxy + Wx[] * Wx[] * uyy));
+        double Wxf = interpolate(Wx, x, y);
+        av.x[] += (1. / rho[]) * (-Wxf * py + mu.x[] * (2. * Wxf * uxy + Wxf * Wxf * uyy));
     }
 
 }
@@ -222,12 +225,12 @@ event refinement (i++) {
         && (level < refineLevel));
 }
 
-event logOutput (t += 1e-3) {
+event logOutput (i++) {
     fprintf(stderr, "Level = %d, t = %g, i = %d\n", refineLevel, t, i);
 }
 
 
-event output_data(t = TMAX) {
+event output_data(t += TMAX) {
     /* Set c to be f */
     foreach() {
         c[] = f[];
@@ -260,7 +263,7 @@ event output_data(t = TMAX) {
 
     /* Output gfs and curvature files */
     char gfs_filename[80];
-    sprintf(gfs_filename, "gfs_output_%d.gfs", refineLevel);
+    sprintf(gfs_filename, "gfs_output_%d.gfs", i);
     output_gfs(file = gfs_filename);
 
 
