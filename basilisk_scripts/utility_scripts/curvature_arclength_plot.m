@@ -24,7 +24,7 @@ WxxExact = @(X) 2 * mag * ones(size(X));
 
 
 % Load in output file
-outputFilename = "refinement_data_curved/interface_13.txt";
+outputFilename = "interface_0.txt";
 A = readmatrix(outputFilename);
 
 % Set constants related to data size
@@ -87,10 +87,10 @@ for k = 2 : noSegments
 %     
     
     % If minVal is larger than tol, then quit
-    if (minVal > tol)
-        disp("minVal = " + minVal);
-        error("minVal is too large");
-    end
+%     if (minVal > tol)
+%         disp("minVal = " + minVal);
+%         error("minVal is too large");
+%     end
     
     % Copy the row over to B and replace the row in A
     B(k, :) = A(idx, :);
@@ -309,7 +309,7 @@ legend("kappa", "interpreter", "latex", "Fontsize", 15);
 xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
 ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
 set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-ylim([1.997, 2.003]);
+ylim([0.29215, 0.29235]);
 title("Comparison of curvature", "interpreter", "latex", "Fontsize", 18);
 
 subplot(2,1,2); 
@@ -321,7 +321,7 @@ legend(["kappa\_x", "kappa\_y"], "interpreter", "latex", "Fontsize", 15);
 xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
 ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
 set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-ylim([1.997, 2.003]);
+ylim([0.29215, 0.29235]);
 
 
 set(gcf, 'position', [200 200 1200 800]);
@@ -429,76 +429,76 @@ savefig(gcf, "curvature_figures/memrbane_second_derivative.fig");
 
 %%
 % Compare kappax to its components
-kappax_cellCentred = 2 * abs((hyy + hy.^3 .* WxxExact(xCellCentres)) ./ ((1 - WxExact(xCellCentres) .* hy).^2 + hy.^2).^(3/2));
-% kappax_cellCentred(kappax_cellCentred == 0) = nan;
-kappax_cellCentred(kappa == kappay) = nan;
-
-kappax_lineCentred = 2 * abs((hyy + hy.^3 .* WxxExact(xLineCentres)) ./ ((1 - WxExact(xLineCentres) .* hy).^2 + hy.^2).^(3/2));
-% kappax_lineCentred(kappax_lineCentred == 0) = nan;
-kappax_lineCentred(kappa == kappay) = nan;
-
-
-
-close(figure(6));
-figure(6)
-hold on;
-scatter(arcLengths, kappax_cellCentred);
-scatter(arcLengths, kappax_lineCentred);
-% scatter(arcLengths, kappax_manual);
-grid on
-legend(["kappa (Cell centred)", "kappa (Line centred)"], ...
-    "interpreter", "latex", "Fontsize", 15, 'location', 'northeast');
-xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
-ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
-set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
-set(gcf, 'position', [200 200 800 600]);
-
-% title("Second derivative of membrane position", "interpreter", "latex", "Fontsize", 18);
-exportgraphics(gcf, "curvature_figures/cell_vs_line_centred.png");
-savefig(gcf, "curvature_figures/cell_vs_line_centred.fig");
+% kappax_cellCentred = 2 * abs((hyy + hy.^3 .* WxxExact(xCellCentres)) ./ ((1 - WxExact(xCellCentres) .* hy).^2 + hy.^2).^(3/2));
+% % kappax_cellCentred(kappax_cellCentred == 0) = nan;
+% kappax_cellCentred(kappa == kappay) = nan;
+% 
+% kappax_lineCentred = 2 * abs((hyy + hy.^3 .* WxxExact(xLineCentres)) ./ ((1 - WxExact(xLineCentres) .* hy).^2 + hy.^2).^(3/2));
+% % kappax_lineCentred(kappax_lineCentred == 0) = nan;
+% kappax_lineCentred(kappa == kappay) = nan;
+% 
+% 
+% 
+% close(figure(6));
+% figure(6)
+% hold on;
+% scatter(arcLengths, kappax_cellCentred);
+% scatter(arcLengths, kappax_lineCentred);
+% % scatter(arcLengths, kappax_manual);
+% grid on
+% legend(["kappa (Cell centred)", "kappa (Line centred)"], ...
+%     "interpreter", "latex", "Fontsize", 15, 'location', 'northeast');
+% xlabel("Arc length", "interpreter", "latex", "Fontsize", 18);
+% ylabel("Curvature", "interpreter", "latex", "Fontsize", 18);
+% set(gca, "ticklabelinterpreter", "latex", "Fontsize", 15);
+% set(gcf, 'position', [200 200 800 600]);
+% 
+% % title("Second derivative of membrane position", "interpreter", "latex", "Fontsize", 18);
+% exportgraphics(gcf, "curvature_figures/cell_vs_line_centred.png");
+% savefig(gcf, "curvature_figures/cell_vs_line_centred.fig");
 
 %% 
-close all;
-figure(45);
-hold on;
-originalTerm = hyy;
-originalTerm(kappa == kappay) = nan;
-adjustedTerm = hy.^3 .* Wxx;
-adjustedTerm(kappa == kappay) = nan;
-
-% scatter(arcLengths, originalTerm);
-% scatter(arcLengths, adjustedTerm);
-
-numerator = hyy + hy.^3 .* Wxx;
-numerator(kappa == kappay) = nan;
-
-denominator = ((1 - Wx .* hy).^2 + hy.^2).^(3/2);
-denominator(kappa == kappay) = nan;
-
-fullsol = numerator ./ denominator;
-fullsol(kappa == kappay) = nan;
-
-% scatter(arcLengths, numerator);
-% scatter(arcLengths, denominator);
-scatter(arcLengths, numerator + denominator);
-
-%% L2 norm error for kappax
-% Determines the L2-norm error for the kappax calulcations, given that it
-% should be 2 everywhere
-kappax_cellCentred_L2Norm = sqrt(sum((kappax_cellCentred - 2).^2, 'omitnan'))
-kappax_lineCentred_L2Norm = sqrt(sum((kappax_lineCentred - 2).^2, 'omitnan'))
-
-
-%%
-% Compare kappay to its components
-% close(figure(7));
-% figure(7)
+% close all;
+% figure(45);
 % hold on;
-% scatter(arcLengths, kappay);
-% % scatter(arcLengths, Wx);
-% % scatter(arcLengths, Wxx);
-% scatter(arcLengths, hx);
-% % scatter(arcLengths, hxx);
-% % scatter(arcLengths, kappax_manual);
-% legend(["kappay", "Wx", "Wxx", "hx", "hxx"]);
-
+% originalTerm = hyy;
+% originalTerm(kappa == kappay) = nan;
+% adjustedTerm = hy.^3 .* Wxx;
+% adjustedTerm(kappa == kappay) = nan;
+% 
+% % scatter(arcLengths, originalTerm);
+% % scatter(arcLengths, adjustedTerm);
+% 
+% numerator = hyy + hy.^3 .* Wxx;
+% numerator(kappa == kappay) = nan;
+% 
+% denominator = ((1 - Wx .* hy).^2 + hy.^2).^(3/2);
+% denominator(kappa == kappay) = nan;
+% 
+% fullsol = numerator ./ denominator;
+% fullsol(kappa == kappay) = nan;
+% 
+% % scatter(arcLengths, numerator);
+% % scatter(arcLengths, denominator);
+% scatter(arcLengths, numerator + denominator);
+% 
+% %% L2 norm error for kappax
+% % Determines the L2-norm error for the kappax calulcations, given that it
+% % should be 2 everywhere
+% kappax_cellCentred_L2Norm = sqrt(sum((kappax_cellCentred - 2).^2, 'omitnan'))
+% kappax_lineCentred_L2Norm = sqrt(sum((kappax_lineCentred - 2).^2, 'omitnan'))
+% 
+% 
+% %%
+% % Compare kappay to its components
+% % close(figure(7));
+% % figure(7)
+% % hold on;
+% % scatter(arcLengths, kappay);
+% % % scatter(arcLengths, Wx);
+% % % scatter(arcLengths, Wxx);
+% % scatter(arcLengths, hx);
+% % % scatter(arcLengths, hxx);
+% % % scatter(arcLengths, kappax_manual);
+% % legend(["kappay", "Wx", "Wxx", "hx", "hxx"]);
+% 
