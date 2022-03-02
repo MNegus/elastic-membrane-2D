@@ -1,10 +1,10 @@
-/* test_I1.c  
+/* surfaceTensionTest.c
     Membrane at the bottom, gravity pointing down, droplet center at x=0, y>0, 
     without AMR (adaptive mesh refinement), without parallelisation
 */
 
 #define MOVING 1 // Moving frame adjustment
-#define AMR 0 // Adaptive mesh refinement
+#define AMR 1 // Adaptive mesh refinement
 #define WALL 0 // Droplet along the wall
 
 #include <vofi.h>
@@ -16,11 +16,14 @@ scalar W[], Wx[], Wxx[];
 #include "two-phase.h"
 #include "tension.h"
 
-double mag = 1.0;
+face vector av; // Acceleration at each face
+
+double mag;
 int gfs_output_no = 0;
 double x_drop_centre;
 double y_drop_centre;
-double DROP_REFINED_WIDTH = 0.05;
+double MEMBRANE_RADIUS;
+double DROP_REFINED_WIDTH = 0.02;
 double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
 FILE * fp_stats; 
@@ -32,8 +35,10 @@ double FROUDE; // Froude number of liquid
 double RHO_R; // Density ratio
 double MU_R; // Viscosity ratio
 
-// Symmetry on left boundary
+// Symmetry on left boundary (only on wall case)
+#if WALL
 u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
+#endif
 
 // Conditions on surface
 uf.n[bottom] = dirichlet(0.);
@@ -43,6 +48,7 @@ vector htest[];
 scalar c[];
 scalar kappa[], kappax[], kappay[];
 scalar origf[];
+scalar avX[], avY[];
 
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
@@ -112,12 +118,18 @@ static void vofi (scalar c, int levelmax) {
 int main() {
 
     #if WALL
-        x_drop_centre = 0.0 * BOX_WIDTH;
+        x_drop_centre = 0.;
+        y_drop_centre = 1.5;
+        MEMBRANE_RADIUS = 1.5;
+        mag = 2.;
     #else
-        x_drop_centre = 0.25 * BOX_WIDTH;
+        x_drop_centre = 3.;
+        y_drop_centre = 1.5;
+        MEMBRANE_RADIUS = 5.;
+        mag = 3.;
     #endif
 
-    y_drop_centre = 0.25 * BOX_WIDTH;
+    a = av;
 
     /* Determine physical constants */
     REYNOLDS = RHO_L * V * R / MU_L; // Reynolds number of liquid
@@ -187,54 +199,6 @@ event init (t = 0) {
 
 }
 
-#if MOVING
-event accAdjustment(i++) {
-    face vector av = a; // Acceleration at each face
-    
-    // y acceleration
-    foreach_face(y) {
-        
-        double ut = av.x[];
-
-        double ux = x_derivative(point, uf.x);
-        double uy = y_derivative(point, uf.x);
-        double uxx = xx_derivative(point, uf.x);
-        double uyy = yy_derivative(point, uf.x);
-        double uxy = xy_derivative(point, uf.x);
-
-        double v = uf.y[];
-        double vy = y_derivative(point, uf.y);
-        double vyy = yy_derivative(point, uf.y);
-        double vxy = xy_derivative(point, uf.y);
-
-        double Wxf = interpolate(Wx, x, y);
-        double Wxxf = interpolate(Wxx, x, y);
-
-        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
-            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
-                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
-                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
-                    + pow(Wxf, 3.) * uyy));
-    }
-
-    // x acceleration
-    foreach_face(x) {
-        double py = y_derivative(point, p);
-        
-        double uy = y_derivative(point, uf.x);
-        double uyy = yy_derivative(point, uf.x);
-        double uxy = xy_derivative(point, uf.x);
-
-        double Wxf = interpolate(Wx, x, y);
-        double Wxxf = interpolate(Wxx, x, y);
-
-        av.x[] += (1. / rho[]) * (-Wxf * py \
-            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
-    }
-
-}
-#endif
-
 #if AMR
 event refinement (i++) {
 /* Adaptive grid refinement */
@@ -250,6 +214,58 @@ event refinement (i++) {
 
 }
 #endif
+
+
+#if MOVING
+event accAdjustment(i++) {
+    
+    // y acceleration
+    foreach_face(y) {
+        
+        double ut = av.x[];
+
+        double ux = x_derivative(point, u.x);
+        double uy = y_derivative(point, u.x);
+        double uxx = xx_derivative(point, u.x);
+        double uyy = yy_derivative(point, u.x);
+        double uxy = xy_derivative(point, u.x);
+
+        double v = u.y[];
+        double vy = y_derivative(point, u.y);
+        double vyy = yy_derivative(point, u.y);
+        double vxy = xy_derivative(point, u.y);
+
+        double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
+            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
+                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
+                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
+                    + pow(Wxf, 3.) * uyy));
+        avY[] = av.y[];
+    }
+
+    // x acceleration
+    foreach_face(x) {
+        double py = y_derivative(point, p);
+        
+        double uy = y_derivative(point, u.x);
+        double uyy = yy_derivative(point, u.x);
+        double uxy = xy_derivative(point, u.x);
+
+        double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.x[] += (1. / rho[]) * (-Wxf * py \
+            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
+
+        avX[] = av.x[];
+    }
+
+}
+#endif
+
 
 event logOutput (t += 1e-3) {
     fprintf(stderr, "t = %.5f, i = %d, v = %.8f\n", t, i, 2 * pi * statsf(f).sum);
@@ -269,7 +285,7 @@ event logstats (t += 1e-3) {
 }
 
 
-event output_data(t += 1e-1) {
+event output_data(t += 1e-3) {
     /* Set c to be f */
     foreach() {
         c[] = f[];
