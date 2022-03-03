@@ -38,11 +38,14 @@ double MU_R; // Viscosity ratio
 // Symmetry on left boundary (only on wall case)
 #if WALL
 u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
+#else
+u.n[left] = neumann(0.); // Neumann condition if the droplet is not at the wall
 #endif
 
-// Conditions on surface
-uf.n[bottom] = dirichlet(0.);
-uf.t[bottom] = dirichlet(0.);
+// Zero Neumann conditions at far-field boundaries
+u.n[bottom] = neumann(0.);
+u.n[top] = neumann(0.);
+u.n[right] = neumann(0.);
 
 vector htest[];
 scalar c[];
