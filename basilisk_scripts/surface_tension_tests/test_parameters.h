@@ -3,7 +3,7 @@ Header file for the parameters to feed into the simulations for droplet impact
 */
 
 /* Dimensional fluid properties */
-const double R = 1.0e-5; // Radius of droplet (metres)
+const double R = 1.0e-3; // Radius of droplet (metres)
 const double V = 5.0; // Velocity of droplet (metres per second)
 const double RHO_L = 998.0; // Density of liquid (kilograms per metre cubed)
 const double RHO_G = 1.23; // Density of gas (kilograms per metre cubed)
@@ -18,7 +18,7 @@ const double INITIAL_DROP_HEIGHT = 0.125; // Initial gap between drop and plate
 
 /* Computational constants */
 const int MINLEVEL = 5; // Minimum refinement level 
-const int MAXLEVEL = 10; // Maximum refinement level
+const int MAXLEVEL = 7; // Maximum refinement level
 const double BOX_WIDTH = 6.0; // Width of the computational box
 const double GFS_OUTPUT_TIMESTEP = 1e-2; // Time between gfs outputs
 const double PLATE_OUTPUT_TIMESTEP = 1e-4; // Time between plate outputs
