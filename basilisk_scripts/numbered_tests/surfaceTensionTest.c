@@ -3,9 +3,9 @@
     without AMR (adaptive mesh refinement), without parallelisation
 */
 
-#define MOVING 1 // Moving frame adjustment
+#define MOVING 0 // Moving frame adjustment
 #define AMR 1 // Adaptive mesh refinement
-#define WALL 0 // Droplet along the wall
+#define WALL 1 // Droplet along the wall
 
 #include <vofi.h>
 #include "test_parameters.h" // Includes all defined parameters
@@ -52,29 +52,44 @@ scalar avX[], avY[];
 
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
+    #if MOVING
     if (x <= MEMBRANE_RADIUS) {
-        return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
+        // return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
+        return mag * x * x;
     } else {
-        return 0;
+        return 0.;
     }
+    #else
+    return 0.;
+    #endif
 }
 
 double membrane_first_derivative(double x) {
 /* Continuous function for the first derivative of the membrane position */
+    #if MOVING
     if (x <= MEMBRANE_RADIUS) {
-        return mag * (-2 * x / sq(MEMBRANE_RADIUS));
+        // return mag * (-2 * x / sq(MEMBRANE_RADIUS));
+        return 2 * mag * x;
     } else {
-        return 0;
+        return 0.;
     }
+    #else
+    return 0.;
+    #endif
 }
 
 double membrane_second_derivative(double x) {
 /* Continuous function for the second derivative of the membrane position */
+    #if MOVING
     if (x <= MEMBRANE_RADIUS) {
-        return mag * (-2 / sq(MEMBRANE_RADIUS));
+        // return mag * (-2 / sq(MEMBRANE_RADIUS));
+        return 2 * mag;
     } else {
-        return 0;
+        return 0.;
     }
+    #else
+    return 0.;
+    #endif
 }
 
 double x_derivative(Point point, scalar q) {
@@ -121,7 +136,8 @@ int main() {
         x_drop_centre = 0.;
         y_drop_centre = 1.5;
         MEMBRANE_RADIUS = 1.5;
-        mag = 2.;
+        // mag = 2.;
+        mag = 0.5;
     #else
         x_drop_centre = 3.;
         y_drop_centre = 1.5;
@@ -155,6 +171,12 @@ int main() {
 
     // c.refine = c.prolongation = fraction_refine;
     // c.height = htest;
+    
+    /* Poisson solver constants */
+    DT = 1.0e-4; // Minimum timestep
+    // NITERMIN = 1; // Min number of iterations (default 1)
+    // NITERMAX = 300; // Max number of iterations (default 100)
+    // TOLERANCE = 1e-6; // Possion solver tolerance (default 1e-3)
 
     /* Creates log file */
     FILE *logfile = fopen("log", "w");
@@ -285,11 +307,9 @@ event logstats (t += 1e-3) {
 }
 
 
-event output_data(t += 1e-3) {
+event output_data(t += 1e-2) {
     /* Set c to be f */
-    foreach() {
-        c[] = f[];
-    }
+    scalar c = f;
 
     /* Determine the curvature and heights */
     heights(c, htest);
