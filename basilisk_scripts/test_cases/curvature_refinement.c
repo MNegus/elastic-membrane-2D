@@ -28,6 +28,7 @@ double mag = 0.5;
 int gfs_output_no = 1;
 double drop_centre;
 double DROP_REFINED_WIDTH = 0.01;
+double WEBER;
 
 
 
@@ -36,7 +37,7 @@ double membrane_position(double x) {
 /* Continuous function for the membrane position */
     if (x <= MEMBRANE_RADIUS) {
         // return mag * cos(pi * x / (2 * MEMBRANE_RADIUS));
-        return mag * x;
+        return mag * x * x;
     } else {
         return 0;
     }
@@ -47,7 +48,7 @@ double membrane_first_derivative(double x) {
     if (x <= MEMBRANE_RADIUS) {
         // return -mag * (pi / (2 * MEMBRANE_RADIUS)) \
         //     * sin(pi * x / (2 * MEMBRANE_RADIUS));
-        return mag;
+        return 2 * mag * x;
     } else {
         return 0;
     }
@@ -58,7 +59,7 @@ double membrane_second_derivative(double x) {
     if (x <= MEMBRANE_RADIUS) {
         // return -mag * pow(pi / (2 * MEMBRANE_RADIUS), 2) \
         //     * cos(pi * x / (2 * MEMBRANE_RADIUS));
-        return 0;
+        return 2 * mag;
     } else {
         return 0;
     }
@@ -87,6 +88,7 @@ int main() {
 
     drop_centre = INITIAL_DROP_HEIGHT + DROP_RADIUS;
 
+    WEBER = RHO_L * V * V * R / SIGMA;
 
     for (int refineLevel = MINLEVEL; refineLevel <= MAXLEVEL; refineLevel++) {
         fprintf(stderr, "refineLevel = %d\n", refineLevel);
@@ -117,7 +119,7 @@ int main() {
 
         /* Determine the curvature and heights */
         heights(c, htest);
-        cstats s = curvature (c, kappa, sigma = 2., add = false);
+        cstats s = curvature (c, kappa, sigma = 1. / WEBER, add = false);
         foreach() { 
             if (c[] == 0 || c[] == 1) {
                 kappax[] = nodata;
@@ -129,13 +131,13 @@ int main() {
                 if (fabs(kappaxVal) > 1e3) {
                     kappax[] = nodata;
                 } else {
-                    kappax[] = 2 * fabs(kappaxVal);
+                    kappax[] = fabs(kappaxVal) / WEBER;
                 }
 
                 if (fabs(kappayVal) > 1e3) {
                     kappay[] = nodata;
                 } else {
-                    kappay[] = 2 * fabs(kappayVal);
+                    kappay[] = fabs(kappayVal) / WEBER;
                 }
             }
         }
