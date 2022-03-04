@@ -2,7 +2,7 @@
 Spurious currents test version...? */
 
 #define MOVING 0 // Moving frame adjustment
-#define AMR 0 // Adaptive mesh refinement
+#define AMR 1 // Adaptive mesh refinement
 #define WALL 1 // Droplet along the wall
 
 #define JACOBI 1
@@ -18,28 +18,47 @@ scalar W[], Wx[], Wxx[];
 #include "tension.h"
 
 
-/* Field definitions */
-scalar c[], * interfaces = {c}; // Volume fraction
+/* Physical constants */
+double LAPLACE; // Laplace number
+double MU; // Viscosity 
+double MEMBRANE_RADIUS; // Radius of the membrane
+double mag; //  Magnitude of membrane 
+double DIAMETER; // Diameter of droplet
 
-double DIAMETER;
-double LAPLACE;
-double MU;
-double TMAX;
-double DC = 0.;
-double xCentre = 0.0;
-double yCentre = 3.0;
 
-FILE * fp = NULL;
-
+/* Computational variables */
+double TMAX; // Maximum time to run simulation
 int gfs_output_no = 0; // Tracks how many gfs outputs there have been
+double xCentre; // x position of centre of drop
+double yCentre = 3.0; // y position of centre of drop (in lab frame)
+double DROP_REFINED_WIDTH = 0.02; // Width of refined region around drop
+double start_wall_time; // Time the simulation was started
+double end_wall_time; // Time the simulation finished
+double DC = 0.; // Change in domain tolerance
+
+
+/* Field definitions */
+face vector av; // Acceleration at each face
+vector htest[]; // Height function for droplet interface
+scalar c[], origc[], * interfaces = {c, origc}; // Volume fraction of droplet 
+scalar kappa[], kappax[], kappay[]; // Curvature fields
+scalar avX[], avY[]; // Acceleration in x and y direction
+
+/* File names */
+FILE * fp = NULL; // Output file 
+FILE * fp_stats; // Stats file
 
 /* Boundary conditions */
+#if WALL    
 u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
+#else
+u.n[left] = neumann(0.);
+#endif
 
 // Zero Neumann conditions at far-field boundaries
-u.n[bottom] = dirichlet(0.);
-u.n[top] = dirichlet(0.);
-u.n[right] = dirichlet(0.);
+u.n[bottom] = neumann(0.);
+u.n[top] = neumann(0.);
+u.n[right] = neumann(0.);
 
 
 double membrane_position(double x) {
@@ -74,10 +93,20 @@ int main() {
     TMAX = sq(DIAMETER) / MU;
     
     TOLERANCE = 1e-6;
-    stokes = true;
+    // stokes = true;
     c.sigma = 1;
-    init_grid(1 << MAXLEVEL);
+    #if AMR
+        init_grid(1 << MINLEVEL);
+    #else
+        init_grid(1 << MAXLEVEL);
+    #endif
     size(BOX_WIDTH); // Size of the domain
+
+    #if WALL
+        xCentre = 0.0;
+    #else
+        xCentre = 3.0;
+    #endif
     
 
     run();
@@ -118,6 +147,12 @@ event init (i = 0) {
         refine (c[] > 0. && c[] < 1. && level < l);
         vofi (c, l);
     }
+
+    #if AMR
+    refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+        && (sq(x - xCentre) + sq(y - membrane_position(x) - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+        && (level < MAXLEVEL));
+    #endif
 
   foreach()
     cn[] = c[];
@@ -208,14 +243,20 @@ event gfsview (i += 10) {
 We use an adaptive mesh with a constant (maximum) resolution along the
 interface. */
 
-#if TREE
-// event adapt ( i++) {
-//   adapt_wavelet ({c}, (double[]){0}, maxlevel = MAXLEVEL, minlevel = 0);
+#if AMR
+event refinement (i++) {
+/* Adaptive grid refinement */
 
-//   refine((sq(x) + sq(y - 3.0) < sq(1.5)) \
-//         && (sq(x) + sq(y - 3.0) > sq(0.5)) \
-//         && (level < MAXLEVEL));
-// }
+    // Adapts with respect to velocities and volume fraction 
+    // adapt_wavelet ({u.x, u.y, f}, (double[]){1e-3, 1e-3, 1e-3},
+    //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
+
+    refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+        && (sq(x - xCentre) + sq(y - membrane_position(x) - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+        && (level < MAXLEVEL));
+
+
+}
 #endif
 
 /**
