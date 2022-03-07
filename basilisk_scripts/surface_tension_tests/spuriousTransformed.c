@@ -361,3 +361,53 @@ event refinement (i++) {
 
 }
 #endif
+
+#if MOVING
+event accAdjustment(i++) {
+    
+    // y acceleration
+    foreach_face(y) {
+        
+        double ut = av.x[];
+
+        double ux = x_derivative(point, u.x);
+        double uy = y_derivative(point, u.x);
+        double uxx = xx_derivative(point, u.x);
+        double uyy = yy_derivative(point, u.x);
+        double uxy = xy_derivative(point, u.x);
+
+        double v = u.y[];
+        double vy = y_derivative(point, u.y);
+        double vyy = yy_derivative(point, u.y);
+        double vxy = xy_derivative(point, u.y);
+
+        double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
+            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
+                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
+                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
+                    + pow(Wxf, 3.) * uyy));
+        avY[] = av.y[];
+    }
+
+    // x acceleration
+    foreach_face(x) {
+        double py = y_derivative(point, p);
+        
+        double uy = y_derivative(point, u.x);
+        double uyy = yy_derivative(point, u.x);
+        double uxy = xy_derivative(point, u.x);
+
+        double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.x[] += (1. / rho[]) * (-Wxf * py \
+            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
+
+        avX[] = av.x[];
+    }
+
+}
+#endif
