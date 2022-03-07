@@ -7,6 +7,8 @@
 #define AMR 0 // Adaptive mesh refinement
 #define WALL 1 // Droplet along the wall
 
+#define JACOBI 1
+
 #include <vofi.h>
 #include "test_parameters.h" // Includes all defined parameters
 
@@ -156,6 +158,7 @@ static void vofi (scalar c, int levelmax) {
 
 int main() {
     stokes = true;
+    
     /* Sets quantities depending on if the droplet is at the wall or not */
     #if WALL
         x_drop_centre = 0.;
@@ -214,7 +217,7 @@ int main() {
     run();
 }
 
-event init (t = 0) {
+event init (i = 0) {
 
     // Records the wall time
     start_wall_time = omp_get_wtime();
@@ -315,7 +318,7 @@ event accAdjustment(i++) {
 #endif
 
 
-event logOutput (i++) {
+event logOutput (i++; t <= TMAX) {
     /* Find velocity norm */
     scalar un[];
     foreach()
@@ -338,7 +341,7 @@ event logstats (i++) {
     fflush(fp_stats);
 }
 
-event gfsOutput(i += 10) {
+event gfsOutput(i += 1000) {
     char gfs_filename[80];
     sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
     output_gfs(file = gfs_filename);
@@ -418,7 +421,7 @@ event gfsOutput(i += 10) {
 
 // }
 
-event end (t = TMAX) {
+event end (t = end) {
     end_wall_time = omp_get_wtime(); // Records the time of finish
 
     fprintf(stderr, "Finished after %g seconds\n", \

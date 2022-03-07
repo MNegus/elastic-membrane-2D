@@ -52,7 +52,7 @@ int main() {
   TOLERANCE = 1e-6;
   stokes = true;
   c.sigma = 1;
-  LEVEL = 5;
+  LEVEL = 8;
   N = 1 << LEVEL;
 //   for (LAPLACE = 120; LAPLACE <= 12000; LAPLACE *= 10)
    LAPLACE = 12000;

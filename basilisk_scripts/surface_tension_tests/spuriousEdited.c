@@ -8,7 +8,6 @@ We use the Navier--Stokes solver with VOF interface tracking and
 surface tension. */
 
 #define JACOBI 1
-#define TREE 1
 
 #include "navier-stokes/centered.h"
 #include "vof.h"
@@ -47,13 +46,6 @@ FILE * fp = NULL;
 
 int gfs_output_no = 0; // Tracks how many gfs outputs there have been
 
-/* Boundary conditions */
-u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
-
-// Zero Neumann conditions at far-field boundaries
-u.n[bottom] = dirichlet(0.);
-u.n[top] = dirichlet(0.);
-u.n[right] = dirichlet(0.);
 
 int main() {
   
@@ -64,7 +56,7 @@ int main() {
   TOLERANCE = 1e-6;
   stokes = true;
   c.sigma = 1;
-  LEVEL = 7;
+  LEVEL = 8;
 //   N = 1 << LEVEL;
  init_grid(1 << LEVEL);
  size(6.0); // Size of the domain
@@ -137,12 +129,12 @@ event logfile (i++; t <= TMAX)
     un[] = norm(u);
   fprintf (fp, "%g %g %g\n",
 	   MU*t/sq(DIAMETER), normf(un).max*sqrt(DIAMETER), dc);
-  fprintf (stderr, "%g %g %g\n",
-	   MU*t/sq(DIAMETER), normf(un).max*sqrt(DIAMETER), dc);
+  fprintf (stderr, "%g %g %g %g\n",
+	   t, MU*t/sq(DIAMETER), normf(un).max*sqrt(DIAMETER), dc);
     
 }
 
-event gfsOutput(i += 1000) {
+event gfsOutput(t += 1) {
     char gfs_filename[80];
     sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
     output_gfs(file = gfs_filename);
