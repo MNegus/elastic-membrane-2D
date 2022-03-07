@@ -70,8 +70,80 @@ u.n[bottom] = dirichlet(0.);
 
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
+    #if MOVING
+    if (x <= MEMBRANE_RADIUS) {
+        // return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
+        return mag * x * x;
+    } else {
+        return 0.;
+    }
+    #else
     return 0.;
+    #endif
 }
+}
+
+
+double membrane_first_derivative(double x) {
+/* Continuous function for the first derivative of the membrane position */
+    #if MOVING
+    if (x <= MEMBRANE_RADIUS) {
+        // return mag * (-2 * x / sq(MEMBRANE_RADIUS));
+        return 2 * mag * x;
+    } else {
+        return 0.;
+    }
+    #else
+    return 0.;
+    #endif
+}
+
+
+double membrane_second_derivative(double x) {
+/* Continuous function for the second derivative of the membrane position */
+    #if MOVING
+    if (x <= MEMBRANE_RADIUS) {
+        // return mag * (-2 / sq(MEMBRANE_RADIUS));
+        return 2 * mag;
+    } else {
+        return 0.;
+    }
+    #else
+    return 0.;
+    #endif
+}
+
+
+double x_derivative(Point point, scalar q) {
+/* Centred difference for x derivative */
+    return (q[1, 0] - q[-1, 0]) / (2. * Delta);
+}
+
+
+double y_derivative(Point point, scalar q) {
+/* Centred difference for y derivative */
+    return (q[0, 1] - q[0, -1]) / (2. * Delta);
+}
+
+
+double xx_derivative(Point point, scalar q) {
+/* Second difference for xx derivative */
+    return (q[1, 0] - 2 * q[] + q[-1, 0]) / (Delta * Delta);
+}
+
+
+double yy_derivative(Point point, scalar q) {
+/* Second difference for yy derivative */
+    return (q[0, 1] - 2 * q[] + q[0, -1]) / (Delta * Delta);
+}
+
+
+double xy_derivative(Point point, scalar q) {
+/* Centred difference for xy derivative */
+    return (q[1, 1] - q[-1, 1] - q[1, -1] + q[-1, -1]) / (4. * Delta * Delta);
+}
+
+
 
 static double droplet_phi (creal xy[2]) {
 /* Level-set function for the initial position of the droplet, where xy is an 
