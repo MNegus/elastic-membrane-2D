@@ -1,5 +1,7 @@
-/**
-Spurious currents test version...? */
+/** spuriousTransform.c
+ * A version of the spurious.c test from the Basilisk src, instead testing the 
+ * transformed frame with a membrane. 
+*/
 
 #define MOVING 0 // Moving frame adjustment
 #define AMR 1 // Adaptive mesh refinement
