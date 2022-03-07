@@ -30,15 +30,14 @@ double DIAMETER; // Diameter of droplet
 double TMAX; // Maximum time to run simulation
 int gfs_output_no = 0; // Tracks how many gfs outputs there have been
 double xCentre; // x position of centre of drop
-double yCentre = 3.0; // y position of centre of drop (in lab frame)
+double yCentre; // y position of centre of drop (in lab frame)
 double DROP_REFINED_WIDTH = 0.02; // Width of refined region around drop
 double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
-double DC = 0.; // Change in domain tolerance
+double DC = 1e-12; // Change in domain tolerance
 
 
 /* Field definitions */
-face vector av; // Acceleration at each face
 vector htest[]; // Height function for droplet interface
 scalar c[], origc[], * interfaces = {c, origc}; // Volume fraction of droplet 
 scalar kappa[], kappax[], kappay[]; // Curvature fields
@@ -48,24 +47,29 @@ scalar avX[], avY[]; // Acceleration in x and y direction
 FILE * fp = NULL; // Output file 
 FILE * fp_stats; // Stats file
 
-/* Boundary conditions */
-#if WALL    
-u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
-#else
-u.n[left] = neumann(0.);
-#endif
+/* Boundary conditions (NEUMANN) */
+// #if WALL    
+// u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
+// #else
+// u.n[left] = neumann(0.);
+// #endif
 
-// Zero Neumann conditions at far-field boundaries
-u.n[bottom] = neumann(0.);
-u.n[top] = neumann(0.);
-u.n[right] = neumann(0.);
+// // Zero Neumann conditions at far-field boundaries
+// u.n[bottom] = neumann(0.);
+// u.n[top] = neumann(0.);
+// u.n[right] = neumann(0.);
+
+/* Boundary conditions (DIRICHLET) */
+u.n[left] = dirichlet(0.);
+u.n[right] = dirichlet(0.);
+u.n[top] = dirichlet(0.);
+u.n[bottom] = dirichlet(0.);
 
 
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
     return 0.;
 }
-
 
 static double droplet_phi (creal xy[2]) {
 /* Level-set function for the initial position of the droplet, where xy is an 
@@ -86,15 +90,36 @@ static void vofi (scalar c, int levelmax) {
 
 
 int main() {
-  
+
+    /* Optional: Set stokes = true to just solve the Stokes equation */
+    // stokes = true;  
+
+    /* Sets quantities depending on if the droplet is at the wall or not */
+    #if WALL
+        xCentre = 0.0;
+        yCentre = 3.0;
+        MEMBRANE_RADIUS = 1.5;
+        mag = 0.5;
+    #else
+        xCentre = 3.0;
+        yCentre = 3.0;
+        MEMBRANE_RADIUS = 5.;
+        mag = 3.;
+    #endif
+
+    /* Determine the physical constants */
+    LAPLACE =  2.5 * 12000;
+
+    /* Set dimensionless constants */
+    c.sigma = 1.;
     DIAMETER = 2.0 * DROP_RADIUS;
-    LAPLACE =  2.5 * 1200;
     MU = sqrt(DIAMETER/LAPLACE);
     TMAX = sq(DIAMETER) / MU;
-    
+
+    /* Poisson solver constants */
     TOLERANCE = 1e-6;
-    // stokes = true;
-    c.sigma = 1;
+    
+    /* Set up grid */
     #if AMR
         init_grid(1 << MINLEVEL);
     #else
@@ -102,13 +127,24 @@ int main() {
     #endif
     size(BOX_WIDTH); // Size of the domain
 
-    #if WALL
-        xCentre = 0.0;
-    #else
-        xCentre = 3.0;
-    #endif
-    
+    /* Creates log file */
+    FILE *logfile = fopen("log", "w");
+    fclose(logfile);
 
+    /* Open stats file */
+    char name[200];
+    sprintf(name, "logstats.dat");
+    fp_stats = fopen(name, "w");
+
+    /* Print variables to a file */
+    char varName[80];
+    sprintf(varName, "variables.txt");
+    FILE * varFile = fopen(varName, "w");
+    fprintf(varFile, "%g %g %g %g\n", MU, LAPLACE, DIAMETER, TMAX);
+    fclose(varFile);
+
+
+    /* Runs the simulation */
     run();
 }
 
@@ -120,27 +156,18 @@ scalar cn[];
 
 event init (i = 0) {
 
-  /**
-  We set the constant viscosity field... */
+    /* Set constant viscosity field */
+    const face vector muc[] = {MU,MU};
+    mu = muc;
 
-  const face vector muc[] = {MU,MU};
-  mu = muc;
-
-  /**
-  ... open a new file to store the evolution of the amplitude of
-  spurious currents for the various LAPLACE, LEVEL combinations... */
-
-  char name[80];
-  sprintf (name, "La-%g-%d", LAPLACE, MAXLEVEL);
-  if (fp)
-    fclose (fp);
-  fp = fopen (name, "w");
-
-  /**
-  ... and initialise the shape of the interface and the initial volume
-  fraction field. */
+    /* Open a new file to store the evolution of the amplitude of
+    spurious currents  */
+    char name[80];
+    sprintf (name, "amplitudes_%d.txt", MAXLEVEL);
+    if (fp)
+        fclose (fp);
+    fp = fopen (name, "w");
   
-//   fraction (c, sq(DIAMETER/2) - sq(x) - sq(y - yCentre));
     /* Define the volume fraction and the curvature */
     vofi (c, MINLEVEL);
     for (int l = MINLEVEL + 1; l <= MAXLEVEL; l++) {
@@ -148,46 +175,59 @@ event init (i = 0) {
         vofi (c, l);
     }
 
+    /* If using adaptive refinement, initialise with a region refined close to
+    the droplet interface */
     #if AMR
     refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
         && (sq(x - xCentre) + sq(y - membrane_position(x) - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
         && (level < MAXLEVEL));
     #endif
 
-  foreach()
-    cn[] = c[];
-  boundary ({cn});
+    /* Volume fraction for determining change in c */
+    foreach()
+        cn[] = c[];
+    boundary ({cn});
 }
 
-event logfile (i++; t <= TMAX)
-{
-  /**
-  At every timestep, we check whether the volume fraction field has
-  converged. */
-  
-  double dc = change (c, cn);
-  if (i > 1 && dc < DC)
+
+event logfile (i++; t <= TMAX) {
+    /* At every timestep, we check whether the volume fraction field has
+    converged. */
+    double dc = change (c, cn);
+    if (i > 1 && dc < DC)
     return 1; /* stop */
 
-  /**
-  And we output the evolution of the maximum velocity. */
+    /* Output the evolution of the maximum velocity */
+    scalar un[];
+    foreach()
+        un[] = norm(u);
 
-  scalar un[];
-  foreach()
-    un[] = norm(u);
-  fprintf (fp, "%g %g %g\n",
-	   MU*t/sq(DIAMETER), normf(un).max*sqrt(DIAMETER), dc);
-  fprintf (stderr, "%g %g %g %g\n",
-	   t, MU*t/sq(DIAMETER), normf(un).max*sqrt(DIAMETER), dc);
+    /* Print out to the amplitudes file */
+    fprintf (fp, "%g %g %g %g %.8f\n",
+        t, normf(un).max, normf(un).rms, dc, statsf(c).sum);
+    fprintf (stderr, "%g %g %g %g %.8f\n",
+        t, normf(un).max, normf(un).rms, dc, statsf(c).sum);
     
 }
 
-event gfsOutput(i += 1000) {
+
+event logstats (i++) {
+
+    timing s = timer_timing (perf.gt, i, perf.tnc, NULL);
+ 
+    // i, timestep, no of cells, real time elapsed, cpu time
+    fprintf(fp_stats, "i: %i t: %g dt: %g #Cells: %ld Wall clock time (s): %g CPU time (s): %g \n", i, t, dt, grid->n, perf.t, s.cpu);
+    fflush(fp_stats);
+}
+
+
+event gfsOutput(t += 1) {
     char gfs_filename[80];
     sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
     output_gfs(file = gfs_filename);
     gfs_output_no++;
 }
+
 
 event error (t = end) {
   
@@ -232,21 +272,10 @@ event error (t = end) {
 	   ekmax);
 }
 
-#if 0
-event gfsview (i += 10) {
-  static FILE * fp = popen ("gfsview2D spurious.gfv", "w");
-  output_gfs (fp);
-}
-#endif
-
-/**
-We use an adaptive mesh with a constant (maximum) resolution along the
-interface. */
 
 #if AMR
 event refinement (i++) {
 /* Adaptive grid refinement */
-
     // Adapts with respect to velocities and volume fraction 
     // adapt_wavelet ({u.x, u.y, f}, (double[]){1e-3, 1e-3, 1e-3},
     //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
@@ -258,43 +287,3 @@ event refinement (i++) {
 
 }
 #endif
-
-/**
-## Results
-
-The maximum velocity converges toward machine zero for a wide range of
-Laplace numbers on a timescale comparable to the viscous dissipation
-timescale, as expected.
-
-~~~gnuplot Evolution of the amplitude of the capillary currents $\max(|\mathbf{u}|)(D/\sigma)^{1/2}$ as a function of non-dimensional time $\tau=t\mu/D^2$ for the range of Laplace numbers indicated in the legend.
-set xlabel 't{/Symbol m}/D^2'
-set ylabel 'U(D/{/Symbol s})^{1/2}'
-set logscale y
-plot 'La-120-5' w l t "La=120", 'La-1200-5' w l t "La=1200", \
-  'La-12000-5' w l t "La=12000"
-~~~
-
-The equilibrium shape and curvature converge toward the exact shape
-and curvature at close to second-order rate.
-
-~~~gnuplot Convergence of the error on the equilibrium shape of the droplet with resolution. The diameter is given in number of grid points.
-set xlabel 'D'
-set ylabel 'Shape error'
-set logscale x
-set xtics 2
-set pointsize 1
-plot [5:120]'< sort -n -k1,2 log' u (0.8*2**$1):5 w lp t "RMS", \
-            '< sort -n -k1,2 log' u (0.8*2**$1):6 w lp t "Max", \
-             0.2/(x*x) t "Second order"
-~~~
-
-~~~gnuplot Convergence of the relative error on the equilibrium curvature value with resolution. The diameter is given in number of grid points.
-set ylabel 'Relative curvature error'
-plot [5:120]'< sort -n -k1,2 log' u (0.8*2**$1):($7/2.5) w lp t "Max", \
-             0.6/(x*x) t "Second order"
-~~~
-
-## See also
-
-* [Same test with Gerris](http://gerris.dalembert.upmc.fr/gerris/tests/tests/spurious.html)
-*/
