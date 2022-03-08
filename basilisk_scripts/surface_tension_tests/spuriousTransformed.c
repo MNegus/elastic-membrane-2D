@@ -420,12 +420,12 @@ event output_data(t += 1.0) {
 }
 
 
-event gfsOutput(t += 1.0) {
-    char gfs_filename[80];
-    sprintf(gfs_filename, "gfs_output_%d_%d.gfs", gfs_output_no, refineLevel);
-    output_gfs(file = gfs_filename);
-    gfs_output_no++;
-}
+// event gfsOutput(t += 1.0) {
+//     char gfs_filename[80];
+//     sprintf(gfs_filename, "gfs_output_%d_%d.gfs", gfs_output_no, refineLevel);
+//     output_gfs(file = gfs_filename);
+//     gfs_output_no++;
+// }
 
 
 #if SINGLESTEP
