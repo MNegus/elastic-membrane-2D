@@ -418,50 +418,6 @@ event gfsOutput(t += 1.0) {
 }
 
 
-event error (t = end) {
-  
-  /**
-  At the end of the simulation, we compute the equivalent radius of
-  the droplet. */
-
-  double vol = statsf(c).sum;
-  double radius = sqrt(4.*vol/pi);
-
-  /**
-  We recompute the reference solution. */
-  
-  scalar cref[];
-  fraction (cref, sq(DIAMETER/2) - sq(x) - sq(y));
-  
-  /**
-  And compute the maximum error on the curvature *ekmax*, the norm of
-  the velocity *un* and the shape error *ec*. */
-  
-  double ekmax = 0.;
-  scalar un[], ec[], kappa[];
-  curvature (c, kappa);
-  foreach() {
-    un[] = norm(u);
-    ec[] = c[] - cref[];
-    if (kappa[] != nodata) {
-      double ek = fabs (kappa[] - (/*AXI*/ + 1.)/radius);
-      if (ek > ekmax)
-	ekmax = ek;
-    }
-  }
-  
-  /**
-  We output these on standard error (i.e. the *log* file). */
-
-  norm ne = normf (ec);
-  fprintf (stderr, "%d %g %g %g %g %g %g\n", 
-	   MAXLEVEL, LAPLACE, 
-	   normf(un).max*sqrt(DIAMETER), 
-	   ne.avg, ne.rms, ne.max,
-	   ekmax);
-}
-
-
 #if SINGLESTEP
 event end (i = 0) {
     fprintf(stderr, "Finished after one timestep\n");
