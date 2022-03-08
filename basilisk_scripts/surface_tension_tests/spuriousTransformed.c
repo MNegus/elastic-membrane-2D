@@ -4,6 +4,7 @@
 */
 
 #define MOVING 0 // Moving frame adjustment
+#define MEMBRANE 1 // Impose a membrane to deform the droplet
 #define AMR 1 // Adaptive mesh refinement
 #define WALL 1 // Droplet along the wall
 
@@ -31,9 +32,10 @@ double DIAMETER; // Diameter of droplet
 /* Computational variables */
 double TMAX; // Maximum time to run simulation
 int gfs_output_no = 0; // Tracks how many gfs outputs there have been
+int interface_output_no = 0; // Tracks how many interface outputs there have been
 double xCentre; // x position of centre of drop
 double yCentre; // y position of centre of drop (in lab frame)
-double DROP_REFINED_WIDTH = 0.02; // Width of refined region around drop
+double DROP_REFINED_WIDTH = 0.5; // Width of refined region around drop
 double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
 double DC = 1e-12; // Change in domain tolerance
@@ -70,10 +72,10 @@ u.n[bottom] = dirichlet(0.);
 
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
-    #if MOVING
+    #if MEMBRANE
     if (x <= MEMBRANE_RADIUS) {
-        // return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
-        return mag * x * x;
+        return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
+        // return mag * x * x;
     } else {
         return 0.;
     }
@@ -81,15 +83,14 @@ double membrane_position(double x) {
     return 0.;
     #endif
 }
-}
 
 
 double membrane_first_derivative(double x) {
 /* Continuous function for the first derivative of the membrane position */
-    #if MOVING
+    #if MEMBRANE
     if (x <= MEMBRANE_RADIUS) {
-        // return mag * (-2 * x / sq(MEMBRANE_RADIUS));
-        return 2 * mag * x;
+        return mag * (-2 * x / sq(MEMBRANE_RADIUS));
+        // return 2 * mag * x;
     } else {
         return 0.;
     }
@@ -101,10 +102,10 @@ double membrane_first_derivative(double x) {
 
 double membrane_second_derivative(double x) {
 /* Continuous function for the second derivative of the membrane position */
-    #if MOVING
+    #if MEMBRANE
     if (x <= MEMBRANE_RADIUS) {
-        // return mag * (-2 / sq(MEMBRANE_RADIUS));
-        return 2 * mag;
+        return mag * (-2 / sq(MEMBRANE_RADIUS));
+        // return 2 * mag;
     } else {
         return 0.;
     }
@@ -144,7 +145,6 @@ double xy_derivative(Point point, scalar q) {
 }
 
 
-
 static double droplet_phi (creal xy[2]) {
 /* Level-set function for the initial position of the droplet, where xy is an 
 array with xy[0] = x and xy[1] = y */
@@ -178,7 +178,7 @@ int main() {
         xCentre = 3.0;
         yCentre = 3.0;
         MEMBRANE_RADIUS = 5.;
-        mag = 3.;
+        mag = 0.5;
     #endif
 
     /* Determine the physical constants */
@@ -257,6 +257,13 @@ event init (i = 0) {
         && (level < MAXLEVEL));
     #endif
 
+    /* Set fields for membrane position */
+    foreach() { 
+        W[] = membrane_position(x);
+        Wx[] = membrane_first_derivative(x);
+        Wxx[] = membrane_second_derivative(x);
+    }
+
     /* Volume fraction for determining change in c */
     foreach()
         cn[] = c[];
@@ -295,12 +302,79 @@ event logstats (i++) {
 }
 
 
-event gfsOutput(t += 1) {
+event gfsOutput(t += 1.0) {
     char gfs_filename[80];
     sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
     output_gfs(file = gfs_filename);
     gfs_output_no++;
 }
+
+event output_data(t += 1.0) {
+    /* Set c to be f */
+    // scalar c = f;
+
+    /* Determine the curvature and heights */
+    heights(c, htest);
+    cstats s = curvature (c, kappa, sigma=1., add = false);
+    foreach() { 
+        if (c[] == 0 || c[] == 1) {
+            kappax[] = nodata;
+            kappay[] = nodata;
+        } else {
+            double kappaxVal = kappa_x(point, htest);
+            double kappayVal = kappa_y(point, htest);
+
+            if (fabs(kappaxVal) > 1e3) {
+                kappax[] = nodata;
+            } else {
+                kappax[] = fabs(kappaxVal);
+            }
+
+            if (fabs(kappayVal) > 1e3) {
+                kappay[] = nodata;
+            } else {
+                kappay[] = fabs(kappayVal);
+            }
+        }
+    }
+
+    /* Output the interface and curvature along it */
+    char interface_filename[80];
+    sprintf(interface_filename, "interface_%d.txt", interface_output_no);
+    FILE *interface_file = fopen(interface_filename, "w");
+
+    foreach() {
+        if (c[] > 1e-6 && c[] < 1. - 1e-6) {
+
+            // Height function derivatives
+            double hx = (htest.y[1, 0] - htest.y[-1, 0])/2.;
+            double hxx = (htest.y[1, 0] + htest.y[-1, 0] - 2.*htest.y[])/Delta;
+            double hy = (htest.x[0, 1] - htest.x[0, -1])/2.;
+            double hyy = (htest.x[0, 1] + htest.x[0, -1] - 2.*htest.x[])/Delta;
+
+            // Segment info
+            coord n = interface_normal(point, c);
+            double alpha = plane_alpha(c[], n);
+            coord segment[2];
+            if (facets(n, alpha, segment) == 2) {
+                fprintf(interface_file, \
+                    "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
+                    x + segment[0].x * Delta, y + segment[0].y * Delta,
+                    x + segment[1].x * Delta, y + segment[1].y * Delta,
+                    kappa[], kappax[], kappay[],
+                    htest.y[], hx, hxx, 
+                    htest.x[], hy, hyy,
+                    W[], Wx[], Wxx[], 
+                    x, y);
+            }
+        }
+    }
+    fclose(interface_file);
+
+    interface_output_no++;
+
+}
+
 
 
 event error (t = end) {
@@ -351,7 +425,7 @@ event error (t = end) {
 event refinement (i++) {
 /* Adaptive grid refinement */
     // Adapts with respect to velocities and volume fraction 
-    // adapt_wavelet ({u.x, u.y, f}, (double[]){1e-3, 1e-3, 1e-3},
+    // adapt_wavelet ({u.x, u.y, c}, (double[]){1e-4, 1e-4, 0},
     //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
     refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
@@ -364,6 +438,8 @@ event refinement (i++) {
 
 #if MOVING
 event accAdjustment(i++) {
+
+    face vector av = a;
     
     // y acceleration
     foreach_face(y) {
