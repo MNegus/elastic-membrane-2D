@@ -131,7 +131,11 @@ acceleration in the x direction */
 	  phi[0, -1] < nodata ? phi[0, -1] :
 	  0.;
 	
+    #if TRANSPOSED
+    ia.x[] += 0.; // Pointless, will adjust another time
+    #else
 	ia.x[] += alpha.x[]/fm.x[]*phif*Wx[]*(f[] - f[0,-1])/Delta;
+    #endif
       }
 #endif
   /**

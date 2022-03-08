@@ -460,6 +460,10 @@ event refinement (i++) {
 #if MOVING
 event accAdjustment(i++) {
 
+    #if TRANSPOSED
+    // Do nothing for now
+    #else
+
     face vector av = a;
     
     // y acceleration
@@ -505,6 +509,6 @@ event accAdjustment(i++) {
 
         avX[] = av.x[];
     }
-
+    #endif
 }
 #endif
