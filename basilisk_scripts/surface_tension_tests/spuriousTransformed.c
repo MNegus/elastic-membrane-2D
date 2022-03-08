@@ -240,9 +240,23 @@ int main() {
 
     /* Runs the simulation */
     #if REFINEMENTSTUDY
-    for (refineLevel = MINLEVEL; refineLevel <= MAXLEVEL; refineLevel++)
+    for (refineLevel = MINLEVEL; refineLevel <= MAXLEVEL; refineLevel++) {
+        #if AMR
+        init_grid(1 << MINLEVEL);
+        #else
+        init_grid(1 << refineLevel);
+        #endif
+        size(BOX_WIDTH); // Size of the domain
+
         run();
+    }
     #else
+    #if AMR
+    init_grid(1 << MINLEVEL);
+    #else
+    init_grid(1 << MAXLEVEL);
+    #endif
+    size(BOX_WIDTH); // Size of the domain
     refineLevel = MAXLEVEL;
     run();
     #endif
