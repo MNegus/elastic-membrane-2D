@@ -67,6 +67,28 @@ orientation. */
 
 #if dimension == 2
 #if MOVING
+#if TRANSPOSED
+static double kappa_x (Point point, vector h)
+{
+    int ori = orientation(h.x[]);
+    for (int i = -1; i <= 1; i++)
+        if (h.x[0, i] == nodata || orientation(h.x[0, i]) != ori)
+            return nodata;
+    double hy = (h.x[0, 1] - h.x[0, -1])/2.;
+    double hyy = (h.x[0, 1] + h.x[0, -1] - 2.*h.x[])/Delta;
+    return (hyy - Wyy[])/pow(1. + sq(hy - Wy[]), 3/2.);
+}
+static double kappa_y (Point point, vector h)
+{
+    int ori = orientation(h.y[]);
+    for (int i = -1; i <= 1; i++)
+        if (h.y[i, 0] == nodata || orientation(h.y[i, 0]) != ori)
+            return nodata;
+    double hx = (h.y[1, 0] - h.y[-1, 0])/2.;
+    double hxx = (h.y[1, 0] + h.y[-1, 0] - 2.*h.y[])/Delta;
+    return (hxx + pow(hx, 3.) * Wyy[]) / pow(sq(1. - Wy[] * hx) + sq(hx), 3/2.);
+}
+#else
 static double kappa_y (Point point, vector h)
 {
     int ori = orientation(h.y[]);
@@ -87,6 +109,7 @@ static double kappa_x (Point point, vector h)
     double hyy = (h.x[0, 1] + h.x[0, -1] - 2.*h.x[])/Delta;
     return (hyy + pow(hy, 3.) * Wxx[]) / pow(sq(1. - Wx[] * hy) + sq(hy), 3/2.);
 }
+#endif // TRANSPOSED
 #else
 foreach_dimension()
 static double kappa_y (Point point, vector h)
@@ -99,7 +122,7 @@ static double kappa_y (Point point, vector h)
     double hxx = (h.y[1] + h.y[-1] - 2.*h.y[])/Delta;
     return hxx/pow(1. + sq(hx), 3/2.);
 }
-#endif
+#endif // MOVING
 foreach_dimension()
 static coord normal_y (Point point, vector h)
 {

@@ -6,7 +6,9 @@
 #define MOVING 0 // Moving frame adjustment
 #define MEMBRANE 1 // Impose a membrane to deform the droplet
 #define AMR 1 // Adaptive mesh refinement
-#define WALL 1 // Droplet along the wall
+#define WALL 0 // Droplet along the wall
+
+#define TRANSPOSED 1 // Transposes so the membrane is along y
 
 #define JACOBI 1
 
@@ -14,7 +16,11 @@
 #include "test_parameters.h" // Includes all defined parameters
 
 // Membrane scalar fields
+#if TRANSPOSED
+scalar W[], Wy[], Wyy[];
+#else
 scalar W[], Wx[], Wxx[];
+#endif
 
 #include "navier-stokes/centered.h"
 #include "vof.h"
@@ -39,6 +45,7 @@ double DROP_REFINED_WIDTH = 0.5; // Width of refined region around drop
 double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
 double DC = 1e-12; // Change in domain tolerance
+int refineLevel; // Variable level of refinement
 
 
 /* Field definitions */
@@ -148,8 +155,13 @@ double xy_derivative(Point point, scalar q) {
 static double droplet_phi (creal xy[2]) {
 /* Level-set function for the initial position of the droplet, where xy is an 
 array with xy[0] = x and xy[1] = y */
-  return sq(xy[0] - xCentre) + sq(xy[1] - membrane_position(xy[0]) - yCentre) \
+    #if TRANSPOSED
+    return sq(xy[0] - membrane_position(xy[1]) - xCentre) + sq(xy[1] - yCentre) \
+        - sq(DROP_RADIUS);
+    #else
+    return sq(xy[0] - xCentre) + sq(xy[1] - membrane_position(xy[0]) - yCentre) \
     - sq(DROP_RADIUS);
+    #endif
 }
 
 
@@ -170,15 +182,20 @@ int main() {
 
     /* Sets quantities depending on if the droplet is at the wall or not */
     #if WALL
-        xCentre = 0.0;
-        yCentre = 3.0;
-        MEMBRANE_RADIUS = 1.5;
-        mag = 0.5;
+    #if TRANSPOSED
+    xCentre = 0.5 * BOX_WIDTH;
+    yCentre = 0.;
     #else
-        xCentre = 3.0;
-        yCentre = 3.0;
-        MEMBRANE_RADIUS = 5.;
-        mag = 0.5;
+    xCentre = 0.0;
+    yCentre = 0.5 * BOX_WIDTH;
+    #endif // TRANSPOSED
+    MEMBRANE_RADIUS = 1.5;
+    mag = 0.5;
+    #else
+    xCentre = 3.0;
+    yCentre = 3.0;
+    MEMBRANE_RADIUS = 5.;
+    mag = 0.5;
     #endif
 
     /* Determine the physical constants */
@@ -252,16 +269,28 @@ event init (i = 0) {
     /* If using adaptive refinement, initialise with a region refined close to
     the droplet interface */
     #if AMR
+    #if TRANSPOSED
+    refine((sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+        && (sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+        && (level < MAXLEVEL));
+    #else
     refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
         && (sq(x - xCentre) + sq(y - membrane_position(x) - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
         && (level < MAXLEVEL));
     #endif
+    #endif
 
     /* Set fields for membrane position */
     foreach() { 
+        #if TRANSPOSED
+        W[] = membrane_position(y);
+        Wy[] = membrane_first_derivative(y);
+        Wyy[] = membrane_second_derivative(y);
+        #else
         W[] = membrane_position(x);
         Wx[] = membrane_first_derivative(x);
         Wxx[] = membrane_second_derivative(x);
+        #endif
     }
 
     /* Volume fraction for determining change in c */
@@ -301,13 +330,6 @@ event logstats (i++) {
     fflush(fp_stats);
 }
 
-
-event gfsOutput(t += 1.0) {
-    char gfs_filename[80];
-    sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
-    output_gfs(file = gfs_filename);
-    gfs_output_no++;
-}
 
 event output_data(t += 1.0) {
     /* Set c to be f */
@@ -352,6 +374,17 @@ event output_data(t += 1.0) {
             double hy = (htest.x[0, 1] - htest.x[0, -1])/2.;
             double hyy = (htest.x[0, 1] + htest.x[0, -1] - 2.*htest.x[])/Delta;
 
+            // W values
+            #if TRANSPOSED
+            double Wval = W[];
+            double Wxval = Wy[];
+            double Wxxval = Wyy[];
+            #else
+            double Wval = W[];
+            double Wxval = Wx[];
+            double Wxxval = Wxx[];
+            #endif
+
             // Segment info
             coord n = interface_normal(point, c);
             double alpha = plane_alpha(c[], n);
@@ -364,7 +397,7 @@ event output_data(t += 1.0) {
                     kappa[], kappax[], kappay[],
                     htest.y[], hx, hxx, 
                     htest.x[], hy, hyy,
-                    W[], Wx[], Wxx[], 
+                    Wval, Wxval, Wxxval, 
                     x, y);
             }
         }
@@ -375,6 +408,13 @@ event output_data(t += 1.0) {
 
 }
 
+
+event gfsOutput(t += 1.0) {
+    char gfs_filename[80];
+    sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
+    output_gfs(file = gfs_filename);
+    gfs_output_no++;
+}
 
 
 event error (t = end) {
@@ -428,9 +468,15 @@ event refinement (i++) {
     // adapt_wavelet ({u.x, u.y, c}, (double[]){1e-4, 1e-4, 0},
     //     minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
+    #if TRANSPOSE
+    refine((sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
+        && (sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
+        && (level < MAXLEVEL));
+    #else
     refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
         && (sq(x - xCentre) + sq(y - membrane_position(x) - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
         && (level < MAXLEVEL));
+    #endif
 
 
 }
