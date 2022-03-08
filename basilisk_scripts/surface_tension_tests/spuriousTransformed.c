@@ -10,6 +10,7 @@
 
 #define TRANSPOSED 1 // Transposes so the membrane is along y
 #define SINGLESTEP 1 // If 1, only performs one timestep 
+#define REFINEMENTSTUDY 1 // Runs at multiple levels for a refinement study
 
 #define JACOBI 1
 
@@ -38,8 +39,8 @@ double DIAMETER; // Diameter of droplet
 
 /* Computational variables */
 double TMAX; // Maximum time to run simulation
-int gfs_output_no = 0; // Tracks how many gfs outputs there have been
-int interface_output_no = 0; // Tracks how many interface outputs there have been
+int gfs_output_no; // Tracks how many gfs outputs there have been
+int interface_output_no; // Tracks how many interface outputs there have been
 double xCentre; // x position of centre of drop
 double yCentre; // y position of centre of drop (in lab frame)
 double DROP_REFINED_WIDTH = 0.5; // Width of refined region around drop
@@ -52,6 +53,7 @@ int refineLevel; // Variable level of refinement
 /* Field definitions */
 vector htest[]; // Height function for droplet interface
 scalar c[], origc[], * interfaces = {c, origc}; // Volume fraction of droplet 
+scalar cn[]; // Field to check for change of c
 scalar kappa[], kappax[], kappay[]; // Curvature fields
 scalar avX[], avY[]; // Acceleration in x and y direction
 
@@ -237,14 +239,15 @@ int main() {
 
 
     /* Runs the simulation */
+    #if REFINEMENTSTUDY
+    for (refineLevel = MINLEVEL; refineLevel <= MAXLEVEL; refineLevel++)
+        run();
+    #else
+    refineLevel = MAXLEVEL;
     run();
+    #endif
 }
 
-/**
-We allocate a field to store the previous volume fraction field (to
-check for stationary solutions). */
-
-scalar cn[];
 
 event init (i = 0) {
 
@@ -255,14 +258,18 @@ event init (i = 0) {
     /* Open a new file to store the evolution of the amplitude of
     spurious currents  */
     char name[80];
-    sprintf (name, "amplitudes_%d.txt", MAXLEVEL);
+    sprintf (name, "amplitudes_%d.txt", refineLevel);
     if (fp)
         fclose (fp);
     fp = fopen (name, "w");
+
+    /* Initialise global variables */
+    gfs_output_no = 0;
+    interface_output_no = 0;
   
     /* Define the volume fraction and the curvature */
     vofi (c, MINLEVEL);
-    for (int l = MINLEVEL + 1; l <= MAXLEVEL; l++) {
+    for (int l = MINLEVEL + 1; l <= refineLevel; l++) {
         refine (c[] > 0. && c[] < 1. && level < l);
         vofi (c, l);
     }
@@ -273,11 +280,11 @@ event init (i = 0) {
     #if TRANSPOSED
     refine((sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
         && (sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
-        && (level < MAXLEVEL));
+        && (level < refineLevel));
     #else
     refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
         && (sq(x - xCentre) + sq(y - membrane_position(x) - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
-        && (level < MAXLEVEL));
+        && (level < refineLevel));
     #endif
     #endif
 
@@ -363,7 +370,7 @@ event output_data(t += 1.0) {
 
     /* Output the interface and curvature along it */
     char interface_filename[80];
-    sprintf(interface_filename, "interface_%d.txt", interface_output_no);
+    sprintf(interface_filename, "interface_%d_%d.txt", interface_output_no, refineLevel);
     FILE *interface_file = fopen(interface_filename, "w");
 
     foreach() {
@@ -412,7 +419,7 @@ event output_data(t += 1.0) {
 
 event gfsOutput(t += 1.0) {
     char gfs_filename[80];
-    sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
+    sprintf(gfs_filename, "gfs_output_%d_%d.gfs", gfs_output_no, refineLevel);
     output_gfs(file = gfs_filename);
     gfs_output_no++;
 }
@@ -420,7 +427,7 @@ event gfsOutput(t += 1.0) {
 
 #if SINGLESTEP
 event end (i = 0) {
-    fprintf(stderr, "Finished after one timestep\n");
+    fprintf(stderr, "Finished refineLevel %d\n", refineLevel);
     fflush(stderr);
     return 1;
 }
