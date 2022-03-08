@@ -2,6 +2,16 @@
 Header file for the parameters to feed into the simulations for droplet impact
 */
 
+/* Computational flags */
+#define MOVING 0 // Moving frame adjustment
+#define MEMBRANE 1 // Impose a membrane to deform the droplet
+#define AMR 1 // Adaptive mesh refinement
+#define WALL 0 // Droplet along the wall
+#define TRANSPOSED 1 // Transposes so the membrane is along y
+#define SINGLESTEP 1 // If 1, only performs one timestep 
+#define REFINEMENTSTUDY 1 // Runs at multiple levels for a refinement study
+#define JACOBI 1 // Jacobi relaxation
+
 /* Dimensional fluid properties */
 const double R = 1.0e-3; // Radius of droplet (metres)
 const double V = 5.0; // Velocity of droplet (metres per second)
