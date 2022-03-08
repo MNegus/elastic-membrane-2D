@@ -446,11 +446,11 @@ event refinement (i++) {
     #if TRANSPOSE
     refine((sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
         && (sq(x - membrane_position(y) - xCentre) + sq(y  - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
-        && (level < MAXLEVEL));
+        && (level < refineLevel));
     #else
     refine((sq(x - xCentre) + sq(y - membrane_position(x) - yCentre) < sq(DROP_RADIUS + DROP_REFINED_WIDTH)) \
         && (sq(x - xCentre) + sq(y - membrane_position(x) - yCentre)  > sq(DROP_RADIUS - DROP_REFINED_WIDTH)) \
-        && (level < MAXLEVEL));
+        && (level < refineLevel));
     #endif
 
 
