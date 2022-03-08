@@ -21,4 +21,4 @@ cp -a ${LOCAL_DIR}/. ${DEST_DIR}/${SUB_DIR_NAME}/code
 
 # Copies the run script, Makefile and parameters over to the destination
 # cp {run_simulation.sh,run_simulation_coupled.sh,run_manual.sh,Makefile,parameters.h} ${DEST_DIR}/${SUB_DIR_NAME}/code
-cp run_test.sh ${DEST_DIR}/${SUB_DIR_NAME}/code
+cp {run_test.sh,test_parameters.h} ${DEST_DIR}/${SUB_DIR_NAME}/code
