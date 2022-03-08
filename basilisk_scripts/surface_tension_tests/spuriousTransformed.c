@@ -9,6 +9,7 @@
 #define WALL 0 // Droplet along the wall
 
 #define TRANSPOSED 1 // Transposes so the membrane is along y
+#define SINGLESTEP 1 // If 1, only performs one timestep 
 
 #define JACOBI 1
 
@@ -460,6 +461,14 @@ event error (t = end) {
 	   ekmax);
 }
 
+
+#if SINGLESTEP
+event end (i = 0) {
+    fprintf(stderr, "Finished after one timestep\n");
+    fflush(stderr);
+    return 1;
+}
+#endif
 
 #if AMR
 event refinement (i++) {
