@@ -108,12 +108,12 @@ event acceleration (i++)
 	ia.x[] += alpha.x[]/fm.x[]*phif*(f[] - f[-1])/Delta;
       }
 
-#if MOVING
+#if IFORCEADJUST
 /** If we are in a moving frame formulation, then we need to increment the 
 acceleration in the x direction */
   foreach_face(x)
     for (scalar f in list)
-      if (f[] != f[-1]) {
+      if (f[] != f[-1, 0]) {
 
 	/**
 	We need to compute the potential *phif* on the face, using its
@@ -125,10 +125,10 @@ acceleration in the x direction */
 	
 	scalar phi = f.phi;
 	double phif =
-	  (phi[] < nodata && phi[0, -1] < nodata) ?
-	  (phi[] + phi[0, -1])/2. :
+	  (phi[] < nodata && phi[-1, 0] < nodata) ?
+	  (phi[] + phi[-1, 0])/2. :
 	  phi[] < nodata ? phi[] :
-	  phi[0, -1] < nodata ? phi[0, -1] :
+	  phi[-1, 0] < nodata ? phi[-1, 0] :
 	  0.;
 	
     #if TRANSPOSED

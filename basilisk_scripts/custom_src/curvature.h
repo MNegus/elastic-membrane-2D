@@ -66,7 +66,7 @@ orientation. */
 #include "heights.h"
 
 #if dimension == 2
-#if MOVING
+#if CURVATUREADJUST
 #if TRANSPOSED
 static double kappa_x (Point point, vector h)
 {

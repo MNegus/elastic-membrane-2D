@@ -41,7 +41,8 @@ int refineLevel; // Variable level of refinement
 
 /* Field definitions */
 vector htest[]; // Height function for droplet interface
-scalar c[], origc[], * interfaces = {c, origc}; // Volume fraction of droplet 
+scalar c[], * interfaces = {c}; // Volume fraction of droplet 
+scalar origc[];
 scalar cn[]; // Field to check for change of c
 scalar kappa[], kappax[], kappay[]; // Curvature fields
 scalar avX[], avY[]; // Acceleration in x and y direction
@@ -58,26 +59,32 @@ FILE * fp_stats; // Stats file
 // #endif
 
 // // Zero Neumann conditions at far-field boundaries
-// u.n[bottom] = neumann(0.);
-// u.n[top] = neumann(0.);
-// u.n[right] = neumann(0.);
+#if WALL
+// Do nothing, keep as symmetric
+// u.n[left] = dirichlet(0.);
+#else
+u.n[left] = neumann(0.);
+#endif
+u.n[bottom] = neumann(0.);
+u.n[top] = neumann(0.);
+u.n[right] = neumann(0.);
 
 /* Boundary conditions (DIRICHLET) */
-u.n[left] = dirichlet(0.);
-u.n[right] = dirichlet(0.);
-u.n[top] = dirichlet(0.);
-u.n[bottom] = dirichlet(0.);
+// u.n[left] = dirichlet(0.);
+// u.n[right] = dirichlet(0.);
+// u.n[top] = dirichlet(0.);
+// u.n[bottom] = dirichlet(0.);
 
 
 double membrane_position(double x) {
 /* Continuous function for the membrane position */
     #if MEMBRANE
-    if (x <= MEMBRANE_RADIUS) {
-        return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
-        // return mag * x * x;
-    } else {
-        return 0.;
-    }
+    // if (x <= MEMBRANE_RADIUS) {
+    //     return mag * (1 - x * x / sq(MEMBRANE_RADIUS));
+    // } else {
+    //     return 0.;
+    // }
+    return 0.5 * mag * (cos(pi * x / BOX_WIDTH) + 1);
     #else
     return 0.;
     #endif
@@ -87,12 +94,12 @@ double membrane_position(double x) {
 double membrane_first_derivative(double x) {
 /* Continuous function for the first derivative of the membrane position */
     #if MEMBRANE
-    if (x <= MEMBRANE_RADIUS) {
-        return mag * (-2 * x / sq(MEMBRANE_RADIUS));
-        // return 2 * mag * x;
-    } else {
-        return 0.;
-    }
+    // if (x <= MEMBRANE_RADIUS) {
+    //     return mag * (-2 * x / sq(MEMBRANE_RADIUS));
+    // } else {
+    //     return 0.;
+    // }
+    return -(pi / BOX_WIDTH) * 0.5 * mag * sin(pi * x / BOX_WIDTH);
     #else
     return 0.;
     #endif
@@ -102,12 +109,12 @@ double membrane_first_derivative(double x) {
 double membrane_second_derivative(double x) {
 /* Continuous function for the second derivative of the membrane position */
     #if MEMBRANE
-    if (x <= MEMBRANE_RADIUS) {
-        return mag * (-2 / sq(MEMBRANE_RADIUS));
-        // return 2 * mag;
-    } else {
-        return 0.;
-    }
+    // if (x <= MEMBRANE_RADIUS) {
+    //     return mag * (-2 / sq(MEMBRANE_RADIUS));
+    // } else {
+    //     return 0.;
+    // }
+    return -sq(pi / BOX_WIDTH) * 0.5 * mag * cos(pi * x / BOX_WIDTH);
     #else
     return 0.;
     #endif
@@ -277,6 +284,11 @@ event init (i = 0) {
         vofi (c, l);
     }
 
+    /* Saves original droplet position */
+    foreach() {
+        origc[] = c[];
+    }
+
     /* If using adaptive refinement, initialise with a region refined close to
     the droplet interface */
     #if AMR
@@ -310,6 +322,61 @@ event init (i = 0) {
     boundary ({cn});
 }
 
+#if BODYFORCEADJUST
+event accAdjustment(i++) {
+
+    #if TRANSPOSED
+    // Do nothing for now
+    #else
+
+    face vector av = a;
+    
+    // y acceleration
+    foreach_face(y) {
+        
+        double ut = av.x[];
+
+        double ux = x_derivative(point, u.x);
+        double uy = y_derivative(point, u.x);
+        double uxx = xx_derivative(point, u.x);
+        double uyy = yy_derivative(point, u.x);
+        double uxy = xy_derivative(point, u.x);
+
+        double v = u.y[];
+        double vy = y_derivative(point, u.y);
+        double vyy = yy_derivative(point, u.y);
+        double vxy = xy_derivative(point, u.y);
+
+        double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
+            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
+                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
+                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
+                    + pow(Wxf, 3.) * uyy));
+        avY[] = av.y[];
+    }
+
+    // x acceleration
+    foreach_face(x) {
+        double py = y_derivative(point, p);
+        
+        double uy = y_derivative(point, u.x);
+        double uyy = yy_derivative(point, u.x);
+        double uxy = xy_derivative(point, u.x);
+
+        double Wxf = interpolate(Wx, x, y);
+        double Wxxf = interpolate(Wxx, x, y);
+
+        av.x[] += (1. / rho[]) * (-Wxf * py \
+            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
+
+        avX[] = av.x[];
+    }
+    #endif
+}
+#endif
 
 event logfile (i++; t <= TMAX) {
     /* At every timestep, we check whether the volume fraction field has
@@ -402,14 +469,14 @@ event output_data(t += 1.0) {
             coord segment[2];
             if (facets(n, alpha, segment) == 2) {
                 fprintf(interface_file, \
-                    "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
+                    "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", 
                     x + segment[0].x * Delta, y + segment[0].y * Delta,
                     x + segment[1].x * Delta, y + segment[1].y * Delta,
                     kappa[], kappax[], kappay[],
                     htest.y[], hx, hxx, 
                     htest.x[], hy, hyy,
                     Wval, Wxval, Wxxval, 
-                    x, y);
+                    x, y, u.x[], u.y[]);
             }
         }
     }
@@ -420,16 +487,18 @@ event output_data(t += 1.0) {
 }
 
 
-// event gfsOutput(t += 1.0) {
-//     char gfs_filename[80];
-//     sprintf(gfs_filename, "gfs_output_%d_%d.gfs", gfs_output_no, refineLevel);
-//     output_gfs(file = gfs_filename);
-//     gfs_output_no++;
-// }
+
+event gfsOutput(t += 1.0) {
+    
+    char gfs_filename[80];
+    sprintf(gfs_filename, "gfs_output_%d_%d.gfs", gfs_output_no, refineLevel);
+    output_gfs(file = gfs_filename);
+    gfs_output_no++;
+}
 
 
 #if SINGLESTEP
-event end (i = 0) {
+event end (i = 1) {
     fprintf(stderr, "Finished refineLevel %d\n", refineLevel);
     fflush(stderr);
     return 1;
@@ -457,58 +526,3 @@ event refinement (i++) {
 }
 #endif
 
-#if MOVING
-event accAdjustment(i++) {
-
-    #if TRANSPOSED
-    // Do nothing for now
-    #else
-
-    face vector av = a;
-    
-    // y acceleration
-    foreach_face(y) {
-        
-        double ut = av.x[];
-
-        double ux = x_derivative(point, u.x);
-        double uy = y_derivative(point, u.x);
-        double uxx = xx_derivative(point, u.x);
-        double uyy = yy_derivative(point, u.x);
-        double uxy = xy_derivative(point, u.x);
-
-        double v = u.y[];
-        double vy = y_derivative(point, u.y);
-        double vyy = yy_derivative(point, u.y);
-        double vxy = xy_derivative(point, u.y);
-
-        double Wxf = interpolate(Wx, x, y);
-        double Wxxf = interpolate(Wxx, x, y);
-
-        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
-            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
-                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
-                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
-                    + pow(Wxf, 3.) * uyy));
-        avY[] = av.y[];
-    }
-
-    // x acceleration
-    foreach_face(x) {
-        double py = y_derivative(point, p);
-        
-        double uy = y_derivative(point, u.x);
-        double uyy = yy_derivative(point, u.x);
-        double uxy = xy_derivative(point, u.x);
-
-        double Wxf = interpolate(Wx, x, y);
-        double Wxxf = interpolate(Wxx, x, y);
-
-        av.x[] += (1. / rho[]) * (-Wxf * py \
-            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
-
-        avX[] = av.x[];
-    }
-    #endif
-}
-#endif

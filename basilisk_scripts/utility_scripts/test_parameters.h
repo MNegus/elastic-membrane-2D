@@ -3,7 +3,9 @@ Header file for the parameters to feed into the simulations for droplet impact
 */
 
 /* Computational flags */
-#define MOVING 0 // Moving frame adjustment
+#define CURVATUREADJUST 0 // Adjusts the curvature
+#define IFORCEADJUST 0 // Adjusts the interfacial force
+#define BODYFORCEADJUST 0 // Adjusts the body force
 #define MEMBRANE 1 // Impose a membrane to deform the droplet
 #define AMR 0 // Adaptive mesh refinement
 #define WALL 0 // Droplet along the wall
