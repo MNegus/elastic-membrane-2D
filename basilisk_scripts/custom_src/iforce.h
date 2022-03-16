@@ -134,7 +134,8 @@ acceleration in the x direction */
     #if TRANSPOSED
     ia.x[] += 0.; // Pointless, will adjust another time
     #else
-	ia.x[] += alpha.x[]/fm.x[]*phif*Wx[]*(f[] - f[0,-1])/Delta;
+    double Wxval = (Wx[] + Wx[-1, 0])/2.;
+	ia.x[] += alpha.x[]/fm.x[]*phif*Wxval*(f[] - f[0,-1])/Delta;
     #endif
       }
 #endif
