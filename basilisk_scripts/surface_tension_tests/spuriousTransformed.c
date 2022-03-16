@@ -208,6 +208,7 @@ int main() {
 
     /* Poisson solver constants */
     TOLERANCE = 1e-6;
+    NITERMAX = 300; // Max number of iterations (default 100)
     
     /* Set up grid */
     #if AMR
@@ -284,11 +285,6 @@ event init (i = 0) {
         vofi (c, l);
     }
 
-    /* Saves original droplet position */
-    foreach() {
-        origc[] = c[];
-    }
-
     /* If using adaptive refinement, initialise with a region refined close to
     the droplet interface */
     #if AMR
@@ -316,67 +312,71 @@ event init (i = 0) {
         #endif
     }
 
-    /* Volume fraction for determining change in c */
-    foreach()
+    /* Save reference volume fractions */
+    foreach() {
         cn[] = c[];
+        origc[] = c[];
+    }
     boundary ({cn});
 }
 
-#if BODYFORCEADJUST
-event accAdjustment(i++) {
+// #if BODYFORCEADJUST
+// // event accAdjustment(i++) {
+// event acceleration(i++) {
 
-    #if TRANSPOSED
-    // Do nothing for now
-    #else
+//     #if TRANSPOSED
+//     // Do nothing for now
+//     #else
 
-    face vector av = a;
+//     face vector av = a;
     
-    // y acceleration
-    foreach_face(y) {
+//     // y acceleration
+//     foreach_face(y) {
         
-        double ut = av.x[];
+//         double ut = av.x[];
 
-        double ux = x_derivative(point, u.x);
-        double uy = y_derivative(point, u.x);
-        double uxx = xx_derivative(point, u.x);
-        double uyy = yy_derivative(point, u.x);
-        double uxy = xy_derivative(point, u.x);
+//         double ux = x_derivative(point, u.x);
+//         double uy = y_derivative(point, u.x);
+//         double uxx = xx_derivative(point, u.x);
+//         double uyy = yy_derivative(point, u.x);
+//         double uxy = xy_derivative(point, u.x);
 
-        double v = u.y[];
-        double vy = y_derivative(point, u.y);
-        double vyy = yy_derivative(point, u.y);
-        double vxy = xy_derivative(point, u.y);
+//         double v = u.y[];
+//         double vy = y_derivative(point, u.y);
+//         double vyy = yy_derivative(point, u.y);
+//         double vxy = xy_derivative(point, u.y);
 
-        double Wxf = interpolate(Wx, x, y);
-        double Wxxf = interpolate(Wxx, x, y);
+//         double Wxf = interpolate(Wx, x, y);
+//         double Wxxf = interpolate(Wxx, x, y);
 
-        av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
-            + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
-                - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
-                    + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
-                    + pow(Wxf, 3.) * uyy));
-        avY[] = av.y[];
-    }
+//         // av.y[] += Wxf * ut + Wxxf * sq(u.x[]) + Wxf * ux * u.x[] + Wxf * uy * v \
+//         //     + (mu.y[] / rho[]) * (Wxxf * vy + 2. * Wxf * vxy + sq(Wxf) * vyy \
+//         //         - (2. * Wxxf * ux + Wxf * uxx + Wxf * uyy \
+//         //             + 3. * Wxf * Wxxf * uy + 2. * sq(Wxf) * uxy \
+//         //             + pow(Wxf, 3.) * uyy));
+//         avY[] = av.y[];
+//     }
 
-    // x acceleration
-    foreach_face(x) {
-        double py = y_derivative(point, p);
+//     // x acceleration
+//     foreach_face(x) {
+//         double py = y_derivative(point, p);
         
-        double uy = y_derivative(point, u.x);
-        double uyy = yy_derivative(point, u.x);
-        double uxy = xy_derivative(point, u.x);
+//         double uy = y_derivative(point, u.x);
+//         double uyy = yy_derivative(point, u.x);
+//         double uxy = xy_derivative(point, u.x);
 
-        double Wxf = interpolate(Wx, x, y);
-        double Wxxf = interpolate(Wxx, x, y);
+//         double Wxf = interpolate(Wx, x, y);
+//         double Wxxf = interpolate(Wxx, x, y);
 
-        av.x[] += (1. / rho[]) * (-Wxf * py \
-            + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
+//         // av.x[] += (1. / rho[]) * (-Wxf * py \
+//         //     + mu.x[] * (Wxxf * uy + 2. * Wxf * uxy + Wxf * Wxf * uyy));
+//         av.x[] += (1. / rho[]) * (-Wxf * py);
 
-        avX[] = av.x[];
-    }
-    #endif
-}
-#endif
+//         avX[] = av.x[];
+//     }
+//     #endif
+// }
+// #endif
 
 event logfile (i++; t <= TMAX) {
     /* At every timestep, we check whether the volume fraction field has
@@ -488,7 +488,7 @@ event output_data(t += 1.0) {
 
 
 
-event gfsOutput(t += 1.0) {
+event gfsOutput(t += 0.1) {
     
     char gfs_filename[80];
     sprintf(gfs_filename, "gfs_output_%d_%d.gfs", gfs_output_no, refineLevel);
