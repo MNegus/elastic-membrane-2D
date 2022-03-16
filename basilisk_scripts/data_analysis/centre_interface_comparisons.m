@@ -15,12 +15,13 @@ position = "centre";
 
 
 
-parent_dir = sprintf("/media/michael/newarre/elastic_membrane/%s_tests_8_3_22", position);
+% parent_dir = sprintf("/media/michael/newarre/elastic_membrane/%s_tests_8_3_22", position);
+parent_dir = "/home/negus/Desktop/cosTests";
 
 
 % Data directories
-untransformedDir = sprintf("%s/CentreDeformedUntransformed/raw_data", parent_dir);
-transformedDir = sprintf("%s/CentreDeformedTransformed/raw_data", parent_dir);
+untransformedDir = sprintf("%s/lab/code/spuriousTransformed", parent_dir);
+transformedDir = sprintf("%s/curvilinear/code/spuriousTransformed", parent_dir);
 
 % Variables
 BOX_WIDTH = 6;
@@ -38,12 +39,13 @@ end
 
 
 % Exact solution
-WExact = @(x) mag * (1 - x.^2 / L^2);
+% WExact = @(x) mag * (1 - x.^2 / L^2);
+WExact = @(x) 0.5 * mag * (cos(pi * x / BOX_WIDTH) - 1);
 
 
-for TIMESTEP = 0 : 35
+for TIMESTEP = 0 : 191
 %% Loads in untransformed case
-outputFilename = sprintf("%s/interface_%d.txt", untransformedDir, TIMESTEP);
+outputFilename = sprintf("%s/interface_%d_9.txt", untransformedDir, TIMESTEP);
     
 % Load in the unsorted matrix A
 untransformedA = readmatrix(outputFilename);
@@ -51,7 +53,7 @@ XsUntransformed = untransformedA(:, 1);
 YsUntransformed = untransformedA(:, 2);
 
 %% Loads in transformed case
-outputFilename = sprintf("%s/interface_%d.txt", transformedDir, TIMESTEP);
+outputFilename = sprintf("%s/interface_%d_9.txt", transformedDir, TIMESTEP);
     
 % Load in the unsorted matrix A
 transformedA = readmatrix(outputFilename);
@@ -132,7 +134,7 @@ sgtitle("$t$ =" + num2str(TIMESTEP) , 'Fontsize', 20);
 set(gcf, 'position', [200 200 1200 600]);
 
 drawnow;
-pause(0.1);
+pause(0.01);
 TIMESTEP
 
 end
