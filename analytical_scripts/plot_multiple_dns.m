@@ -6,6 +6,9 @@ clear;
 %% Parameters
 [~, ALPHAS, BETAS, GAMMAS, L, T_MAX, DELTA_T, N_MEMBRANE] ...
     = parameters();
+ALPHAS = 2.004;
+BETAS = 0;
+GAMMAS = 1069;
 
 no_params = length(ALPHAS);
 
@@ -22,7 +25,9 @@ ts_analytical = 0 : DELTA_T : T_MAX - IMPACT_TIME;
 
 
 %% Data dirs
-parent_dir = "/media/michael/newarre/elastic_membrane/basilisk_parameter_sweeping/modulus_varying";
+% parent_dir = "/media/michael/newarre/elastic_membrane/basilisk_parameter_sweeping/modulus_varying";
+parent_dir = "/scratch/negus/realisticParamTests";
+
 
 
 %% Loops over time
@@ -52,8 +57,10 @@ for k = 1 : 100 : length(T_VALS)
         GAMMA = GAMMAS(idx);
                 
         % Loads in parameters
-        parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/raw_data", ...
-          parent_dir, ALPHA, BETA, GAMMA);
+%         parameter_dir = sprintf("%s/alpha_%g-beta_%g-gamma_%g/raw_data", ...
+%           parent_dir, ALPHA, BETA, GAMMA);
+        parameter_dir = sprintf("%s/ALPHA-%g_BETA-%g_GAMMA-%g/raw_data", ...
+                  parent_dir, ALPHA, BETA, GAMMA);
         displayname = ['$\alpha =$ ', num2str(ALPHA),', $\beta =$ ', num2str(BETA), ', $\gamma =$ ', num2str(GAMMA)];
 
         % w plot
