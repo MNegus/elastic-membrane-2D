@@ -429,8 +429,29 @@ event update_membrane(t += DELTA_T) {
         }
     }
 
-    /* Updates membrane position after the start time */
-    if ((t >= MEMBRANE_START_TIME) && (STATIONARY == 0)) {
+    /* If constant acceleration, then use imposed solution to set w_next */
+    if (CONST_ACC) {
+        // Start motion after impact time
+        if (t >= IMPACT_TIME) {
+            // Loop over membrane
+            #pragma omp parallel for
+            for (int k = 0; k < M; k++) {
+                double x = k * DELTA_X;
+
+                /* Set w(x, t) = 0.5 * a * (t - impact_time)^2 * cos(pi / (2L)) */
+                w_next[k] = 0.5 * MEMBRANE_ACC * sq(t + DELTA_T - IMPACT_TIME) \
+                    * cos(pi * x / (2 * MEMBRANE_RADIUS)); 
+                w_deriv[k] = MEMBRANE_ACC * (t - IMPACT_TIME) \
+                    * cos(pi * x / (2 * MEMBRANE_RADIUS));
+            }
+        }
+
+        // Set boundary condition on membrane
+        u.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
+
+    } else if (t >= MEMBRANE_START_TIME) {
+        /* Else solve membrane equation PDE */
+
         if (start_membrane == 0) {
             /* Initialise membrane motion */
             start_membrane = 1; // Indicates membrane motion has started
@@ -446,16 +467,12 @@ event update_membrane(t += DELTA_T) {
 
         /* Updates boundary condition if COUPLED is set*/
         if (COUPLED) {
-            uf.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
+            u.n[bottom] = dirichlet(membrane_bc(x, w_deriv)); 
         }
     }
 
     /* Outputs membrane arrays */
-    if (STATIONARY) {
-        output_arrays_stationary(p_arr);
-    } else {
-        output_arrays(w, w_deriv, p_arr);
-    }
+    output_arrays(w, w_deriv, p_arr);
 
     // Swaps membrane arrays 
     double *temp2 = w_previous;

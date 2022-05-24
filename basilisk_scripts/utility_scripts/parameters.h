@@ -25,7 +25,8 @@ const double BETA = 1; // Tension term
 const double GAMMA = 2; // Bending term
 const double DELTA_T = 1e-4; // Timestep for membrane solution
 const int COUPLED = 0; // Set to 1 if membrane motion is coupled to the fluid
-const int STATIONARY = 1; // Set to 1 if enforcing membrane to be stationary
+const int CONST_ACC = 1; // Set to 1 to enforce constant acceleration
+const double MEMBRANE_ACC = 0.05; // Coefficient of constant membrane acceleration
 
 /* Computational constants */
 const int MINLEVEL = 5; // Minimum refinement level 
