@@ -99,7 +99,6 @@ scalar bubbles[]; // Tag field for bubbles
 /* Function definitions */
 double membrane_bc(double x, double *w_deriv_arr);
 void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr);
-void output_arrays_stationary(double *p_arr);
 void remove_droplets_region(struct RemoveDroplets p,\
         double ignore_region_x_limit, double ignore_region_y_limit);
 
@@ -220,7 +219,7 @@ event refinement (i++) {
 /* Adaptive grid refinement */
 
     // Adapts with respect to velocities and volume fraction 
-    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-3, 1e-3, 1e-6},
+    adapt_wavelet ({u.x, u.y, f}, (double[]){1e-2, 1e-2, 1e-6},
         minlevel = MINLEVEL, maxlevel = MAXLEVEL);
 
     /* Attempts to refine above the membrane, doubling the refine height until
@@ -285,21 +284,36 @@ event small_droplet_removal (t += 1e-4) {
             pinch_off_time = t;
         }
     } else {
-        /* After the pinch off time, determine area of the entrapped bubble */
-        // Determine the tag of the entrapped bubble by finding the tag of the 
-        // cell 
-        int entrap_idx;
-        foreach_boundary(bottom) {
-            if (x < MIN_CELL_SIZE) {
-                entrap_idx = bubbles[];
-                break;
+        /* Determine area of entrapped bubble */
+
+        // Determine the tag of the entrapped bubble. After pinch-off, this will
+        // be somewhere along the bottom boundary. It's possible that the corner
+        // cell isn't contained within the bubble, so instead we find the 
+        // boundary cell with the smallest value of x that is a bubble (i.e. 
+        // bubbles[] > 0).
+
+        // We initialise the tag to be 0, which is the tag the
+        // bulk droplet will have, so that if the bubble is not found, the 
+        // resulting area will be huge and easy to identify that we're wrong.
+        int entrap_tag = 0; 
+
+        // Found minimum x value, initialised to be BOX_WIDTH 
+        double x_min = BOX_WIDTH; 
+
+        // Serial loop along bottom boundary as reduction operators are not 
+        // implemented in foreach_boundary loops
+        foreach_boundary(bottom, serial) {
+            if ((bubbles[] > 0) && (x < x_min)) {
+                // Update tag and the minimum x
+                entrap_tag = bubbles[];
+                x_min = x;
             }
         }
 
         // Determine the area of the tagged droplet
         bubble_area = 0.;
         foreach(reduction(+:bubble_area)) {
-            if (bubbles[] == entrap_idx) {
+            if (bubbles[] == entrap_tag) {
                 bubble_area += (1. - f[]) * Delta * Delta;
             }
         }
@@ -781,69 +795,30 @@ bottom boundary, which matches the velocity of the membrane
 
 void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr) {
 /* output_membrane
-Outputs the x positions of the membrane into a text file
+Outputs the position and time derivative of the membrane, as well as the 
+pressure along the membrane, into a text file.
 */
-    char w_filename[40];
-    sprintf(w_filename, "w_%d.txt", membrane_output_no);
-    FILE *w_file = fopen(w_filename, "w");
-
-    char w_deriv_filename[40];
-    sprintf(w_deriv_filename, "w_deriv_%d.txt", membrane_output_no);
-    FILE *w_deriv_file = fopen(w_deriv_filename, "w");
-
-    char p_filename[40];
-    sprintf(p_filename, "p_%d.txt", membrane_output_no);
-    FILE *p_file = fopen(p_filename, "w");
+   
+    char arr_filename[40];
+    sprintf(arr_filename, "membrane_arr_%d.txt", membrane_output_no);
+    FILE *arr_file = fopen(arr_filename, "w");
 
     // Outputs from x = 0 to L - dx
     #pragma omp parallel for
     for (int k = 0; k < M; k++) {
         double x = k * DELTA_X;
-        // fprintf(w_file, "%.10f, %.10f\n", x, w_arr[k]);
-        // fprintf(w_deriv_file, "%.10f, %.10f\n", x, w_deriv_arr[k]);
-        // fprintf(p_file, "%.10f, %.10f\n", x, p_arr[k]);
-        fprintf(w_file, "%g, %g\n", x, w_arr[k]);
-        fprintf(w_deriv_file, "%g, %g\n", x, w_deriv_arr[k]);
-        fprintf(p_file, "%g, %g\n", x, p_arr[k]);
+        fprintf(arr_file, "%g, %g, %g, %g\n", x, w_arr[k], w_deriv_arr[k], p_arr[k]);
     }
 
     // Outputs x = L, where w and w_deriv = 0
     double x = M * DELTA_X;
-    fprintf(w_file, "%g, %g\n", x, 0.0);
-    fprintf(p_file, "%g, %g\n", x, 0.0);
-    fprintf(w_deriv_file, "%g, %g", x, 0.0);
+    fprintf(arr_file, "%g, %g, %g, %g\n", x, 0.0, 0.0, 0.0);
 
-    fclose(w_file);
-    fclose(p_file);
-    fclose(w_deriv_file);
+    fclose(arr_file);
 
     membrane_output_no++;
 }
 
-
-void output_arrays_stationary(double *p_arr) {
-/* output_membrane_stationary
-Outputs the x positions of the pressure in a text file
-*/
-    char p_filename[40];
-    sprintf(p_filename, "p_%d.txt", membrane_output_no);
-    FILE *p_file = fopen(p_filename, "w");
-
-    // Outputs from x = 0 to L - dx
-    #pragma omp parallel for
-    for (int k = 0; k < M; k++) {
-        double x = k * DELTA_X;
-        fprintf(p_file, "%g, %g\n", x, p_arr[k]);
-    }
-
-    // Outputs x = L, where w and w_deriv = 0
-    double x = M * DELTA_X;
-    fprintf(p_file, "%.10f, %.10f\n", x, 0.0);
-
-    fclose(p_file);
-
-    membrane_output_no++;
-}
 
 /* Alternative remove_droplets definitions */
 void remove_droplets_region(struct RemoveDroplets p,\
