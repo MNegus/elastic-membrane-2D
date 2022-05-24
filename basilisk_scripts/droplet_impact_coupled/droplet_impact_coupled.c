@@ -10,7 +10,10 @@
     Author: Michael Negus
 */
 
+// Filtering for large viscosity ratios
 #define FILTERED
+
+// Filtered viscosity field
 #define mu(f)  (1./(clamp(f,0,1)*(1./mu1 - 1./mu2) + 1./mu2))
 
 #include "parameters.h" // Includes all defined parameters
@@ -19,11 +22,11 @@
 #include "view.h" // Creating movies using bview
 #include "tension.h" // Surface tension of droplet
 #include "tag.h" // For removing small droplets
-#include "heights.h"
+#include "heights.h" // For height function routines
 #include "contact.h" // For imposing contact angle on the surface
 #include "membrane-equation.h" // For solving the membrane equation
 #include <omp.h> // For openMP parallel
-#include <stdlib.h>
+#include <stdlib.h> // For string manipulation
 
 
 /* Physical constants */
@@ -59,20 +62,14 @@ int impact = 0; // Sets to 1 once impact has happened
 double start_wall_time; // Time the simulation was started
 double end_wall_time; // Time the simulation finished
 int gfs_output_no = 0; // Records how many GFS files have been outputted
-int log_output_no = 0; // Records how many plate data files there have been
+int log_output_no = 0; // Records how many log outputs files there have been
 int interface_output_no = 0; // Records how many interface files there have been
 int membrane_output_no = 0; // Records how many membrane outputs there have been
 int start_membrane = 0; // Boolean to indicate if membrane motion has started
 double drop_thresh = 1e-4; // Remove droplets threshold
 double pinch_off_time = 0.; // Time of pinch-off
-FILE * fp_stats; 
-
-/* Function definitions */
-double membrane_bc(double x, double *w_deriv_arr);
-void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr);
-void output_arrays_stationary(double *p_arr);
-void remove_droplets_region(struct RemoveDroplets p,\
-        double ignore_region_x_limit, double ignore_region_y_limit);
+double bubble_area = 0.; // Area of entrapped bubble
+FILE * fp_stats; // Logstats files
 
 /* Contact angle variables */ 
 vector h[]; // Height function
@@ -83,8 +80,8 @@ double theta0 = 90.;  // Contact angle in degrees
 u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
 
 // Conditions on surface
-uf.n[bottom] = dirichlet(0.);
-uf.t[bottom] = dirichlet(0.);
+u.n[bottom] = dirichlet(0.);
+u.t[bottom] = dirichlet(0.);
 h.t[bottom] = contact_angle (theta0*pi/180.);
 
 // Conditions for entry from above
@@ -97,6 +94,14 @@ p[right] = dirichlet(0.); // 0 pressure far from surface
 
 /* Field definitions */
 vector h_test[]; // Height function field
+scalar bubbles[]; // Tag field for bubbles
+
+/* Function definitions */
+double membrane_bc(double x, double *w_deriv_arr);
+void output_arrays(double *w_arr, double *w_deriv_arr, double *p_arr);
+void output_arrays_stationary(double *p_arr);
+void remove_droplets_region(struct RemoveDroplets p,\
+        double ignore_region_x_limit, double ignore_region_y_limit);
 
 int main() {
 /* Main function for running the simulation */
@@ -112,7 +117,7 @@ int main() {
     RHO_R = RHO_G / RHO_L; // Density ratio
     MU_R = MU_G / MU_L; // Viscosity ratio
 
-    /* Set dimensionless constants */
+    /* Set VOF constants */
     rho1 = 1.; // Density of water phase
     rho2 = RHO_R; // Density of air phase
     mu1 = 1. / REYNOLDS; // Viscosity of water phase
@@ -128,7 +133,8 @@ int main() {
     DROP_CENTRE = INITIAL_DROP_HEIGHT + DROP_RADIUS; // Initial centre of drop
     IMPACT_TIME = INITIAL_DROP_HEIGHT / (-DROP_VEL); // Theoretical impact time
     MEMBRANE_REFINE_NO = 8; // Number of cells above membrane to refine by
-    MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
+    // MEMBRANE_REFINED_HEIGHT = MEMBRANE_REFINE_NO * MIN_CELL_SIZE; 
+    MEMBRANE_REFINED_HEIGHT = 0.01;
 
     /* Allocates memory for turnover point search arrays */
     num_threads = atoi(getenv("OMP_NUM_THREADS"));
@@ -163,7 +169,7 @@ int main() {
     DT = 1.0e-4; // Minimum timestep
     NITERMIN = 1; // Min number of iterations (default 1)
     NITERMAX = 300; // Max number of iterations (default 100)
-    TOLERANCE = 1e-6; // Possion solver tolerance (default 1e-3)
+    TOLERANCE = 1e-5; // Possion solver tolerance (default 1e-3)
 
     /* Open stats file */
     char name[200];
@@ -224,14 +230,14 @@ event refinement (i++) {
 
     while (adequate_refinement == 0) {
 
-        // Attempts to refine
+        // Attempts to refine on top of the membrane
         refine((x < MEMBRANE_RADIUS) && (y <= refine_height) \
         && level < MAXLEVEL);
 
         // Refines a box near origin
-        refine((x <= 0.2) && (y <= 0.1) && level < MAXLEVEL);
+        // refine((x <= 0.2) && (y <= 0.1) && level < MAXLEVEL);
 
-        // Loops and check if refinement was successful
+        // Loops and check if refinement was successful along boundary
         adequate_refinement = 1;
         foreach_boundary(bottom) {
             if ((x < MEMBRANE_RADIUS) && (level < MAXLEVEL)) {
@@ -262,11 +268,10 @@ event small_droplet_removal (t += 1e-4) {
     int drop_min_cell_width = 16;
 
     // Region to ignore
-    double ignore_region_x_limit = 0.02; 
-    double ignore_region_y_limit = 0.02; 
+    double ignore_region_x_limit = 0.05; 
+    double ignore_region_y_limit = 0.05; 
     
     // Counts the number of bubbles there are using the tag function
-    scalar bubbles[];
     foreach() {
         bubbles[] = 1. - f[] > drop_thresh;
     }
@@ -279,36 +284,57 @@ event small_droplet_removal (t += 1e-4) {
         if (bubble_no > 1) {
             pinch_off_time = t;
         }
-    } else if (t >= pinch_off_time + REMOVAL_DELAY) {
-        /* If we are a certain time after the pinch-off time, remove drops and 
-        bubbles below the specified minimum size */
+    } else {
+        /* After the pinch off time, determine area of the entrapped bubble */
+        // Determine the tag of the entrapped bubble by finding the tag of the 
+        // cell 
+        int entrap_idx;
+        foreach_boundary(bottom) {
+            if (x < MIN_CELL_SIZE) {
+                entrap_idx = bubbles[];
+                break;
+            }
+        }
 
-        // Set up RemoveDroplets struct
-        struct RemoveDroplets remove_struct;
-        remove_struct.f = f;
-        remove_struct.minsize = drop_min_cell_width;
-        remove_struct.threshold = drop_thresh;
-        remove_struct.bubbles = false;
+        // Determine the area of the tagged droplet
+        bubble_area = 0.;
+        foreach(reduction(+:bubble_area)) {
+            if (bubbles[] == entrap_idx) {
+                bubble_area += (1. - f[]) * Delta * Delta;
+            }
+        }
+        
+        if (t >= pinch_off_time + REMOVAL_DELAY) {
+            /* If we are a certain time after the pinch-off time, remove drops and 
+            bubbles below the specified minimum size */
 
-        // Remove droplets outside of the specified region
-        remove_droplets_region(remove_struct, ignore_region_x_limit, \
-            ignore_region_y_limit);
+            // Set up RemoveDroplets struct
+            struct RemoveDroplets remove_struct;
+            remove_struct.f = f;
+            remove_struct.minsize = drop_min_cell_width;
+            remove_struct.threshold = drop_thresh;
+            remove_struct.bubbles = false;
 
-        // Remove bubbles outside of the specified region
-        remove_struct.bubbles = true;
-        remove_droplets_region(remove_struct, ignore_region_x_limit, \
-            ignore_region_y_limit);
+            // Remove droplets outside of the specified region
+            remove_droplets_region(remove_struct, ignore_region_x_limit, \
+                ignore_region_y_limit);
 
-        // Remove the entrapped bubble if specified
-        if (REMOVE_ENTRAPMENT) {
-            foreach(){ 
-                if (x < 0.01 && y < 2 * 0.05) {
-                    f[] = 1.;
+            // Remove bubbles outside of the specified region
+            remove_struct.bubbles = true;
+            remove_droplets_region(remove_struct, ignore_region_x_limit, \
+                ignore_region_y_limit);
+
+            // Remove the entrapped bubble if specified
+            if (REMOVE_ENTRAPMENT) {
+                foreach(){ 
+                    if (y < 0.01 && x < 2 * 0.05) {
+                        f[] = 1.;
+                    }
                 }
             }
         }
+        
     }
-    
 }
 
 
@@ -358,8 +384,16 @@ event update_membrane(t += DELTA_T) {
         
         int k = (int) intpart;
 
-        // Initially fills p_next_arr[k] with the current value of pressure
-        p_next_arr[k] = p[];
+        /* Initially fills p_next_arr[k] with the current value of the sum of
+        the pressure and viscous stress */
+        // Viscosity average in the cell above the plate
+        double avg_mu = f[] * (mu1 - mu2) + mu2;
+
+        // Viscous stress in the cell above the plate
+        double viscous_stress = \
+            - 2 * avg_mu * (u.y[0, 1] - u.y[]) / Delta;
+
+        p_next_arr[k] = p[] - viscous_stress;
 
         // If we are pre-impact or are not doing a cutoff, then continue in loop
         if ((CUTOFF == 0) || (impact == 0)) continue;
@@ -435,10 +469,12 @@ event output_data (t += LOG_OUTPUT_TIMESTEP) {
 /* Outputs data about the flow */
     /* Outputs data to log file */
     fprintf(stderr, \
-        "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
+        "t = %.5f, v = %.8f, bubble_area = %.7f\n", t, 2 * pi * statsf(f).sum, \
+            bubble_area);
     
     FILE *logfile = fopen("log", "a");
-    fprintf(logfile, "t = %.5f, v = %.8f\n", t, 2 * pi * statsf(f).sum);
+    fprintf(logfile, "t = %.5f, v = %.8f, bubble_area = %.7f\n", t, \
+        2 * pi * statsf(f).sum, bubble_area);
     fclose(logfile);
 
     /* Outputs info about cells along membrane */
@@ -447,7 +483,12 @@ event output_data (t += LOG_OUTPUT_TIMESTEP) {
     FILE *output_file = fopen(output_filename, "w");
 
     foreach_boundary(bottom) {
-        fprintf(output_file, "%g %g %g\n", x, p[], uf.y[]);
+        /* Determine viscous stress */
+        double avg_mu = f[] * (mu1 - mu2) + mu2;
+        double viscous_stress = \
+            - 2 * avg_mu * (u.y[0, 1] - u.y[]) / Delta;
+
+        fprintf(output_file, "%g %g %g %g\n", x, p[], uf.y[], viscous_stress);
     }
     fclose(output_file);
 
@@ -469,7 +510,7 @@ event output_interface (t += DELTA_T) {
     interface_output_no++;
 }
 
-
+#if TURNOVER
 event output_turnover_point (t += DELTA_T) {
 /* Outputs the coordinates of the turnover point and its velocity */
 
@@ -622,7 +663,7 @@ event output_turnover_point (t += DELTA_T) {
         }
     }
 }
-
+#endif
 
 event gfs_output (t += GFS_OUTPUT_TIMESTEP) {
 /* Saves a gfs file */
@@ -633,57 +674,56 @@ event gfs_output (t += GFS_OUTPUT_TIMESTEP) {
     gfs_output_no++;
 }
 
-
+#if MOVIES
 event movies (t += 1e-3) {
 /* Produces movies using bview */ 
-    if (MOVIES) {
-        // Creates a string with the time to put on the plots
-        char time_str[80];
-        sprintf(time_str, "t = %g\n", t);
+    // Creates a string with the time to put on the plots
+    char time_str[80];
+    sprintf(time_str, "t = %g\n", t);
 
-        /* Zoomed out view */
-        // Set up bview box
-        view (width = 1024, height = 1024, fov = 12.0, ty = -0.31, tx = -0.31);
+    /* Zoomed out view */
+    // Set up bview box
+    view (width = 1024, height = 1024, fov = 12.0, ty = -0.31, tx = -0.31);
 
-        /* Movie of the volume fraction of the droplet */
-        clear();
-        draw_vof("f", lw = 2);
-        squares("f", linear = true, spread = -1, map = cool_warm); // RC - minor changes here and beyond
-        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("tracer.mp4");
+    /* Movie of the volume fraction of the droplet */
+    clear();
+    draw_vof("f", lw = 2);
+    squares("f", linear = true, spread = -1, map = cool_warm); // RC - minor changes here and beyond
+    draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+    save ("tracer.mp4");
 
-        /* Movie of the horiztonal velocity */
-        clear();
-        draw_vof("f", lw = 2);
-        squares("u.x", spread = -1, linear = true, map = cool_warm);
-        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("horizontal_vel.mp4");
+    /* Movie of the horiztonal velocity */
+    clear();
+    draw_vof("f", lw = 2);
+    squares("u.x", spread = -1, linear = true, map = cool_warm);
+    draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+    save ("horizontal_vel.mp4");
 
 
-        /* Movie of the vertical velocity */
-        clear();
-        draw_vof("f", lw = 2);
-        squares("u.y", min = -1.5, max = 1.5, linear = true, spread = -1, map = cool_warm);
-        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("vertical_vel.mp4");
+    /* Movie of the vertical velocity */
+    clear();
+    draw_vof("f", lw = 2);
+    squares("u.y", min = -1.5, max = 1.5, linear = true, spread = -1, map = cool_warm);
+    draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+    save ("vertical_vel.mp4");
 
-        /* Movie of the pressure */
-        clear();
-        draw_vof("f", lw = 2);
-        squares("p", spread = -1, linear = true, map = cool_warm);
-        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("pressure.mp4");
+    /* Movie of the pressure */
+    clear();
+    draw_vof("f", lw = 2);
+    squares("p", spread = -1, linear = true, map = cool_warm);
+    draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+    save ("pressure.mp4");
 
-        /* Zoomed in view of pressure around entrapped bubble */
-        // Set up bview box
-        view (width = 1024, height = 1024, fov = 2.0, ty = -0.05, tx = -0.05);
-        clear();
-        draw_vof("f", lw = 2);
-        squares("u.y", min = -1.5, max = 1.5, linear = true, spread = -1, map = cool_warm);
-        draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
-        save ("zoomed_vertical_vel.mp4");
-    }
+    /* Zoomed in view of pressure around entrapped bubble */
+    // Set up bview box
+    view (width = 1024, height = 1024, fov = 2.0, ty = -0.05, tx = -0.05);
+    clear();
+    draw_vof("f", lw = 2);
+    squares("u.y", min = -1.5, max = 1.5, linear = true, spread = -1, map = cool_warm);
+    draw_string(time_str, pos=1, lc= { 0, 0, 0 }, lw=2);
+    save ("zoomed_vertical_vel.mp4");
 }
+#endif
 
 event logstats (t += 1e-4) {
 
@@ -752,9 +792,9 @@ Outputs the x positions of the membrane into a text file
 
     // Outputs x = L, where w and w_deriv = 0
     double x = M * DELTA_X;
-    fprintf(w_file, "%.10f, %.10f\n", x, 0.0);
-    fprintf(p_file, "%.10f, %.10f\n", x, 0.0);
-    fprintf(w_deriv_file, "%.10f, %.10f", x, 0.0);
+    fprintf(w_file, "%g, %g\n", x, 0.0);
+    fprintf(p_file, "%g, %g\n", x, 0.0);
+    fprintf(w_deriv_file, "%g, %g", x, 0.0);
 
     fclose(w_file);
     fclose(p_file);
