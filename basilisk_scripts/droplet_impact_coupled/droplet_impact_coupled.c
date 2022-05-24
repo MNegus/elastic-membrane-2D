@@ -80,8 +80,8 @@ double theta0 = 90.;  // Contact angle in degrees
 u.n[left] = dirichlet(0.); // No flow in the x direction along boundary
 
 // Conditions on surface
-u.n[bottom] = dirichlet(0.);
-u.t[bottom] = dirichlet(0.);
+u.n[bottom] = dirichlet(0.); // No-flux condition
+u.t[bottom] = dirichlet(0.); // No-slip condition
 h.t[bottom] = contact_angle (theta0*pi/180.);
 
 // Conditions for entry from above
