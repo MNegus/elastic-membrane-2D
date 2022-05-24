@@ -75,8 +75,8 @@ void remove_droplets_region(struct RemoveDroplets p,\
         double ignore_region_x_limit, double ignore_region_y_limit);
 
 /* Contact angle variables */ 
-vector h[];  // Height function
-double theta0 = 90;  // Contact angle in degrees
+vector h[]; // Height function
+double theta0 = 90.;  // Contact angle in degrees
 
 /* Boundary conditions */
 // Symmetry on left boundary
@@ -138,8 +138,6 @@ int main() {
 
     /* Membrane constants */
     // Number of grid points, depending on MAXLEVEL and FD_COARSEN_LEVEL
-    // M = (int) floor(pow(2, MAXLEVEL) * MEMBRANE_RADIUS / (BOX_WIDTH * pow(2, FD_COARSEN_LEVEL)));
-    // DELTA_X = MEMBRANE_RADIUS / M;
     DELTA_X = MIN_CELL_SIZE * pow(2, FD_COARSEN_LEVEL);
     M = (int) floor(MEMBRANE_RADIUS / DELTA_X) + 1;
     fprintf(stderr, "M = %d, MEMBRANE_RADIUS / DELTA_X = %g\n", M, MEMBRANE_RADIUS / DELTA_X);
@@ -248,8 +246,7 @@ event refinement (i++) {
     
 }
 
-
-event gravity (i++) {
+event acceleration (i++) {
 /* Adds acceleration due to gravity in the vertical direction */
     face vector av = a; // Acceleration at each face
     foreach_face(x) av.y[] -= 1. / sq(FROUDE); // Adds acceleration due to gravity
@@ -259,12 +256,58 @@ event gravity (i++) {
 event small_droplet_removal (t += 1e-4) {
 /* Removes any small droplets or bubbles that have formed, that are smaller than
     a specific size */
-    // Removes droplets of diameter 5 cells or less
-    int remove_droplet_radius = min(16, (int)(0.2 / MIN_CELL_SIZE));
-    remove_droplets(f, remove_droplet_radius);
+    
+    // Minimum diameter (in cells) a droplet/bubble has to be, else it will be 
+    // removed
+    int drop_min_cell_width = 16;
 
-    // Also remove air bubbles
-    remove_droplets(f, remove_droplet_radius, 1e-4, true);
+    // Region to ignore
+    double ignore_region_x_limit = 0.02; 
+    double ignore_region_y_limit = 0.02; 
+    
+    // Counts the number of bubbles there are using the tag function
+    scalar bubbles[];
+    foreach() {
+        bubbles[] = 1. - f[] > drop_thresh;
+    }
+    int bubble_no = tag(bubbles);
+
+    // Determines if we are before or after the pinch-off time
+    if (pinch_off_time == 0.) {
+        /* The first time the bubble number is above 1, we define it to be the 
+        pinch off time */
+        if (bubble_no > 1) {
+            pinch_off_time = t;
+        }
+    } else if (t >= pinch_off_time + REMOVAL_DELAY) {
+        /* If we are a certain time after the pinch-off time, remove drops and 
+        bubbles below the specified minimum size */
+
+        // Set up RemoveDroplets struct
+        struct RemoveDroplets remove_struct;
+        remove_struct.f = f;
+        remove_struct.minsize = drop_min_cell_width;
+        remove_struct.threshold = drop_thresh;
+        remove_struct.bubbles = false;
+
+        // Remove droplets outside of the specified region
+        remove_droplets_region(remove_struct, ignore_region_x_limit, \
+            ignore_region_y_limit);
+
+        // Remove bubbles outside of the specified region
+        remove_struct.bubbles = true;
+        remove_droplets_region(remove_struct, ignore_region_x_limit, \
+            ignore_region_y_limit);
+
+        // Remove the entrapped bubble if specified
+        if (REMOVE_ENTRAPMENT) {
+            foreach(){ 
+                if (x < 0.01 && y < 2 * 0.05) {
+                    f[] = 1.;
+                }
+            }
+        }
+    }
     
 }
 
@@ -324,7 +367,6 @@ event update_membrane(t += DELTA_T) {
         /* Implements cutoff */
         if ((f[] > 0) && (f[] < 1)) {
             /* If a mixed cell, output 0 */
-            // p_scale = 0;
             p_next_arr[k] = 0.0;
         } else {
             /* Else, f[] == 0 or 1, and we check the heights */
