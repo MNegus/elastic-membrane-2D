@@ -33,8 +33,7 @@ cp raw_data/turnover_points_basilisk.txt .
 
 # Move files
 mv raw_data/boundary_output_*.txt boundary_outputs
-mv raw_data/w_*.txt membrane_outputs
-mv raw_data/p_*.txt membrane_outputs
+mv raw_data/membrane_arr_*.txt membrane_outputs
 mv raw_data/*.mp4 movies
 mv raw_data/interface_* interfaces
 
@@ -49,3 +48,5 @@ sed -n '/^t = /p' log > output.txt
 # Removes readable qualifies
 sed -e "s/t = //g" -i output.txt
 sed -e "s/v = //g" -i output.txt
+sed -e "s/p0 = //g" -i output.txt
+sed -e "s/bubble_area = //g" -i output.txt
