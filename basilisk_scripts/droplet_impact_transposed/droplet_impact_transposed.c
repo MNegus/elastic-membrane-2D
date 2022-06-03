@@ -170,7 +170,7 @@ event init(t = 0) {
     double refine_height = MIN_CELL_SIZE;
     int adequate_refinement = 0;
 
-    while (adequate_refinement == 0) {
+    while ((adequate_refinement == 0) && (refine_height < BOX_WIDTH)) {
 
         // Attempts to refine
         refine(((sq(x - DROP_CENTRE) + sq(y) < sq(DROP_RADIUS + DROP_REFINED_WIDTH) \
@@ -414,8 +414,8 @@ event small_droplet_removal (t += 1e-3) {
     int drop_min_cell_width = 16;
 
     // Region to ignore
-    double ignore_region_x_limit = 0.05; 
-    double ignore_region_y_limit = 0.05; 
+    double ignore_region_x_limit = 0.1; 
+    double ignore_region_y_limit = 0.1; 
     
     // Counts the number of bubbles there are using the tag function
     foreach() {
@@ -432,33 +432,31 @@ event small_droplet_removal (t += 1e-3) {
     } else {
         /* Determine area of entrapped bubble */
 
-        // Determine the tag of the entrapped bubble. After pinch-off, this will
-        // be somewhere along the bottom boundary. It's possible that the corner
-        // cell isn't contained within the bubble, so instead we find the 
-        // boundary cell with the smallest value of x that is a bubble (i.e. 
-        // bubbles[] > 0).
+        // We assume that entrapped bubbles are any bubble which is not the #
+        // surrounding air, so we determine the tag of the surrounding air, and 
+        // then add up the volume of all of the cells which do not have that 
+        // tag
 
         // We initialise the tag to be 0, which is the tag the
         // bulk droplet will have, so that if the bubble is not found, the 
         // resulting area will be huge and easy to identify that we're wrong.
-        int entrap_tag = 0; 
+        int air_tag = 0; 
 
-        // Found minimum y value, initialised to be BOX_WIDTH 
-        double y_min = BOX_WIDTH; 
-
-        // Serial loop along left boundary as reduction operators are not 
-        // implemented in foreach_boundary loops
-        foreach_boundary(left, serial) {
-            if ((bubbles[] > 0) && (y < y_min)) {
-                // Update tag and the minimum x
-                entrap_tag = bubbles[];
-                y_min = y;
+        // Serial foreach loop along the right boundary to find the tag of the 
+        // air, which in theory should end after one iteration
+        foreach_boundary(right, serial) {
+            if (f[] == 0.) {
+                air_tag = bubbles[];
+                break;
             }
         }
-        // Determine the area of the tagged droplet
+
+        // Determine the area of all of the entrapped air cells, which will have
+        // a tag not equal to 0 (which will be liquid) or air_tag, which is the
+        // tag of the surrounding air
         bubble_area = 0.;
         foreach(reduction(+:bubble_area)) {
-            if (bubbles[] == entrap_tag) {
+            if ((bubbles[] > 0) && (bubbles[] != air_tag)) {
                 bubble_area += (1. - f[]) * dv();
             }
         }
@@ -472,9 +470,15 @@ event small_droplet_removal (t += 1e-3) {
             remove_struct.threshold = drop_thresh;
             remove_struct.bubbles = false;
 
-            // Remove droplets outside of the specified region
-            remove_droplets_region(remove_struct, ignore_region_x_limit, \
-                ignore_region_y_limit);
+            // Remove droplets outside of the specified region up to a certain
+            // point, and then remove any that appear 
+            if (t < 0.3) {
+                remove_droplets_region(remove_struct, ignore_region_x_limit, \
+                    ignore_region_y_limit);
+            } else {
+                remove_droplets_region(remove_struct, 0, 0);
+            }
+            
 
             // Remove bubbles outside of the specified region
             remove_struct.bubbles = true;
@@ -535,7 +539,7 @@ event output_data (t += LOG_OUTPUT_TIMESTEP) {
 }
 
 
-event output_interface (t += DELTA_T) {
+event output_interface (t += PLATE_OUTPUT_TIMESTEP) {
 /* Outputs the interface locations of the droplet */
     // Creates text file to save output to
     char interface_filename[80];
