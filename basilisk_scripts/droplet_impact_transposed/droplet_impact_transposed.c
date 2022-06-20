@@ -411,7 +411,8 @@ event small_droplet_removal (t += 1e-3) {
 
     // Minimum diameter (in cells) a droplet/bubble has to be, else it will be 
     // removed
-    int drop_min_cell_width = 4;
+    int drop_min_cell_width = 12;
+    int bubble_min_cell_width = 8;
 
     // Region to ignore
     double ignore_region_x_limit = 0.1; 
@@ -477,12 +478,14 @@ event small_droplet_removal (t += 1e-3) {
 
                 // Remove bubbles outside of the specified region
                 remove_struct.bubbles = true;
+                remove_struct.minsize = bubble_min_cell_width;
                 remove_droplets_region(remove_struct, ignore_region_x_limit, \
                     ignore_region_y_limit);
             } else {
                 remove_droplets_region(remove_struct, 0, 0);
                 
                 remove_struct.bubbles = true;
+                remove_struct.minsize = bubble_min_cell_width;
                 remove_droplets_region(remove_struct, 0, 0);
             }
 
