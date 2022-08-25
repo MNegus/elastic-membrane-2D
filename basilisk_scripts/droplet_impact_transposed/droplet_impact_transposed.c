@@ -146,7 +146,7 @@ int main() {
     fp_stats = fopen(name, "w");
 
     /* Poisson solver constants */
-    DT = 1.0e-4; // Minimum timestep
+    DT = 1.0e-5; // Minimum timestep
     NITERMIN = 1; // Min number of iterations (default 1)
     NITERMAX = 300; // Max number of iterations (default 100)
     TOLERANCE = 1e-5; // Possion solver tolerance (default 1e-3)
@@ -340,19 +340,20 @@ event update_membrane(t += DELTA_T) {
         // Start motion after impact time
         if (t >= IMPACT_TIME) {
             double tShift = t - IMPACT_TIME + DELTA_T;
-            double lambda = 12.;
 
-            double w_coeff = IMPOSED_COEFF * (1 - cos(lambda * tShift) + sq(tShift));
+            double w_coeff = IMPOSED_COEFF * (1 - cos(OMEGA * tShift) + sq(tShift));
             double w_t_coeff = IMPOSED_COEFF * (2 * (tShift - DELTA_T) \
-                + lambda * sin(lambda * (tShift - DELTA_T)));
+                + OMEGA * sin(OMEGA * (tShift - DELTA_T)));
 
             // Loop over membrane
             #pragma omp parallel for
             for (int k = 0; k < M; k++) {
                 double y = k * DELTA_X;
 
-                w_next[k] = w_coeff * cos(pi * y / (2 * MEMBRANE_RADIUS)); 
-                w_deriv[k] = w_t_coeff * cos(pi * y / (2 * MEMBRANE_RADIUS));
+                // w_next[k] = w_coeff * cos(pi * y / (2 * MEMBRANE_RADIUS)); 
+                // w_deriv[k] = w_t_coeff * cos(pi * y / (2 * MEMBRANE_RADIUS));
+                w_next[k] = w_coeff * (1 - sq(y) / sq(MEMBRANE_RADIUS));
+                w_deriv[k] = w_t_coeff * (1 - sq(y) / sq(MEMBRANE_RADIUS));
             }
         }
 
@@ -462,7 +463,25 @@ event small_droplet_removal (t += 1e-3) {
             }
         }
 
-        /* After the removal delay, remove drops and bubbles as necessary */    
+        /* After the removal delay, remove drops and bubbles as necessary */  
+        if ((REMOVE_ENTRAPMENT) && (t >= pinch_off_time)) {
+            // Remove any bubbble with a large radius e.g. 60
+            struct RemoveDroplets remove_struct;
+            remove_struct.f = f;
+            remove_struct.minsize = 60;
+            remove_struct.bubbles = true;
+            remove_struct.threshold = drop_thresh;
+            remove_droplets(remove_struct);
+
+            fprintf(stderr, "Remove entrapment\n");
+
+            // foreach() { 
+            //     if (x < 0.01 && y < 2 * 0.05) {
+            //         f[] = 1.;
+            //     }
+            // }
+        } 
+        
         if (t >= pinch_off_time + REMOVAL_DELAY) {
             // Set up RemoveDroplets struct
             struct RemoveDroplets remove_struct;
@@ -487,15 +506,6 @@ event small_droplet_removal (t += 1e-3) {
                 remove_struct.bubbles = true;
                 remove_struct.minsize = bubble_min_cell_width;
                 remove_droplets_region(remove_struct, 0, 0);
-            }
-
-            // Remove the entrapped bubble if specified
-            if (REMOVE_ENTRAPMENT) {
-                foreach() { 
-                    if (x < 0.01 && y < 2 * 0.05) {
-                        f[] = 1.;
-                    }
-                }
             }
         }
     }
