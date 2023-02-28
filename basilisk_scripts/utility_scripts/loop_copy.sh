@@ -4,10 +4,10 @@ code_dir=$1
 dest_dir=$2
 
 
-for IMPOSEDCOEFF in 0 0.0025 
+for IMPOSEDCOEFF in 0 0.05
 do
     # Change the axisymmetric value in parameters file
-    sed -i "/IMPOSED_COEFF/c\const double IMPOSED_COEFF =  $IMPOSEDCOEFF;" parameters.h
+    sed -i "/IMPOSED_COEFF/c\const double IMPOSED_COEFF = $IMPOSEDCOEFF;" parameters.h
 
     # Make the respective directory
     mkdir $dest_dir/imposed_coeff_$IMPOSEDCOEFF

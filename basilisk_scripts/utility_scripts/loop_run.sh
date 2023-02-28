@@ -4,7 +4,7 @@ parent_dir=$1
 code_name=$2
 cores=$3
 
-for MAXLEVEL in 10 11 12 13 14
+for MAXLEVEL in 13 14 
 do
     echo Max level = $MAXLEVEL
     cd $parent_dir/max_level_$MAXLEVEL/code

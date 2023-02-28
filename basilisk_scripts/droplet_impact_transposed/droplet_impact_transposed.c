@@ -573,6 +573,16 @@ event gfs_output (t += GFS_OUTPUT_TIMESTEP) {
     sprintf(gfs_filename, "gfs_output_%d.gfs", gfs_output_no);
     output_gfs(file = gfs_filename);
 
+    // Output fields
+    char field_filename[80];
+    sprintf(field_filename, "field_output_%d.txt", gfs_output_no);
+    FILE *field_file = fopen(field_filename, "w");
+
+    int N_output = 512;
+    output_field ({p,f,u}, field_file, N_output, box = {{0,0},{2.5,2.5}});
+
+    fclose(field_file);
+
     gfs_output_no++;
 }
 
